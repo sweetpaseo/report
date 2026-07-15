@@ -2,6 +2,12 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-07-16 — Fix modal "Lihat semua" cocok dengan periode terpilih  (commit 2b6e21f0093f5b4b3fea2874e4d046367c00f8c4)
+- Bug: section inline (mis. Kata Kunci) menampilkan "Belum ada data" untuk periode terpilih, tapi modal "Lihat semua" menampilkan data dari bulan lain karena `getFullReportData` + `effectivePeriodId` melakukan fallback diam ke periode terbaru yang punya data.
+- Perbaikan: `getFullReportData` sekarang query langsung terhadap `selected.id` (tanpa fallback) untuk semua tabel, dan mengembalikan `selectedPeriod` agar modal selalu sama dengan periode dashboard. Hapus fungsi `effectivePeriodId`.
+- Dampak: inline kosong kini konsisten dengan modal kosong untuk periode yang sama; tidak ada lagi kesan "data ada tapi section kosong".
+- File terlibat: `lib/dashboard.ts`, `app/api/report-data/route.ts` (tetap meneruskan periodId).
+
 ## 2026-07-16 — Sembunyikan section dashboard bila sumber datanya tidak ada  (commit 096a08d60c8728485e3c315dbe574b002ee699c3)
 - Dashboard hanya menampilkan section yang datanya tersedia per website: section GSC (Pillar 1, Perangkat & Halaman, Geografi & Tampilan, Halaman Paling Sering Dicari, Kata Kunci, kartu peluang 1 & 2) digate pada `hasGsc`; section GA (Pillar 2-4, Perangkat Pengunjung, Kota, kartu peluang 3) digate pada `hasGa`.
 - `hasGsc`/`hasGa` diturunkan di `components/dashboard-app.tsx` dari `data.metrics["gsc.impressions"]` / `data.metrics["ga.sessions"]` (sama dengan logika `lib/dashboard.ts`), sehingga tidak ada section kosong "Belum ada data" yang ditampilkan bila website hanya punya satu sumber.
