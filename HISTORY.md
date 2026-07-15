@@ -2,6 +2,13 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-07-16 — Add Kota & Perangkat pengunjung dari GA  (commit dbefa275a53eb9849435943a59338c4c678683e5)
+- Tambah data pengunjung berbasis visitor dari GA "Ringkasan laporan": Kota (top cities) dan Model perangkat (device models), terpisah dari `gsc_countries` (impression) dan `gsc_devices` (kategori device GSC).
+- Parser `lib/parsers/ga.ts` membaca section `Kota` & `Model perangkat` via pencocokan header `.includes()` (robust terhadap variasi teks header).
+- Skema: tabel baru `ga_cities` + `ga_device_models` (FK cascade ke `ga_imports`); persist di `lib/import-report.ts`.
+- Dashboard: kartu "Kota" (`g-cities`, CityList) + "Perangkat (Model)" (`g-devices-visitor`, DeviceModelList) di grid order ke-5/ke-6; field `topCities`/`deviceModels` di `lib/dashboard.ts` + `FullReportData`; `FULL_COLUMNS` + modal "Lihat semua" mendukung keduanya.
+- File terlibat: `lib/parsers/types.ts`, `lib/parsers/ga.ts`, `lib/db.ts`, `lib/import-report.ts`, `lib/dashboard.ts`, `components/dashboard-app.tsx`, `app/dashboard-theme.css`.
+
 ## 2026-07-16 — Ignore runtime artifacts (.omo) dan build cache  (commit 0b6b6c0ac1c2ce67acf03d9c9106ae9a64eb1660)
 - Tambah `.omo/` dan `tsconfig.tsbuildinfo` ke `.gitignore`; lepas dari tracking agar state runtime agent & build cache tidak masuk version control.
 - File terlibat: `.gitignore` (diubah), `.omo/run-continuation/ses_09b2bf7b5ffeS5xkMI34qmS7Ve.json` (dihapus dari tracking), `tsconfig.tsbuildinfo` (dihapus dari tracking).
