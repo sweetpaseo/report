@@ -1,0 +1,237 @@
+.page {
+  --ink: #1d1d1f;
+  --secondary: #6e6e73;
+  --blue: #0071e3;
+  --blue-dark: #0077ed;
+  --line: #d2d2d7;
+  --bg: #fbfbfd;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr minmax(380px, 560px);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", system-ui, sans-serif;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 26px;
+  padding: clamp(32px, 7vw, 92px);
+  max-width: 560px;
+  width: 100%;
+  margin: 0 auto;
+  animation: fadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.brand {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #0071e3, #7b5cff);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  box-shadow: 0 12px 30px rgba(0, 113, 227, 0.28);
+}
+
+.intro {
+  display: grid;
+  gap: 10px;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(30px, 4vw, 42px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--secondary);
+  font-size: 16px;
+  line-height: 1.55;
+  max-width: 38ch;
+}
+
+.footnote {
+  margin: 0;
+  color: #a1a1a6;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.visual {
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: linear-gradient(155deg, #eef2ff 0%, #f6f0ff 55%, #fdf2f6 100%);
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.55;
+}
+
+.orbA {
+  width: 460px;
+  height: 460px;
+  top: -120px;
+  right: -90px;
+  background: radial-gradient(circle at 40% 40%, #4d8bff, rgba(77, 139, 255, 0) 68%);
+}
+
+.orbB {
+  width: 380px;
+  height: 380px;
+  bottom: -110px;
+  left: -80px;
+  background: radial-gradient(circle at 50% 50%, #b08bff, rgba(176, 139, 255, 0) 68%);
+}
+
+.card {
+  position: relative;
+  width: min(420px, 72%);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 24px;
+  padding: 30px;
+  box-shadow: 0 24px 70px rgba(20, 40, 90, 0.18);
+  display: grid;
+  gap: 14px;
+  animation: fadeUp 0.9s 0.12s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.pill {
+  width: max-content;
+  border-radius: 999px;
+  padding: 7px 13px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: rgba(52, 199, 89, 0.16);
+  color: #1a8a3c;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.18;
+  color: var(--ink);
+}
+
+.cardText {
+  margin: 0;
+  color: var(--secondary);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.panel :global(.form-stack) {
+  display: grid;
+  gap: 16px;
+}
+
+.panel :global(.form-stack label) {
+  display: grid;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.panel :global(.form-stack input) {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 15px;
+  font-size: 15px;
+  color: var(--ink);
+  background: #fff;
+  outline: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.panel :global(.form-stack input):focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.15);
+}
+
+.panel :global(.button.primary) {
+  background: var(--blue);
+  color: #fff;
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  box-shadow: 0 10px 24px rgba(0, 113, 227, 0.22);
+  transition: background 0.18s ease, transform 0.1s ease;
+}
+
+.panel :global(.button.primary):hover {
+  background: var(--blue-dark);
+}
+
+.panel :global(.button.primary):active {
+  transform: scale(0.985);
+}
+
+.panel :global(.form-error) {
+  background: #fff0f1;
+  color: #b02a37;
+  border-radius: 10px;
+  padding: 11px 13px;
+  font-size: 13px;
+  margin: 0;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+  .visual {
+    display: none;
+  }
+  .panel {
+    min-height: 100vh;
+    padding: 48px 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel,
+  .card {
+    animation: none;
+  }
+}

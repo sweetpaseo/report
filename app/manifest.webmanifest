@@ -1,0 +1,9 @@
+{
+  "name": "Website Health Report",
+  "short_name": "WHR",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#f5f7fb",
+  "theme_color": "#071329",
+  "icons": []
+}

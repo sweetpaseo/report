@@ -1,0 +1,35 @@
+import crypto from "node:crypto";
+import { NextResponse } from "next/server";
+import { createSessionToken, SESSION_COOKIE, type SessionRole } from "@/lib/auth";
+
+function safeEqual(left: string, right: string) {
+  const a = Buffer.from(left);
+  const b = Buffer.from(right);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+export async function POST(request: Request) {
+  const { password } = await request.json().catch(() => ({ password: "" }));
+  const adminExpected = process.env.ADMIN_PASSWORD;
+  const clientExpected = process.env.CLIENT_PASSWORD;
+
+  if ((!adminExpected || adminExpected.length < 10) && (!clientExpected || clientExpected.length < 10)) {
+    return NextResponse.json({ error: "ADMIN_PASSWORD belum dikonfigurasi dengan aman." }, { status: 500 });
+  }
+
+  const passwordStr = String(password || "");
+  let role: SessionRole | null = null;
+  if (adminExpected && adminExpected.length >= 10 && safeEqual(passwordStr, adminExpected)) role = "admin";
+  if (!role && clientExpected && clientExpected.length >= 10 && safeEqual(passwordStr, clientExpected)) role = "client";
+  if (!role) return NextResponse.json({ error: "Password salah." }, { status: 401 });
+
+  const response = NextResponse.json({ ok: true, role });
+  response.cookies.set(SESSION_COOKIE, await createSessionToken(role), {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 7,
+  });
+  return response;
+}
