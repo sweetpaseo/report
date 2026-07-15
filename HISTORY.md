@@ -2,6 +2,13 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-07-16 — Sembunyikan section dashboard bila sumber datanya tidak ada  (commit 096a08d60c8728485e3c315dbe574b002ee699c3)
+- Dashboard hanya menampilkan section yang datanya tersedia per website: section GSC (Pillar 1, Perangkat & Halaman, Geografi & Tampilan, Halaman Paling Sering Dicari, Kata Kunci, kartu peluang 1 & 2) digate pada `hasGsc`; section GA (Pillar 2-4, Perangkat Pengunjung, Kota, kartu peluang 3) digate pada `hasGa`.
+- `hasGsc`/`hasGa` diturunkan di `components/dashboard-app.tsx` dari `data.metrics["gsc.impressions"]` / `data.metrics["ga.sessions"]` (sama dengan logika `lib/dashboard.ts`), sehingga tidak ada section kosong "Belum ada data" yang ditampilkan bila website hanya punya satu sumber.
+- Navigasi sidebar juga menyembunyikan anchor menuju section yang tidak ditampilkan.
+- Tidak ada perubahan skema DB; gating murni di sisi presentasi. `app/dashboard-theme.css` tidak diubah (grid `order` pada node yang tidak dirender bersifat no-op).
+- File terlibat: `components/dashboard-app.tsx`.
+
 ## 2026-07-16 — Add Kota & Perangkat pengunjung dari GA  (commit dbefa275a53eb9849435943a59338c4c678683e5)
 - Tambah data pengunjung berbasis visitor dari GA "Ringkasan laporan": Kota (top cities) dan Model perangkat (device models), terpisah dari `gsc_countries` (impression) dan `gsc_devices` (kategori device GSC).
 - Parser `lib/parsers/ga.ts` membaca section `Kota` & `Model perangkat` via pencocokan header `.includes()` (robust terhadap variasi teks header).
