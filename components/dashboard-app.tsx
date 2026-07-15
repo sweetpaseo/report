@@ -119,6 +119,8 @@ export function DashboardApp({ publicToken }: { publicToken?: string }) {
   const clickValues = useMemo(() => (data?.trends?.gsc || []).map((row: any) => Number(row.clicks || 0)), [data]);
   const gaValues = useMemo(() => (data?.trends?.ga || []).map((row: any) => Number(row.activeUsers || 0)), [data]);
   const engagementValues = useMemo(() => (data?.trends?.ga || []).map((row: any) => Number(row.engagementSeconds || 0)), [data]);
+  const hasGsc = (data?.metrics?.["gsc.impressions"] || 0) > 0;
+  const hasGa = (data?.metrics?.["ga.sessions"] || 0) > 0;
 
   async function logout() { await fetch("/api/auth/logout", { method: "POST" }); location.href = "/login"; }
   function shareReport() {
@@ -159,12 +161,12 @@ export function DashboardApp({ publicToken }: { publicToken?: string }) {
         <nav onClick={() => setMobileMenu(false)}>
           <a className="active"><Home /> Ringkasan</a>
           <a href="#anomalies"><CircleAlert /> Peringatan & Anomali</a>
-          <a href="#search"><Search /> Kinerja di Google</a>
-          <a href="#traffic"><Users /> Traffic & Pengunjung</a>
-          <a href="#engagement"><Activity /> Perilaku Pengunjung</a>
-          <a href="#conversion"><Target /> Tindakan & Konversi</a>
+          {hasGsc && <a href="#search"><Search /> Kinerja di Google</a>}
+          {hasGa && <a href="#traffic"><Users /> Traffic & Pengunjung</a>}
+          {hasGa && <a href="#engagement"><Activity /> Perilaku Pengunjung</a>}
+          {hasGa && <a href="#conversion"><Target /> Tindakan & Konversi</a>}
           <a href="#opportunities"><Gauge /> Peluang & Rekomendasi</a>
-          <a href="#geography"><Globe2 /> Geografi & Tampilan</a>
+          {hasGsc && <a href="#geography"><Globe2 /> Geografi & Tampilan</a>}
           <a href="#quality"><Database /> Data Quality</a>
         </nav>
         {!isPublic && <button className="sidebar-logout" onClick={logout}><LogOut /> Keluar</button>}
@@ -209,61 +211,61 @@ export function DashboardApp({ publicToken }: { publicToken?: string }) {
           {data.monthlySeries?.length > 1 && <MonthlyTrend data={data} />}
 
           <section className="pillar-grid">
-            <article className="pillar-card" id="search"><header><span className="pillar-number blue"><Search /></span><div><b>1. Ditemukan di Google</b><p>Visibilitas website di pencarian</p></div></header>
+            {hasGsc && <article className="pillar-card" id="search"><header><span className="pillar-number blue"><Search /></span><div><b>1. Ditemukan di Google</b><p>Visibilitas website di pencarian</p></div></header>
               <Metric label="Impressions" value={fmt.format(data.metrics["gsc.impressions"] || 0)} comparison={data.comparisons["gsc.impressions"]} values={gscValues}/>
               <Metric label="Clicks" value={fmt.format(data.metrics["gsc.clicks"] || 0)} comparison={data.comparisons["gsc.clicks"]} values={clickValues}/>
               <div className="small-metrics"><div><span>CTR</span><b>{percent(data.metrics["gsc.ctr"], true)}</b></div><div><span>Posisi rata-rata</span><b>{dec.format(data.metrics["gsc.average_position"] || 0)}</b></div></div>
-            </article>
+            </article>}
 
-            <article className="pillar-card" id="traffic"><header><span className="pillar-number green"><Users /></span><div><b>2. Mendapatkan Pengunjung</b><p>Jumlah dan sumber traffic</p></div></header>
+            {hasGa && <article className="pillar-card" id="traffic"><header><span className="pillar-number green"><Users /></span><div><b>2. Mendapatkan Pengunjung</b><p>Jumlah dan sumber traffic</p></div></header>
               <Metric label="Sesi" value={fmt.format(data.metrics["ga.sessions"] || 0)} comparison={data.comparisons["ga.sessions"]} values={gaValues}/>
               <Metric label="Pengguna aktif" value={fmt.format(data.metrics["ga.active_users"] || 0)} comparison={data.comparisons["ga.active_users"]} values={gaValues}/>
               <ChannelList channels={data.channels || []} sessions={data.metrics["ga.sessions"] || 0}/>
-            </article>
+            </article>}
 
-            <article className="pillar-card" id="engagement"><header><span className="pillar-number purple"><Activity /></span><div><b>3. Membuat Pengunjung Tertarik</b><p>Ketertarikan terhadap konten</p></div></header>
+            {hasGa && <article className="pillar-card" id="engagement"><header><span className="pillar-number purple"><Activity /></span><div><b>3. Membuat Pengunjung Tertarik</b><p>Ketertarikan terhadap konten</p></div></header>
               <Metric label="Page view" value={fmt.format(data.metrics["ga.page_views"] || 0)} comparison={data.comparisons["ga.page_views"]} values={engagementValues}/>
               <Metric label="Page view / sesi" value={dec.format(data.metrics["ga.pages_per_session"] || 0)} comparison={data.comparisons["ga.pages_per_session"]} values={engagementValues}/>
               <div className="small-metrics"><div><span>Engagement rata-rata</span><b>{formatDuration(data.metrics["ga.average_engagement_seconds"] || 0)}</b></div><div><span>Pengguna baru</span><b>{fmt.format(data.metrics["ga.new_users"] || 0)}</b></div></div>
-            </article>
+            </article>}
 
-            <article className="pillar-card" id="conversion"><header><span className="pillar-number orange"><MousePointerClick /></span><div><b>4. Menghasilkan Tindakan Bisnis</b><p>Interaksi penting pengunjung</p></div></header>
+            {hasGa && <article className="pillar-card" id="conversion"><header><span className="pillar-number orange"><MousePointerClick /></span><div><b>4. Menghasilkan Tindakan Bisnis</b><p>Interaksi penting pengunjung</p></div></header>
               <Metric label="Click-to-chat" value={fmt.format(data.metrics["ga.click_to_chat"] || 0)} comparison={data.comparisons["ga.click_to_chat"]} values={clickValues}/>
               <Metric label="Conversion rate (chat)" value={percent(data.metrics["ga.chat_conversion_rate"], true)} comparison={data.comparisons["ga.chat_conversion_rate"]} values={clickValues}/>
               <div className="small-metrics"><div><span>Revenue tercatat</span><b>{data.metrics["ga.revenue"] ? `Rp${fmt.format(data.metrics["ga.revenue"])}` : "Belum tersedia"}</b></div></div>
-            </article>
+            </article>}
           </section>
 
           <div className="dash-grid">
           <section className="section-card g-change"><div className="section-heading"><div><p className="eyebrow">PERUBAHAN UTAMA</p><h2>Apa yang berubah dibanding bulan lalu?</h2></div></div><div className="insight-grid">{(data.insights || []).slice(0, 4).map((insight: string, i: number) => <article key={insight}><span className={i === 1 ? "insight-icon down" : "insight-icon"}>{i === 1 ? <TrendingDown/> : <TrendingUp/>}</span><p>{insight}</p></article>)}</div>{data.isPartialMonth && <p className="partial-note"><CircleAlert size={14} /> Periode ini belum berakhir (masih berjalan). Angka dibandingkan dengan bulan lalu mungkin belum mencerminkan kondisi akhir bulan.</p>}</section>
 
           <section className="section-card full opp" id="opportunities"><div className="section-heading"><div><p className="eyebrow">PRIORITAS BULAN DEPAN</p><h2>Peluang terbaik yang dapat dikerjakan</h2></div><button className="link-button" onClick={() => openFull("queries", "Semua Kata Kunci")}><ExternalLink size={14} /> Lihat semua</button></div><div className="opportunity-grid">
-            <OpportunityCard number="1" title="Perbaiki CTR keyword potensial"><p>Keyword sudah berada dekat posisi teratas, tetapi belum menghasilkan klik maksimal.</p><div className="responsive-table"><table><thead><tr><th>Keyword</th><th>Posisi</th><th>CTR</th><th>Impr.</th></tr></thead><tbody>{(data.opportunities || []).slice(0,4).map((row:any)=><tr key={row.query}><td>{row.query}</td><td>{dec.format(row.averagePosition)}</td><td>{percent(row.ctr,true)}</td><td>{fmt.format(row.impressions)}</td></tr>)}</tbody></table></div></OpportunityCard>
-            <OpportunityCard number="2" title="Sebarkan traffic ke halaman lain"><p>Kurangi konsentrasi traffic organik pada satu halaman saja.</p>{(data.topGscPages || []).slice(0,4).map((row:any)=><div className="bar-row" key={row.page}><span>{shortPage(row.page)}</span><div><i style={{width:`${Math.min(100,(row.clicks/(data.metrics["gsc.clicks"]||1))*100)}%`}}/></div><b>{fmt.format(row.clicks)}</b></div>)}</OpportunityCard>
-            <OpportunityCard number="3" title="Perkuat pengukuran konversi"><p>Pastikan tindakan bisnis penting ditandai sebagai key event di GA4.</p>{(data.events || []).slice(0,5).map((row:any)=><div className="event-row" key={row.name}><span>{row.name}</span><b>{fmt.format(row.count)}</b></div>)}</OpportunityCard>
+            {hasGsc && <OpportunityCard number="1" title="Perbaiki CTR keyword potensial"><p>Keyword sudah berada dekat posisi teratas, tetapi belum menghasilkan klik maksimal.</p><div className="responsive-table"><table><thead><tr><th>Keyword</th><th>Posisi</th><th>CTR</th><th>Impr.</th></tr></thead><tbody>{(data.opportunities || []).slice(0,4).map((row:any)=><tr key={row.query}><td>{row.query}</td><td>{dec.format(row.averagePosition)}</td><td>{percent(row.ctr,true)}</td><td>{fmt.format(row.impressions)}</td></tr>)}</tbody></table></div></OpportunityCard>}
+            {hasGsc && <OpportunityCard number="2" title="Sebarkan traffic ke halaman lain"><p>Kurangi konsentrasi traffic organik pada satu halaman saja.</p>{(data.topGscPages || []).slice(0,4).map((row:any)=><div className="bar-row" key={row.page}><span>{shortPage(row.page)}</span><div><i style={{width:`${Math.min(100,(row.clicks/(data.metrics["gsc.clicks"]||1))*100)}%`}}/></div><b>{fmt.format(row.clicks)}</b></div>)}</OpportunityCard>}
+            {hasGa && <OpportunityCard number="3" title="Perkuat pengukuran konversi"><p>Pastikan tindakan bisnis penting ditandai sebagai key event di GA4.</p>{(data.events || []).slice(0,5).map((row:any)=><div className="event-row" key={row.name}><span>{row.name}</span><b>{fmt.format(row.count)}</b></div>)}</OpportunityCard>}
           </div></section>
 
-          <section className="section-card g-devices" id="devices"><div className="section-heading"><div><p className="eyebrow">PERANGKAT & HALAMAN</p><h2>Dari mana traffic datang & halaman apa paling diminati?</h2></div><button className="link-button" onClick={() => openFull("pages", "Semua Halaman Terpopuler")}><ExternalLink size={14} /> Lihat semua</button></div><div className="split-grid">
+          {hasGsc && <section className="section-card g-devices" id="devices"><div className="section-heading"><div><p className="eyebrow">PERANGKAT & HALAMAN</p><h2>Dari mana traffic datang & halaman apa paling diminati?</h2></div><button className="link-button" onClick={() => openFull("pages", "Semua Halaman Terpopuler")}><ExternalLink size={14} /> Lihat semua</button></div><div className="split-grid">
             <div className="split-col"><h3 className="sub-head"><Globe2 size={16} /> Kinerja per Perangkat</h3><DeviceList devices={data.devices || []} /></div>
             <div className="split-col"><h3 className="sub-head"><FileSpreadsheet size={16} /> Halaman Terpopuler</h3><TopPagesList pages={data.topPages || []} /></div>
-          </div></section>
+          </div></section>}
 
-          <section className="section-card g-devices-visitor" id="devices-visitor"><div className="section-heading"><div><p className="eyebrow">PERANGKAT PENGUNJUNG</p><h2>Model perangkat yang dipakai pengunjung</h2></div><button className="link-button" onClick={() => openFull("deviceModels", "Semua Model Perangkat")}><ExternalLink size={14} /> Lihat semua</button></div><DeviceModelList models={data.deviceModels || []} /><p className="device-foot">Data dari Google Analytics berdasarkan pengguna aktif.</p></section>
+          {hasGa && <section className="section-card g-devices-visitor" id="devices-visitor"><div className="section-heading"><div><p className="eyebrow">PERANGKAT PENGUNJUNG</p><h2>Model perangkat yang dipakai pengunjung</h2></div><button className="link-button" onClick={() => openFull("deviceModels", "Semua Model Perangkat")}><ExternalLink size={14} /> Lihat semua</button></div><DeviceModelList models={data.deviceModels || []} /><p className="device-foot">Data dari Google Analytics berdasarkan pengguna aktif.</p></section>}
 
-          <section className="section-card g-geography" id="geography"><div className="section-heading"><div><p className="eyebrow">GEOGRAFI & TAMPILAN</p><h2>Dari wilayah mana audiens berasal & bagaimana website muncul di pencarian?</h2></div></div><div className="split-grid">
+          {hasGsc && <section className="section-card g-geography" id="geography"><div className="section-heading"><div><p className="eyebrow">GEOGRAFI & TAMPILAN</p><h2>Dari wilayah mana audiens berasal & bagaimana website muncul di pencarian?</h2></div></div><div className="split-grid">
             <div className="split-col"><h3 className="sub-head"><Globe2 size={16} /> Negara (Wilayah)</h3><CountryList countries={data.countries || []} /></div>
             <div className="split-col"><h3 className="sub-head"><Search size={16} /> Tampilan di Pencarian</h3><AppearanceList appearances={data.appearances || []} /></div>
-          </div><p className="device-foot">Negara & tampilan penelusuran mencerminkan agregat 12 bulan dari ekspor Google Search Console.</p></section>
+          </div><p className="device-foot">Negara & tampilan penelusuran mencerminkan agregat 12 bulan dari ekspor Google Search Console.</p></section>}
 
-          <section className="section-card g-cities" id="cities"><div className="section-heading"><div><p className="eyebrow">GEOGRAFI PENGUNJUNG</p><h2>Kota asal pengunjung website</h2></div><button className="link-button" onClick={() => openFull("cities", "Semua Kota")}><ExternalLink size={14} /> Lihat semua</button></div><CityList cities={data.topCities || []} /><p className="device-foot">Kota diurutkan dari jumlah pengguna aktif terbanyak, berdasarkan data Google Analytics.</p></section>
+          {hasGa && <section className="section-card g-cities" id="cities"><div className="section-heading"><div><p className="eyebrow">GEOGRAFI PENGUNJUNG</p><h2>Kota asal pengunjung website</h2></div><button className="link-button" onClick={() => openFull("cities", "Semua Kota")}><ExternalLink size={14} /> Lihat semua</button></div><CityList cities={data.topCities || []} /><p className="device-foot">Kota diurutkan dari jumlah pengguna aktif terbanyak, berdasarkan data Google Analytics.</p></section>}
 
           <section className="section-card g-quality" id="quality"><div className="section-heading"><div><p className="eyebrow">KUALITAS DATA</p><h2>Seberapa lengkap laporan ini?</h2></div></div><div className="quality-grid">{data.dataQuality.map((item:any)=><article key={item.label}><span className={`quality-icon ${item.status}`}>{item.status === "ok" ? <Check/> : <CircleAlert/>}</span><div><b>{item.label}</b><p>{item.detail}</p></div></article>)}</div>          </section>
 
           <div className="full analyst-wrap"><AnalystNotes notes={data.analystNotes || []} /></div>
 
-          <section className="section-card g-topsearch" id="top-search"><div className="section-heading"><div><p className="eyebrow">HALAMAN PALING SERING DICARI</p><h2>Halaman apa yang paling banyak muncul di Google?</h2></div><button className="link-button" onClick={() => openFull("gscPages", "Semua Halaman Pencarian")}><ExternalLink size={14} /> Lihat semua</button></div><TopSearchPagesList pages={data.topGscPages || []} /></section>
+          {hasGsc && <section className="section-card g-topsearch" id="top-search"><div className="section-heading"><div><p className="eyebrow">HALAMAN PALING SERING DICARI</p><h2>Halaman apa yang paling banyak muncul di Google?</h2></div><button className="link-button" onClick={() => openFull("gscPages", "Semua Halaman Pencarian")}><ExternalLink size={14} /> Lihat semua</button></div><TopSearchPagesList pages={data.topGscPages || []} /></section>}
 
-          <section className="section-card g-keywords" id="keywords"><div className="section-heading"><div><p className="eyebrow">KATA KUNCI</p><h2>Kata kunci apa yang paling banyak muncul di Google?</h2></div><button className="link-button" onClick={() => openFull("queries", "Semua Kata Kunci")}><ExternalLink size={14} /> Lihat semua</button></div>{(data.topQueries || []).length ? <TopQueryList queries={data.topQueries} /> : <p className="empty-note">Belum ada data kata kunci untuk periode ini.</p>}</section>
+          {hasGsc && <section className="section-card g-keywords" id="keywords"><div className="section-heading"><div><p className="eyebrow">KATA KUNCI</p><h2>Kata kunci apa yang paling banyak muncul di Google?</h2></div><button className="link-button" onClick={() => openFull("queries", "Semua Kata Kunci")}><ExternalLink size={14} /> Lihat semua</button></div>{(data.topQueries || []).length ? <TopQueryList queries={data.topQueries} /> : <p className="empty-note">Belum ada data kata kunci untuk periode ini.</p>}</section>}
           </div>
         </>}
       </main>
