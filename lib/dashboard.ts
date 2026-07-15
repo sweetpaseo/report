@@ -38,6 +38,8 @@ function shortLabel(value: string): string {
 
 type DimensionRow = { name: string; clicks: number; impressions: number; ctr: number; averagePosition: number };
 type QueryRow = { query: string; clicks: number; impressions: number; ctr: number; averagePosition: number };
+type CityRow = { city: string; activeUsers: number };
+type DeviceModelRow = { model: string; activeUsers: number };
 
 function dimensionRows(
   db: DatabaseSync,
@@ -149,6 +151,14 @@ export function getDashboard(db: DatabaseSync, websiteId: string, requestedPerio
     SELECT event_name AS name, event_count AS count, key_event_count AS keyCount
     FROM ga_events WHERE website_id = ? AND report_period_id = ? ORDER BY event_count DESC LIMIT 10
   `).all(websiteId, selected.id) as Array<{ name: string; count: number; keyCount: number }>;
+  const topCities = db.prepare(`
+    SELECT city, active_users AS activeUsers FROM ga_cities
+    WHERE website_id = ? AND report_period_id = ? ORDER BY active_users DESC LIMIT 12
+  `).all(websiteId, selected.id) as CityRow[];
+  const deviceModels = db.prepare(`
+    SELECT model, active_users AS activeUsers FROM ga_device_models
+    WHERE website_id = ? AND report_period_id = ? ORDER BY active_users DESC LIMIT 12
+  `).all(websiteId, selected.id) as DeviceModelRow[];
 
   const impressionsChange = comparisons["gsc.impressions"].percent;
   const sessionsChange = comparisons["ga.sessions"].percent;
@@ -275,6 +285,8 @@ export function getDashboard(db: DatabaseSync, websiteId: string, requestedPerio
     appearances,
     topPages,
     events,
+    topCities,
+    deviceModels,
     analystNotes,
     status,
     anomalies,
@@ -306,11 +318,13 @@ export type FullReportData = {
   appearances?: DimensionRow[];
   events?: FullEventRow[];
   channels?: FullChannelRow[];
+  cities?: CityRow[];
+  deviceModels?: DeviceModelRow[];
   empty?: boolean;
 };
 
 function effectivePeriodId(db: DatabaseSync, websiteId: string, selectedId: string, table: string): string {
-  const allowed = new Set(["gsc_queries", "gsc_pages", "ga_pages", "ga_events", "ga_channels"]);
+  const allowed = new Set(["gsc_queries", "gsc_pages", "ga_pages", "ga_events", "ga_channels", "ga_cities", "ga_device_models"]);
   if (!allowed.has(table)) return selectedId;
   const exists = db.prepare(`SELECT 1 FROM ${table} WHERE website_id = ? AND report_period_id = ? LIMIT 1`).get(websiteId, selectedId);
   if (exists) return selectedId;
@@ -333,6 +347,8 @@ export function getFullReportData(
   const pgPeriod = effectivePeriodId(db, websiteId, selected.id, "ga_pages");
   const ePeriod = effectivePeriodId(db, websiteId, selected.id, "ga_events");
   const cPeriod = effectivePeriodId(db, websiteId, selected.id, "ga_channels");
+  const cityPeriod = effectivePeriodId(db, websiteId, selected.id, "ga_cities");
+  const modelPeriod = effectivePeriodId(db, websiteId, selected.id, "ga_device_models");
   const queries = db.prepare(`
     SELECT query, clicks, impressions, ctr, average_position AS averagePosition
     FROM gsc_queries WHERE website_id = ? AND report_period_id = ? ORDER BY impressions DESC LIMIT ?
@@ -355,5 +371,13 @@ export function getFullReportData(
     SELECT channel, sessions, new_users AS newUsers FROM ga_channels
     WHERE website_id = ? AND report_period_id = ? ORDER BY sessions DESC LIMIT ?
   `).all(websiteId, cPeriod, FULL_DATA_LIMIT) as FullChannelRow[];
-  return { website, periods, selected, previous, isPartialMonth, queries, gscPages, pages, devices, countries, appearances, events, channels, empty: false };
+  const cities = db.prepare(`
+    SELECT city, active_users AS activeUsers FROM ga_cities
+    WHERE website_id = ? AND report_period_id = ? ORDER BY active_users DESC LIMIT ?
+  `).all(websiteId, cityPeriod, FULL_DATA_LIMIT) as CityRow[];
+  const deviceModels = db.prepare(`
+    SELECT model, active_users AS activeUsers FROM ga_device_models
+    WHERE website_id = ? AND report_period_id = ? ORDER BY active_users DESC LIMIT ?
+  `).all(websiteId, modelPeriod, FULL_DATA_LIMIT) as DeviceModelRow[];
+  return { website, periods, selected, previous, isPartialMonth, queries, gscPages, pages, devices, countries, appearances, events, channels, cities, deviceModels, empty: false };
 }

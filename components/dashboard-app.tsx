@@ -56,6 +56,14 @@ const FULL_COLUMNS: Record<string, Column<any>[]> = {
     { key: "title", label: "Halaman", value: (r: any) => shortTitle(r.title) },
     { key: "views", label: "Views", value: (r: any) => r.views, align: "right" },
   ],
+  cities: [
+    { key: "city", label: "Kota", value: (r: any) => r.city },
+    { key: "activeUsers", label: "Pengguna aktif", value: (r: any) => r.activeUsers, align: "right" },
+  ],
+  deviceModels: [
+    { key: "model", label: "Model perangkat", value: (r: any) => r.model },
+    { key: "activeUsers", label: "Pengguna aktif", value: (r: any) => r.activeUsers, align: "right" },
+  ],
 };
 
 export function DashboardApp({ publicToken }: { publicToken?: string }) {
@@ -121,7 +129,7 @@ export function DashboardApp({ publicToken }: { publicToken?: string }) {
     setMessage("Link laporan client sudah disalin.");
   }
 
-  async function openFull(kind: "queries" | "gscPages" | "pages", title: string): Promise<void> {
+  async function openFull(kind: "queries" | "gscPages" | "pages" | "cities" | "deviceModels", title: string): Promise<void> {
     if (!data?.website?.public_token) return;
     const endpoint = isPublic
       ? `/api/public/report-data/${data.website.public_token}${periodId ? `?periodId=${periodId}` : ""}`
@@ -133,6 +141,8 @@ export function DashboardApp({ publicToken }: { publicToken?: string }) {
       queries: { rows: full.queries || [], columns: FULL_COLUMNS.queries },
       gscPages: { rows: full.gscPages || [], columns: FULL_COLUMNS.gscPages },
       pages: { rows: full.pages || [], columns: FULL_COLUMNS.pages },
+      cities: { rows: full.cities || [], columns: FULL_COLUMNS.cities },
+      deviceModels: { rows: full.deviceModels || [], columns: FULL_COLUMNS.deviceModels },
     };
     const entry = map[kind];
     const domain = data.website.domain || "laporan";
@@ -238,10 +248,14 @@ export function DashboardApp({ publicToken }: { publicToken?: string }) {
             <div className="split-col"><h3 className="sub-head"><FileSpreadsheet size={16} /> Halaman Terpopuler</h3><TopPagesList pages={data.topPages || []} /></div>
           </div></section>
 
+          <section className="section-card g-devices-visitor" id="devices-visitor"><div className="section-heading"><div><p className="eyebrow">PERANGKAT PENGUNJUNG</p><h2>Model perangkat yang dipakai pengunjung</h2></div><button className="link-button" onClick={() => openFull("deviceModels", "Semua Model Perangkat")}><ExternalLink size={14} /> Lihat semua</button></div><DeviceModelList models={data.deviceModels || []} /><p className="device-foot">Data dari Google Analytics berdasarkan pengguna aktif.</p></section>
+
           <section className="section-card g-geography" id="geography"><div className="section-heading"><div><p className="eyebrow">GEOGRAFI & TAMPILAN</p><h2>Dari wilayah mana audiens berasal & bagaimana website muncul di pencarian?</h2></div></div><div className="split-grid">
             <div className="split-col"><h3 className="sub-head"><Globe2 size={16} /> Negara (Wilayah)</h3><CountryList countries={data.countries || []} /></div>
             <div className="split-col"><h3 className="sub-head"><Search size={16} /> Tampilan di Pencarian</h3><AppearanceList appearances={data.appearances || []} /></div>
           </div><p className="device-foot">Negara & tampilan penelusuran mencerminkan agregat 12 bulan dari ekspor Google Search Console.</p></section>
+
+          <section className="section-card g-cities" id="cities"><div className="section-heading"><div><p className="eyebrow">GEOGRAFI PENGUNJUNG</p><h2>Kota asal pengunjung website</h2></div><button className="link-button" onClick={() => openFull("cities", "Semua Kota")}><ExternalLink size={14} /> Lihat semua</button></div><CityList cities={data.topCities || []} /><p className="device-foot">Kota diurutkan dari jumlah pengguna aktif terbanyak, berdasarkan data Google Analytics.</p></section>
 
           <section className="section-card g-quality" id="quality"><div className="section-heading"><div><p className="eyebrow">KUALITAS DATA</p><h2>Seberapa lengkap laporan ini?</h2></div></div><div className="quality-grid">{data.dataQuality.map((item:any)=><article key={item.label}><span className={`quality-icon ${item.status}`}>{item.status === "ok" ? <Check/> : <CircleAlert/>}</span><div><b>{item.label}</b><p>{item.detail}</p></div></article>)}</div>          </section>
 
@@ -331,6 +345,22 @@ function CountryList({ countries }:{ countries:Array<{ name:string; clicks:numbe
   const max=Math.max(...countries.map((c)=>c.impressions||0),1);
   return <div className="bar-list">{countries.slice(0,10).map((c)=>(
     <div className="bar-row" key={c.name}><span>{c.name}</span><div><i style={{width:`${Math.min(100,(c.impressions/max)*100)}%`}}/></div><b>{fmt.format(c.impressions)}</b></div>
+  ))}</div>;
+}
+
+function CityList({ cities }:{ cities:Array<{ city:string; activeUsers:number }> }){
+  if(!cities.length) return <p className="empty-note">Belum ada data kota untuk periode ini.</p>;
+  const max=Math.max(...cities.map((c)=>c.activeUsers||0),1);
+  return <div className="bar-list">{cities.map((c)=>(
+    <div className="bar-row" key={c.city}><span>{c.city}</span><div><i style={{width:`${Math.min(100,(c.activeUsers/max)*100)}%`}}/></div><b>{fmt.format(c.activeUsers)}</b></div>
+  ))}</div>;
+}
+
+function DeviceModelList({ models }:{ models:Array<{ model:string; activeUsers:number }> }){
+  if(!models.length) return <p className="empty-note">Belum ada data model perangkat untuk periode ini.</p>;
+  const max=Math.max(...models.map((m)=>m.activeUsers||0),1);
+  return <div className="bar-list">{models.map((m)=>(
+    <div className="bar-row" key={m.model}><span>{m.model}</span><div><i style={{width:`${Math.min(100,(m.activeUsers/max)*100)}%`}}/></div><b>{fmt.format(m.activeUsers)}</b></div>
   ))}</div>;
 }
 

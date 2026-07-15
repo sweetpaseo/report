@@ -40,5 +40,7 @@ export type ParsedReport = {
     channels: Array<{ channel: string; sessions: number; newUsers: number }>;
     pages: Array<{ title: string; views: number }>;
     events: Array<{ name: string; count: number; keyCount: number }>;
+    cities?: Array<{ city: string; activeUsers: number }>;
+    deviceModels?: Array<{ model: string; activeUsers: number }>;
   };
 };

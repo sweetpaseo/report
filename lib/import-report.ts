@@ -25,7 +25,7 @@ export function importReport(db: DatabaseSync, websiteId: string, uploadId: stri
 
     const sourceTables = report.source === "gsc"
       ? ["gsc_daily_metrics", "gsc_queries", "gsc_pages", "gsc_devices"]
-      : ["ga_daily_metrics", "ga_channels", "ga_pages", "ga_events"];
+      : ["ga_daily_metrics", "ga_channels", "ga_pages", "ga_events", "ga_cities", "ga_device_models"];
     for (const table of sourceTables) {
       db.prepare(`DELETE FROM ${table} WHERE website_id = ? AND report_period_id = ?`).run(websiteId, periodId);
     }
@@ -83,6 +83,16 @@ export function importReport(db: DatabaseSync, websiteId: string, uploadId: stri
         VALUES (?, ?, ?, ?, ?)
       `);
       report.ga.events.forEach((row) => eventInsert.run(websiteId, periodId, row.name, row.count, row.keyCount));
+      const cityInsert = db.prepare(`
+        INSERT INTO ga_cities(website_id, report_period_id, city, active_users)
+        VALUES (?, ?, ?, ?)
+      `);
+      (report.ga.cities || []).forEach((row) => cityInsert.run(websiteId, periodId, row.city, row.activeUsers));
+      const modelInsert = db.prepare(`
+        INSERT INTO ga_device_models(website_id, report_period_id, model, active_users)
+        VALUES (?, ?, ?, ?)
+      `);
+      (report.ga.deviceModels || []).forEach((row) => modelInsert.run(websiteId, periodId, row.model, row.activeUsers));
     }
 
     db.prepare(`

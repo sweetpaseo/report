@@ -43,6 +43,8 @@ export function parseGa(buffer: Buffer): ParsedReport {
   const channelMap = new Map<string, { channel: string; sessions: number; newUsers: number }>();
   const pageRows: Array<{ title: string; views: number }> = [];
   const eventMap = new Map<string, { name: string; count: number; keyCount: number }>();
+  const cities: Array<{ city: string; activeUsers: number }> = [];
+  const deviceModels: Array<{ model: string; activeUsers: number }> = [];
   const warnings: string[] = [];
 
   for (const section of sections(rows)) {
@@ -111,6 +113,22 @@ export function parseGa(buffer: Buffer): ParsedReport {
         eventMap.set(name, item);
       }
     }
+
+    if (first.includes("kota")) {
+      for (const row of section.rows) {
+        if (!row[0]) continue;
+        cities.push({ city: row[0], activeUsers: numberValue(row[1]) });
+      }
+      continue;
+    }
+
+    if (first.includes("model perangkat")) {
+      for (const row of section.rows) {
+        if (!row[0]) continue;
+        deviceModels.push({ model: row[0], activeUsers: numberValue(row[1]) });
+      }
+      continue;
+    }
   }
 
   const daily = Array.from(dailyMap.values()).sort((a, b) => a.date.localeCompare(b.date));
@@ -150,6 +168,6 @@ export function parseGa(buffer: Buffer): ParsedReport {
       click_to_chat: chatEvents,
       chat_conversion_rate: sessions ? chatEvents / sessions : 0,
     },
-    ga: { daily, channels, pages: pageRows, events },
+    ga: { daily, channels, pages: pageRows, events, cities, deviceModels },
   };
 }

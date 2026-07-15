@@ -123,10 +123,12 @@
 .dash-grid > .g-quality { order: 2; }
 .dash-grid > .opp { order: 3; }
 .dash-grid > .g-devices { order: 4; }
-.dash-grid > .g-geography { order: 5; }
-.dash-grid > .g-topsearch { order: 6; }
-.dash-grid > .g-keywords { order: 7; }
-.dash-grid > .analyst-wrap { order: 8; }
+.dash-grid > .g-devices-visitor { order: 5; }
+.dash-grid > .g-cities { order: 6; }
+.dash-grid > .g-geography { order: 7; }
+.dash-grid > .g-topsearch { order: 8; }
+.dash-grid > .g-keywords { order: 9; }
+.dash-grid > .analyst-wrap { order: 10; }
 
 @media (min-width: 1101px) {
   .dash-grid .split-grid {

@@ -195,6 +195,26 @@ function initialize(db: DatabaseSync) {
       FOREIGN KEY(website_id) REFERENCES websites(id) ON DELETE CASCADE,
       FOREIGN KEY(report_period_id) REFERENCES report_periods(id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS ga_cities (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      website_id TEXT NOT NULL,
+      report_period_id TEXT NOT NULL,
+      city TEXT NOT NULL,
+      active_users REAL NOT NULL DEFAULT 0,
+      FOREIGN KEY(website_id) REFERENCES websites(id) ON DELETE CASCADE,
+      FOREIGN KEY(report_period_id) REFERENCES report_periods(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS ga_device_models (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      website_id TEXT NOT NULL,
+      report_period_id TEXT NOT NULL,
+      model TEXT NOT NULL,
+      active_users REAL NOT NULL DEFAULT 0,
+      FOREIGN KEY(website_id) REFERENCES websites(id) ON DELETE CASCADE,
+      FOREIGN KEY(report_period_id) REFERENCES report_periods(id) ON DELETE CASCADE
+    );
   `);
 }
 
