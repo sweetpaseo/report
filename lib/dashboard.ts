@@ -310,6 +310,7 @@ export type FullReportData = {
   selected?: PeriodRow;
   previous?: PeriodRow;
   isPartialMonth?: boolean;
+  selectedPeriod?: PeriodRow;
   queries?: FullQueryRow[];
   gscPages?: FullGscPageRow[];
   pages?: FullPageRow[];
@@ -323,15 +324,6 @@ export type FullReportData = {
   empty?: boolean;
 };
 
-function effectivePeriodId(db: DatabaseSync, websiteId: string, selectedId: string, table: string): string {
-  const allowed = new Set(["gsc_queries", "gsc_pages", "ga_pages", "ga_events", "ga_channels", "ga_cities", "ga_device_models"]);
-  if (!allowed.has(table)) return selectedId;
-  const exists = db.prepare(`SELECT 1 FROM ${table} WHERE website_id = ? AND report_period_id = ? LIMIT 1`).get(websiteId, selectedId);
-  if (exists) return selectedId;
-  const latest = db.prepare(`SELECT rp.id FROM report_periods rp JOIN ${table} t ON t.report_period_id = rp.id WHERE rp.website_id = ? ORDER BY rp.period_start DESC LIMIT 1`).get(websiteId) as { id: string } | undefined;
-  return latest?.id ?? selectedId;
-}
-
 export function getFullReportData(
   db: DatabaseSync,
   websiteId: string,
@@ -342,42 +334,35 @@ export function getFullReportData(
   const ctx = resolvePeriodContext(db, websiteId, requestedPeriodId);
   if (!ctx) return { website, periods: [], empty: true };
   const { periods, selected, previous, isPartialMonth } = ctx;
-  const qPeriod = effectivePeriodId(db, websiteId, selected.id, "gsc_queries");
-  const pPeriod = effectivePeriodId(db, websiteId, selected.id, "gsc_pages");
-  const pgPeriod = effectivePeriodId(db, websiteId, selected.id, "ga_pages");
-  const ePeriod = effectivePeriodId(db, websiteId, selected.id, "ga_events");
-  const cPeriod = effectivePeriodId(db, websiteId, selected.id, "ga_channels");
-  const cityPeriod = effectivePeriodId(db, websiteId, selected.id, "ga_cities");
-  const modelPeriod = effectivePeriodId(db, websiteId, selected.id, "ga_device_models");
   const queries = db.prepare(`
     SELECT query, clicks, impressions, ctr, average_position AS averagePosition
     FROM gsc_queries WHERE website_id = ? AND report_period_id = ? ORDER BY impressions DESC LIMIT ?
-  `).all(websiteId, qPeriod, FULL_DATA_LIMIT) as FullQueryRow[];
+  `).all(websiteId, selected.id, FULL_DATA_LIMIT) as FullQueryRow[];
   const gscPages = db.prepare(`
     SELECT page, clicks, impressions, ctr, average_position AS averagePosition
     FROM gsc_pages WHERE website_id = ? AND report_period_id = ? ORDER BY impressions DESC LIMIT ?
-  `).all(websiteId, pPeriod, FULL_DATA_LIMIT) as FullGscPageRow[];
+  `).all(websiteId, selected.id, FULL_DATA_LIMIT) as FullGscPageRow[];
   const pages = db.prepare(`
     SELECT page_title AS title, views FROM ga_pages WHERE website_id = ? AND report_period_id = ? ORDER BY views DESC LIMIT ?
-  `).all(websiteId, pgPeriod, FULL_DATA_LIMIT) as FullPageRow[];
+  `).all(websiteId, selected.id, FULL_DATA_LIMIT) as FullPageRow[];
   const devices = dimensionRows(db, websiteId, selected.id, "gsc_devices", "device");
   const countries = dimensionRows(db, websiteId, selected.id, "gsc_countries", "country");
   const appearances = dimensionRows(db, websiteId, selected.id, "gsc_appearance", "appearance");
   const events = db.prepare(`
     SELECT event_name AS name, event_count AS count, key_event_count AS keyCount
     FROM ga_events WHERE website_id = ? AND report_period_id = ? ORDER BY event_count DESC LIMIT ?
-  `).all(websiteId, ePeriod, FULL_DATA_LIMIT) as FullEventRow[];
+  `).all(websiteId, selected.id, FULL_DATA_LIMIT) as FullEventRow[];
   const channels = db.prepare(`
     SELECT channel, sessions, new_users AS newUsers FROM ga_channels
     WHERE website_id = ? AND report_period_id = ? ORDER BY sessions DESC LIMIT ?
-  `).all(websiteId, cPeriod, FULL_DATA_LIMIT) as FullChannelRow[];
+  `).all(websiteId, selected.id, FULL_DATA_LIMIT) as FullChannelRow[];
   const cities = db.prepare(`
     SELECT city, active_users AS activeUsers FROM ga_cities
     WHERE website_id = ? AND report_period_id = ? ORDER BY active_users DESC LIMIT ?
-  `).all(websiteId, cityPeriod, FULL_DATA_LIMIT) as CityRow[];
+  `).all(websiteId, selected.id, FULL_DATA_LIMIT) as CityRow[];
   const deviceModels = db.prepare(`
     SELECT model, active_users AS activeUsers FROM ga_device_models
     WHERE website_id = ? AND report_period_id = ? ORDER BY active_users DESC LIMIT ?
-  `).all(websiteId, modelPeriod, FULL_DATA_LIMIT) as DeviceModelRow[];
-  return { website, periods, selected, previous, isPartialMonth, queries, gscPages, pages, devices, countries, appearances, events, channels, cities, deviceModels, empty: false };
+  `).all(websiteId, selected.id, FULL_DATA_LIMIT) as DeviceModelRow[];
+  return { website, periods, selected, previous, isPartialMonth, selectedPeriod: selected, queries, gscPages, pages, devices, countries, appearances, events, channels, cities, deviceModels, empty: false };
 }
