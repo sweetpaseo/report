@@ -2,6 +2,11 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-07-16 — Sortir website berdasarkan abjad & perbaikan bug UI/JSON (commit 507ff73)
+- Menambahkan pengurutan abjad dari A ke Z (`ORDER BY name ASC`) untuk daftar website di dropdown Dashboard Admin (`app/api/websites/route.ts`) dan halaman Klien (`app/api/public/client/[token]/route.ts`).
+- **Bugfix (cee2ef7)**: Menangani respons non-JSON (kosong/error) secara aman saat me-refresh daftar klien (`fetch("/api/clients")`) di `components/dashboard-app.tsx` untuk mencegah `SyntaxError: Unexpected end of JSON input` yang membuat aplikasi crash.
+- **Bugfix (7050f8b)**: Menyembunyikan tombol-tombol spesifik Admin (Hapus, Upload, Bagikan, Data lengkap) pada tampilan halaman publik (`/report/[token]`) dengan mengecek `!isPublic`, sehingga Admin tidak bingung saat mengecek link publik di browser yang sama.
+
 ## 2026-07-16 — Perbaiki layout insight-grid & fallback data dimensi GSC (commit 79177e8)
 - Memperbaiki layout grid dengan menggunakan `auto-fit` pada `globals.css` agar *card* dengan jumlah item sedikit dapat mengisi ruang secara proporsional dan teks tidak terjepit.
 - Menambahkan mekanisme fallback periode dinamis (`getGscPeriod`) di `lib/dashboard.ts` agar data dimensi GSC seperti *Kata Kunci* dan *Peluang Optimasi* tetap muncul saat GSC di-import via Bundle CSV multi-bulan.
