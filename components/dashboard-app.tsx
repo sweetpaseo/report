@@ -208,10 +208,10 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
           <div><p className="eyebrow">{data?.website?.name ? "LAPORAN WEBSITE" : ""}</p><h1>{data?.website?.name || "Ringkasan Kondisi Website"}</h1></div>
           <div className="top-actions">
             <button className="button secondary desktop-only" onClick={() => window.print()}><Download /> Export PDF</button>
-            {isAdmin && periodId && <button className="button secondary desktop-only" style={{color: "var(--red)"}} onClick={deletePeriod}><Trash2 /> Hapus</button>}
-            {isAdmin && <button className="button secondary desktop-only" onClick={() => setUploadModal(true)}><Upload /> Upload report</button>}
-            {isAdmin && <button className="button secondary desktop-only" onClick={shareReport}><Share2 /> Bagikan</button>}
-            {isAdmin && data?.website?.public_token && <a className="button secondary desktop-only" href={`/report-data/${data.website.public_token}${periodId ? `?periodId=${periodId}` : ""}`}><Database /> Data lengkap</a>}
+            {!isPublic && isAdmin && periodId && <button className="button secondary desktop-only" style={{color: "var(--red)"}} onClick={deletePeriod}><Trash2 /> Hapus</button>}
+            {!isPublic && isAdmin && <button className="button secondary desktop-only" onClick={() => setUploadModal(true)}><Upload /> Upload report</button>}
+            {!isPublic && isAdmin && <button className="button secondary desktop-only" onClick={shareReport}><Share2 /> Bagikan</button>}
+            {!isPublic && isAdmin && data?.website?.public_token && <a className="button secondary desktop-only" href={`/report-data/${data.website.public_token}${periodId ? `?periodId=${periodId}` : ""}`}><Database /> Data lengkap</a>}
           </div>
         </header>
 
