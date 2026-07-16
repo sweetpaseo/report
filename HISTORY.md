@@ -2,6 +2,11 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-07-16 — Terapkan client password minimum 6 ke server (commit 7488aee)
+- Melonggarkan syarat panjang minimal password klien dari `>= 10` menjadi `>= 6` di `app/api/auth/login/route.ts` (permintaan user agar konsisten lokal & server). Gate admin tetap `>= 10`.
+- Di-deploy lewat alur satu perintah (`npm run build` → `assemble-deploy-bundle.js` → `deploy-to-server.js`). Build lokal Node 24.16.0 / Next 16.2.10.
+- Verifikasi live: client login `han1234` kini mengembalikan `{"ok":true,"role":"client"}` (sebelumnya 401 karena server masih memakai kode lama `>= 10`). Password admin/klien di server sudah tersinkron dari nilai lokal (`DEPLOY_*` + `.env` lokal), `.env` & `data/` server tetap utuh.
+
 ## 2026-07-16 — Sync lokal → server jadi satu perintah (commit 0bea1fd)
 - Menambahkan `scripts/deploy-to-server.js`: pipeline deploy lokal → server dalam satu jalur — upload `deploy_bundle.zip` (hasil `assemble-deploy-bundle.js`) via `pscp`, swap atomik `nodejs/` di host cPanel, restart Passenger lewat `nodejs/tmp/restart.txt`, lalu verifikasi HTTPS (`/login` 200 + `/api/auth/me` Unauthorized). Kalau verifikasi gagal, otomatis rollback ke `nodejs_old`.
 - Raisa deploy dibaca dari `.env` lokal (gitignored): `DEPLOY_HOST`, `DEPLOY_PORT`, `DEPLOY_USER`, `DEPLOY_PASS`, `DEPLOY_DIR`. Variabel placeholder didokumentasikan di `.env.example`. `.env` server + `data/` (DB/uploads) tetap di host, tidak pernah terupload.
