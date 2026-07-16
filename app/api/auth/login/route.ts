@@ -13,14 +13,14 @@ export async function POST(request: Request) {
   const adminExpected = process.env.ADMIN_PASSWORD;
   const clientExpected = process.env.CLIENT_PASSWORD;
 
-  if ((!adminExpected || adminExpected.length < 10) && (!clientExpected || clientExpected.length < 10)) {
+  if ((!adminExpected || adminExpected.length < 10) && (!clientExpected || clientExpected.length < 6)) {
     return NextResponse.json({ error: "ADMIN_PASSWORD belum dikonfigurasi dengan aman." }, { status: 500 });
   }
 
   const passwordStr = String(password || "");
   let role: SessionRole | null = null;
   if (adminExpected && adminExpected.length >= 10 && safeEqual(passwordStr, adminExpected)) role = "admin";
-  if (!role && clientExpected && clientExpected.length >= 10 && safeEqual(passwordStr, clientExpected)) role = "client";
+  if (!role && clientExpected && clientExpected.length >= 6 && safeEqual(passwordStr, clientExpected)) role = "client";
   if (!role) return NextResponse.json({ error: "Password salah." }, { status: 401 });
 
   const response = NextResponse.json({ ok: true, role });
