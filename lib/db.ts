@@ -230,6 +230,12 @@ function initialize(db: DatabaseSync) {
       FOREIGN KEY(report_period_id) REFERENCES report_periods(id) ON DELETE CASCADE
     );
   `);
+
+  try {
+    db.exec("ALTER TABLE websites ADD COLUMN client_id TEXT REFERENCES clients(id) ON DELETE SET NULL;");
+  } catch (e) {
+    // Ignore if column already exists
+  }
 }
 
 export function getDb() {
