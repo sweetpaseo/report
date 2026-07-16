@@ -2,6 +2,12 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-07-16 — Sync lokal → server jadi satu perintah (commit 0bea1fd)
+- Menambahkan `scripts/deploy-to-server.js`: pipeline deploy lokal → server dalam satu jalur — upload `deploy_bundle.zip` (hasil `assemble-deploy-bundle.js`) via `pscp`, swap atomik `nodejs/` di host cPanel, restart Passenger lewat `nodejs/tmp/restart.txt`, lalu verifikasi HTTPS (`/login` 200 + `/api/auth/me` Unauthorized). Kalau verifikasi gagal, otomatis rollback ke `nodejs_old`.
+- Raisa deploy dibaca dari `.env` lokal (gitignored): `DEPLOY_HOST`, `DEPLOY_PORT`, `DEPLOY_USER`, `DEPLOY_PASS`, `DEPLOY_DIR`. Variabel placeholder didokumentasikan di `.env.example`. `.env` server + `data/` (DB/uploads) tetap di host, tidak pernah terupload.
+- Alur kerja tiap pembaruan: `npm run build` → `node scripts/assemble-deploy-bundle.js` → `node scripts/deploy-to-server.js`. Teruji end-to-end: aplikasi live dan verifikasi lolos.
+- `project_source.zip` (artifact lama) ditambahkan ke `.gitignore`.
+
 ## 2026-07-16 — Deploy build lokal ke report.erihome.id via bundle standalone (commit 52f0963)
 - Build di server gagal karena jailed shell cPanel memicu `kill EPERM` saat Next membersihkan worker (`next build` tidak bisa jalan di host). Solusi: build standalone dilakukan di lokal (Node 24.16.0, Next 16.2.10 sama dengan server), lalu di-zip via `scripts/assemble-deploy-bundle.js`.
 - `assemble-deploy-bundle.js` meratakan payload standalone (Next menelusuri ke path `Desktop/...` karena `outputFileTracingRoot`) menjadi layout `nodejs/` datar: `server.js` + `node_modules` + `.next` (+ `.next/static`). `.env` dan `data/` sengaja dikecualikan agar rahasia & DB produksi tetap utuh di host.
