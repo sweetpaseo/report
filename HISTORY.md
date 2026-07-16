@@ -2,6 +2,12 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-07-16 — Deploy build lokal ke report.erihome.id via bundle standalone (commit 52f0963)
+- Build di server gagal karena jailed shell cPanel memicu `kill EPERM` saat Next membersihkan worker (`next build` tidak bisa jalan di host). Solusi: build standalone dilakukan di lokal (Node 24.16.0, Next 16.2.10 sama dengan server), lalu di-zip via `scripts/assemble-deploy-bundle.js`.
+- `assemble-deploy-bundle.js` meratakan payload standalone (Next menelusuri ke path `Desktop/...` karena `outputFileTracingRoot`) menjadi layout `nodejs/` datar: `server.js` + `node_modules` + `.next` (+ `.next/static`). `.env` dan `data/` sengaja dikecualikan agar rahasia & DB produksi tetap utuh di host.
+- Proses deploy: upload `deploy_bundle.zip` (4.5 MB) ke server, unzip ke `nodejs_new`, salin `.env` + `data/` dari `nodejs` lama, lalu swap atomik `nodejs` <-> `nodejs_new`, restart Passenger (`tmp/restart.txt`).
+- Verifikasi live (HTTPS): `/login` 200, `/api/auth/me` mengembalikan `{"role":"admin"}` setelah login, `/api/dashboard` menjalankan validasi baru (`websiteId wajib diisi.`) — membuktikan kode build terbaru (source-gating + fix periode modal) sudah tayang. Temp `nodejs_old`/`_sync_tmp` sudah dibersihkan.
+
 ## 2026-07-16 — Sortir website berdasarkan abjad & perbaikan bug UI/JSON (commit 507ff73)
 - Menambahkan pengurutan abjad dari A ke Z (`ORDER BY name ASC`) untuk daftar website di dropdown Dashboard Admin (`app/api/websites/route.ts`) dan halaman Klien (`app/api/public/client/[token]/route.ts`).
 - **Bugfix (cee2ef7)**: Menangani respons non-JSON (kosong/error) secara aman saat me-refresh daftar klien (`fetch("/api/clients")`) di `components/dashboard-app.tsx` untuk mencegah `SyntaxError: Unexpected end of JSON input` yang membuat aplikasi crash.
