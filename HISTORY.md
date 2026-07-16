@@ -11,6 +11,10 @@ Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). For
 - Memperbaiki layout grid dengan menggunakan `auto-fit` pada `globals.css` agar *card* dengan jumlah item sedikit dapat mengisi ruang secara proporsional dan teks tidak terjepit.
 - Menambahkan mekanisme fallback periode dinamis (`getGscPeriod`) di `lib/dashboard.ts` agar data dimensi GSC seperti *Kata Kunci* dan *Peluang Optimasi* tetap muncul saat GSC di-import via Bundle CSV multi-bulan.
 
+## 2026-07-16 — Sync lokal ke GitHub (chore)  (commit 7da009d777f5a3f380efcd7bb36b8ca0bd49d1d5)
+- Persiapan sinkronisasi local -> GitHub -> server hosting: abaikan artifact zip hosting (`source_for_hosting.zip`, `deploy.zip`) di `.gitignore`; tambah `scripts/create-deploy-zip.js` (helper zip source tanpa node_modules/.next/.git); perbarui `next-env.d.ts` (referensi tipe Next regenerate).
+- Tidak ada perubahan perilaku aplikasi; murni hygiene repo + alat deploy.
+
 ## 2026-07-16 — Hapus periode Juli 2026 (operasi data, tanpa commit kode)  (data only)
 - Penghapusan data atas permintaan user: periode `Juli 2026` (id `fd434cd1-895a-4d20-93b2-426bca95f672`) untuk website Kurnia Printing (`3a8824ca-a33b-442c-b82d-bace098d58a5`) dihapus langsung dari `website-health.db` via `node:sqlite`.
 - Terdampak (cascade): 13 baris `gsc_daily_metrics`, 6 baris `monthly_metrics`, 1 linkage `report_uploads` (SET NULL). Tidak ada data keyword/halaman/device/GA untuk Juli sehingga section terkait sebelumnya tampil kosong.
