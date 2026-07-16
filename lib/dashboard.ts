@@ -41,6 +41,13 @@ type QueryRow = { query: string; clicks: number; impressions: number; ctr: numbe
 type CityRow = { city: string; activeUsers: number };
 type DeviceModelRow = { model: string; activeUsers: number };
 
+function getGscPeriod(db: DatabaseSync, websiteId: string, selectedId: string, table: string) {
+  const has = db.prepare(`SELECT 1 FROM ${table} WHERE website_id = ? AND report_period_id = ? LIMIT 1`).get(websiteId, selectedId);
+  if (has) return selectedId;
+  const fb = db.prepare(`SELECT t.report_period_id FROM ${table} t JOIN report_periods rp ON rp.id = t.report_period_id WHERE t.website_id = ? ORDER BY rp.period_start DESC LIMIT 1`).get(websiteId) as { report_period_id: string } | undefined;
+  return fb?.report_period_id || selectedId;
+}
+
 function dimensionRows(
   db: DatabaseSync,
   websiteId: string,
@@ -48,13 +55,10 @@ function dimensionRows(
   table: string,
   column: string,
 ): DimensionRow[] {
-  const selected = db.prepare(
-    `SELECT ${column} AS name, clicks, impressions, ctr, average_position AS averagePosition FROM ${table} WHERE website_id = ? AND report_period_id = ? ORDER BY impressions DESC`,
-  ).all(websiteId, selectedId) as DimensionRow[];
-  if (selected.length) return selected;
+  const periodId = getGscPeriod(db, websiteId, selectedId, table);
   return db.prepare(
-    `SELECT t.${column} AS name, t.clicks, t.impressions, t.ctr, t.average_position AS averagePosition FROM ${table} t JOIN report_periods rp ON rp.id = t.report_period_id WHERE t.website_id = ? ORDER BY rp.period_start DESC, t.impressions DESC`,
-  ).all(websiteId) as DimensionRow[];
+    `SELECT ${column} AS name, clicks, impressions, ctr, average_position AS averagePosition FROM ${table} WHERE website_id = ? AND report_period_id = ? ORDER BY impressions DESC`,
+  ).all(websiteId, periodId) as DimensionRow[];
 }
 
 type PeriodContext = { periods: PeriodRow[]; selected: PeriodRow; previous?: PeriodRow; isPartialMonth: boolean };
@@ -124,18 +128,19 @@ export function getDashboard(db: DatabaseSync, websiteId: string, requestedPerio
     SELECT channel, sessions, new_users AS newUsers FROM ga_channels
     WHERE website_id = ? AND report_period_id = ? ORDER BY sessions DESC LIMIT 8
   `).all(websiteId, selected.id);
+  const queryPeriodId = getGscPeriod(db, websiteId, selected.id, "gsc_queries");
   const opportunities = db.prepare(`
     SELECT query, clicks, impressions, ctr, average_position AS averagePosition
     FROM gsc_queries
     WHERE website_id = ? AND report_period_id = ?
       AND average_position BETWEEN 4 AND 10 AND impressions >= 10 AND ctr <= 0.05
     ORDER BY impressions DESC LIMIT 6
-  `).all(websiteId, selected.id);
+  `).all(websiteId, queryPeriodId);
   const topQueries = db.prepare(`
     SELECT query, clicks, impressions, ctr, average_position AS averagePosition
     FROM gsc_queries WHERE website_id = ? AND report_period_id = ?
     ORDER BY impressions DESC LIMIT 8
-  `).all(websiteId, selected.id) as QueryRow[];
+  `).all(websiteId, queryPeriodId) as QueryRow[];
   const devices = dimensionRows(db, websiteId, selected.id, "gsc_devices", "device").map((row) => ({ device: row.name, clicks: row.clicks, impressions: row.impressions, ctr: row.ctr, averagePosition: row.averagePosition }));
   const topGscPages = dimensionRows(db, websiteId, selected.id, "gsc_pages", "page")
     .map((row) => ({ page: row.name, clicks: row.clicks, impressions: row.impressions, ctr: row.ctr }))
@@ -334,14 +339,16 @@ export function getFullReportData(
   const ctx = resolvePeriodContext(db, websiteId, requestedPeriodId);
   if (!ctx) return { website, periods: [], empty: true };
   const { periods, selected, previous, isPartialMonth } = ctx;
+  const queryPeriodId = getGscPeriod(db, websiteId, selected.id, "gsc_queries");
   const queries = db.prepare(`
     SELECT query, clicks, impressions, ctr, average_position AS averagePosition
     FROM gsc_queries WHERE website_id = ? AND report_period_id = ? ORDER BY impressions DESC LIMIT ?
-  `).all(websiteId, selected.id, FULL_DATA_LIMIT) as FullQueryRow[];
+  `).all(websiteId, queryPeriodId, FULL_DATA_LIMIT) as FullQueryRow[];
+  const pagePeriodId = getGscPeriod(db, websiteId, selected.id, "gsc_pages");
   const gscPages = db.prepare(`
     SELECT page, clicks, impressions, ctr, average_position AS averagePosition
     FROM gsc_pages WHERE website_id = ? AND report_period_id = ? ORDER BY impressions DESC LIMIT ?
-  `).all(websiteId, selected.id, FULL_DATA_LIMIT) as FullGscPageRow[];
+  `).all(websiteId, pagePeriodId, FULL_DATA_LIMIT) as FullGscPageRow[];
   const pages = db.prepare(`
     SELECT page_title AS title, views FROM ga_pages WHERE website_id = ? AND report_period_id = ? ORDER BY views DESC LIMIT ?
   `).all(websiteId, selected.id, FULL_DATA_LIMIT) as FullPageRow[];
