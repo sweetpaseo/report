@@ -19,7 +19,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
     SELECT id, name, domain, public_token
     FROM websites
     WHERE client_id = ?
-    ORDER BY created_at DESC
+    ORDER BY name ASC
   `).all(client.id);
 
   return NextResponse.json({ client, websites });

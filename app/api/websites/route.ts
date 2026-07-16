@@ -16,7 +16,7 @@ export async function GET() {
   const websites = getDb().prepare(`
     SELECT w.*,
       (SELECT COUNT(*) FROM report_periods rp WHERE rp.website_id = w.id) AS period_count
-    FROM websites w ORDER BY w.created_at DESC
+    FROM websites w ORDER BY w.name ASC
   `).all();
   return NextResponse.json({ websites });
 }
