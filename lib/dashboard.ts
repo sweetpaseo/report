@@ -139,18 +139,18 @@ export function getDashboard(db: DatabaseSync, websiteId: string, requestedPerio
   const topQueries = db.prepare(`
     SELECT query, clicks, impressions, ctr, average_position AS averagePosition
     FROM gsc_queries WHERE website_id = ? AND report_period_id = ?
-    ORDER BY impressions DESC LIMIT 8
+    ORDER BY impressions DESC LIMIT 10
   `).all(websiteId, queryPeriodId) as QueryRow[];
   const devices = dimensionRows(db, websiteId, selected.id, "gsc_devices", "device").map((row) => ({ device: row.name, clicks: row.clicks, impressions: row.impressions, ctr: row.ctr, averagePosition: row.averagePosition }));
   const topGscPages = dimensionRows(db, websiteId, selected.id, "gsc_pages", "page")
     .map((row) => ({ page: row.name, clicks: row.clicks, impressions: row.impressions, ctr: row.ctr }))
     .sort((a, b) => b.clicks - a.clicks)
-    .slice(0, 6);
+    .slice(0, 10);
   const countries = dimensionRows(db, websiteId, selected.id, "gsc_countries", "country");
   const appearances = dimensionRows(db, websiteId, selected.id, "gsc_appearance", "appearance");
   const topPages = db.prepare(`
     SELECT page_title AS title, views FROM ga_pages
-    WHERE website_id = ? AND report_period_id = ? ORDER BY views DESC LIMIT 8
+    WHERE website_id = ? AND report_period_id = ? ORDER BY views DESC LIMIT 10
   `).all(websiteId, selected.id) as Array<{ title: string; views: number }>;
   const events = db.prepare(`
     SELECT event_name AS name, event_count AS count, key_event_count AS keyCount

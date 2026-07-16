@@ -23,17 +23,24 @@ export function importReport(db: DatabaseSync, websiteId: string, uploadId: stri
       `).run(periodId, websiteId, report.periodStart, report.periodEnd, periodLabel(report.periodStart), now);
     }
 
-    const sourceTables = report.source === "gsc"
-      ? ["gsc_daily_metrics", "gsc_queries", "gsc_pages", "gsc_devices"]
-      : ["ga_daily_metrics", "ga_channels", "ga_pages", "ga_events", "ga_cities", "ga_device_models"];
-    for (const table of sourceTables) {
-      db.prepare(`DELETE FROM ${table} WHERE website_id = ? AND report_period_id = ?`).run(websiteId, periodId);
+    if (report.source === "gsc" && report.gsc) {
+      if (report.gsc.daily.length > 0) db.prepare(`DELETE FROM gsc_daily_metrics WHERE website_id = ? AND report_period_id = ?`).run(websiteId, periodId);
+      if (report.gsc.queries.length > 0) db.prepare(`DELETE FROM gsc_queries WHERE website_id = ? AND report_period_id = ?`).run(websiteId, periodId);
+      if (report.gsc.pages.length > 0) db.prepare(`DELETE FROM gsc_pages WHERE website_id = ? AND report_period_id = ?`).run(websiteId, periodId);
+      if (report.gsc.devices.length > 0) db.prepare(`DELETE FROM gsc_devices WHERE website_id = ? AND report_period_id = ?`).run(websiteId, periodId);
+      if (report.gsc.countries && report.gsc.countries.length > 0) db.prepare(`DELETE FROM gsc_countries WHERE website_id = ? AND report_period_id = ?`).run(websiteId, periodId);
+      if (report.gsc.appearances && report.gsc.appearances.length > 0) db.prepare(`DELETE FROM gsc_appearance WHERE website_id = ? AND report_period_id = ?`).run(websiteId, periodId);
     }
-    db.prepare("DELETE FROM monthly_metrics WHERE website_id = ? AND report_period_id = ? AND source_type = ?")
-      .run(websiteId, periodId, report.source);
-
+    if (report.source === "ga" && report.ga) {
+      if (report.ga.daily.length > 0) db.prepare(`DELETE FROM ga_daily_metrics WHERE website_id = ? AND report_period_id = ?`).run(websiteId, periodId);
+      if (report.ga.channels.length > 0) db.prepare(`DELETE FROM ga_channels WHERE website_id = ? AND report_period_id = ?`).run(websiteId, periodId);
+      if (report.ga.pages.length > 0) db.prepare(`DELETE FROM ga_pages WHERE website_id = ? AND report_period_id = ?`).run(websiteId, periodId);
+      if (report.ga.events.length > 0) db.prepare(`DELETE FROM ga_events WHERE website_id = ? AND report_period_id = ?`).run(websiteId, periodId);
+      if (report.ga.cities && report.ga.cities.length > 0) db.prepare(`DELETE FROM ga_cities WHERE website_id = ? AND report_period_id = ?`).run(websiteId, periodId);
+      if (report.ga.deviceModels && report.ga.deviceModels.length > 0) db.prepare(`DELETE FROM ga_device_models WHERE website_id = ? AND report_period_id = ?`).run(websiteId, periodId);
+    }
     const metricInsert = db.prepare(`
-      INSERT INTO monthly_metrics(website_id, report_period_id, source_type, metric_key, metric_value)
+      INSERT OR REPLACE INTO monthly_metrics(website_id, report_period_id, source_type, metric_key, metric_value)
       VALUES (?, ?, ?, ?, ?)
     `);
     for (const [key, value] of Object.entries(report.metrics)) {
@@ -57,6 +64,8 @@ export function importReport(db: DatabaseSync, websiteId: string, uploadId: stri
       insertDimension("gsc_queries", "query", report.gsc.queries);
       insertDimension("gsc_pages", "page", report.gsc.pages);
       insertDimension("gsc_devices", "device", report.gsc.devices);
+      if (report.gsc.countries) insertDimension("gsc_countries", "country", report.gsc.countries);
+      if (report.gsc.appearances) insertDimension("gsc_appearance", "appearance", report.gsc.appearances);
     }
 
     if (report.ga) {
@@ -191,8 +200,8 @@ export function importGscBundle(db: DatabaseSync, websiteId: string, uploadId: s
     insertDimension("gsc_queries", "query", bundle.queries);
     insertDimension("gsc_pages", "page", bundle.pages);
     insertDimension("gsc_devices", "device", bundle.devices);
-    insertDimension("gsc_countries", "country", bundle.countries);
-    insertDimension("gsc_appearance", "appearance", bundle.appearances);
+    insertDimension("gsc_countries", "country", bundle.countries || []);
+    insertDimension("gsc_appearance", "appearance", bundle.appearances || []);
 
     db.prepare(`UPDATE report_uploads SET report_period_id = ?, source_type = ?, status = ?, warning_message = ?, processed_at = ? WHERE id = ?`)
       .run(lastPeriodId, "gsc-csv-bundle", bundle.warnings.length ? "COMPLETED_WITH_WARNINGS" : "COMPLETED", bundle.warnings.join("\n") || null, now, uploadId);

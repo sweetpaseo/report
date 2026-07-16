@@ -45,6 +45,9 @@ export async function parseGsc(buffer: Buffer): Promise<ParsedReport> {
   const warnings: string[] = [];
   if (!workbook.getWorksheet("Kueri")) warnings.push("Sheet Kueri tidak ditemukan.");
   if (!workbook.getWorksheet("Halaman")) warnings.push("Sheet Halaman tidak ditemukan.");
+  if ((workbook.getWorksheet("Negara")?.rowCount || 0) <= 1) {
+    warnings.push("Negara tidak memiliki data.");
+  }
   if ((workbook.getWorksheet("Tampilan penelusuran")?.rowCount || 0) <= 1) {
     warnings.push("Tampilan penelusuran tidak memiliki data.");
   }
@@ -67,6 +70,8 @@ export async function parseGsc(buffer: Buffer): Promise<ParsedReport> {
       queries: dimensions(workbook.getWorksheet("Kueri")),
       pages: dimensions(workbook.getWorksheet("Halaman")),
       devices: dimensions(workbook.getWorksheet("Perangkat")),
+      countries: dimensions(workbook.getWorksheet("Negara")),
+      appearances: dimensions(workbook.getWorksheet("Tampilan penelusuran")),
     },
   };
 }

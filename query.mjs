@@ -1,0 +1,1 @@
+import { DatabaseSync } from 'node:sqlite'; const db = new DatabaseSync('data/website-health.db'); const upload = db.prepare('SELECT storage_path FROM report_uploads WHERE original_filename = ''GA-Jun26.csv'' ORDER BY uploaded_at DESC LIMIT 1').get(); console.log(upload ? upload.storage_path : 'Not found');

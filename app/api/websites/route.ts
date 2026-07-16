@@ -9,6 +9,7 @@ const schema = z.object({
   name: z.string().trim().min(2).max(80),
   domain: z.string().trim().min(3).max(200),
   timezone: z.string().trim().default("Asia/Jakarta"),
+  client_id: z.string().optional(),
 });
 
 export async function GET() {
@@ -32,8 +33,8 @@ export async function POST(request: Request) {
   const token = crypto.randomBytes(24).toString("base64url");
   let domain = parsed.data.domain.replace(/^https?:\/\//i, "").replace(/\/$/, "");
   getDb().prepare(`
-    INSERT INTO websites(id, name, domain, timezone, public_token, created_at)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `).run(id, parsed.data.name, domain, parsed.data.timezone, token, new Date().toISOString());
+    INSERT INTO websites(id, name, domain, timezone, public_token, created_at, client_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(id, parsed.data.name, domain, parsed.data.timezone, token, new Date().toISOString(), parsed.data.client_id || null);
   return NextResponse.json({ id, publicToken: token }, { status: 201 });
 }

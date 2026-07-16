@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity, BarChart3, Check, ChevronDown, CircleAlert, Database, Download, ExternalLink,
   FileSpreadsheet, Gauge, Globe2, Home, LogOut, Menu, MousePointerClick, Plus, Search,
-  Share2, Target, TrendingDown, TrendingUp, Upload, Users, X,
+  Share2, Target, Trash2, TrendingDown, TrendingUp, Upload, Users, X,
 } from "lucide-react";
 import { Sparkline } from "./sparkline";
 import { MonthlyTrend } from "./monthly-trend";
@@ -66,9 +66,10 @@ const FULL_COLUMNS: Record<string, Column<any>[]> = {
   ],
 };
 
-export function DashboardApp({ publicToken }: { publicToken?: string }) {
-  const isPublic = Boolean(publicToken);
-  const [websites, setWebsites] = useState<Website[]>([]);
+export function DashboardApp({ publicToken, clientToken }: { publicToken?: string, clientToken?: string }) {
+  const isPublic = Boolean(publicToken) || Boolean(clientToken);
+  const isClientMode = Boolean(clientToken);
+  const [websites, setWebsites] = useState<any[]>([]);
   const [websiteId, setWebsiteId] = useState("");
   const [periodId, setPeriodId] = useState("");
   const [data, setData] = useState<DashboardData | null>(null);
@@ -78,11 +79,14 @@ export function DashboardApp({ publicToken }: { publicToken?: string }) {
   const [uploadModal, setUploadModal] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [role, setRole] = useState<"admin" | "client" | "">("");
-  const isAdmin = role !== "client";
+  const isAdmin = role === "admin";
+  const [clients, setClients] = useState<any[]>([]);
+  const [clientModal, setClientModal] = useState(false);
   const [fullModal, setFullModal] = useState<{ open: boolean; title: string; columns: Column<any>[]; rows: any[]; filename: string } | null>(null);
 
   async function loadWebsites() {
-    const response = await fetch("/api/websites", { cache: "no-store" });
+    const endpoint = isClientMode ? `/api/public/client/${clientToken}` : "/api/websites";
+    const response = await fetch(endpoint, { cache: "no-store" });
     if (!response.ok) { setLoading(false); return; }
     const result = await response.json();
     setWebsites(result.websites);
@@ -91,12 +95,19 @@ export function DashboardApp({ publicToken }: { publicToken?: string }) {
     if (!firstId) setLoading(false);
   }
 
-  async function loadDashboard(targetWebsite = websiteId, targetPeriod = periodId) {
-    if (!isPublic && !targetWebsite) { setLoading(false); setData(null); return; }
+  async function loadDashboard(targetWebsite = websiteId, targetPeriod = periodId, currentWebsites = websites) {
+    if ((!isPublic || isClientMode) && !targetWebsite) { setLoading(false); setData(null); return; }
     setLoading(true);
-    const endpoint = isPublic
-      ? `/api/public/report/${publicToken}${targetPeriod ? `?periodId=${targetPeriod}` : ""}`
-      : `/api/dashboard?websiteId=${targetWebsite}${targetPeriod ? `&periodId=${targetPeriod}` : ""}`;
+    let endpoint = "";
+    if (isClientMode) {
+      const wToken = currentWebsites.find((w: any) => w.id === targetWebsite)?.public_token;
+      if (!wToken) { setLoading(false); return; }
+      endpoint = `/api/public/report/${wToken}${targetPeriod ? `?periodId=${targetPeriod}` : ""}`;
+    } else if (isPublic) {
+      endpoint = `/api/public/report/${publicToken}${targetPeriod ? `?periodId=${targetPeriod}` : ""}`;
+    } else {
+      endpoint = `/api/dashboard?websiteId=${targetWebsite}${targetPeriod ? `&periodId=${targetPeriod}` : ""}`;
+    }
     const response = await fetch(endpoint, { cache: "no-store" });
     const result = await response.json();
     setLoading(false);
@@ -105,15 +116,17 @@ export function DashboardApp({ publicToken }: { publicToken?: string }) {
     if (result.selected?.id && result.selected.id !== periodId) setPeriodId(result.selected.id);
   }
 
-  useEffect(() => { if (isPublic) loadDashboard(); else loadWebsites(); }, []);
+  useEffect(() => { if (isPublic && !isClientMode) loadDashboard(); else loadWebsites(); }, []);
   useEffect(() => {
-    if (isPublic) return;
-    fetch("/api/auth/me").then((r) => (r.ok ? r.json() : null)).then((data) => {
-      if (data?.role) setRole(data.role);
-    }).catch(() => {});
+    fetch("/api/auth/me").then((r) => (r.ok ? r.json() : null)).then((d) => {
+      setRole(d?.role || "client");
+      if (d?.role === "admin") {
+        fetch("/api/clients").then(r => r.ok ? r.json() : null).then(res => { if (res?.clients) setClients(res.clients); });
+      }
+    }).catch(() => setRole("client"));
   }, []);
-  useEffect(() => { if (!isPublic && websiteId) { setPeriodId(""); loadDashboard(websiteId, ""); } }, [websiteId]);
-  useEffect(() => { if (isPublic && periodId) loadDashboard("", periodId); }, [periodId]);
+  useEffect(() => { if ((!isPublic || isClientMode) && websiteId) { setPeriodId(""); loadDashboard(websiteId, "", websites); } }, [websiteId, websites]);
+  useEffect(() => { if (isPublic && !isClientMode && periodId) loadDashboard("", periodId, websites); }, [periodId]);
 
   const gscValues = useMemo(() => (data?.trends?.gsc || []).map((row: any) => Number(row.impressions || 0)), [data]);
   const clickValues = useMemo(() => (data?.trends?.gsc || []).map((row: any) => Number(row.clicks || 0)), [data]);
@@ -129,6 +142,22 @@ export function DashboardApp({ publicToken }: { publicToken?: string }) {
     const url = `${location.origin}/report/${token}`;
     navigator.clipboard.writeText(url);
     setMessage("Link laporan client sudah disalin.");
+  }
+
+  async function deletePeriod() {
+    if (!periodId || !confirm("Apakah Anda yakin ingin menghapus seluruh data untuk periode ini? Tindakan ini tidak dapat dibatalkan.")) return;
+    try {
+      const res = await fetch(`/api/periods/${periodId}`, { method: "DELETE" });
+      if (res.ok) {
+        setMessage("Data periode berhasil dihapus.");
+        setPeriodId("");
+        loadDashboard(websiteId, "", websites);
+      } else {
+        setMessage("Gagal menghapus data periode.");
+      }
+    } catch (e) {
+      setMessage("Terjadi kesalahan.");
+    }
   }
 
   async function openFull(kind: "queries" | "gscPages" | "pages" | "cities" | "deviceModels", title: string): Promise<void> {
@@ -160,7 +189,7 @@ export function DashboardApp({ publicToken }: { publicToken?: string }) {
         <div className="brand"><div className="brand-mark small"><BarChart3 /></div><span>Website<br/>Health Report</span></div>
         <nav onClick={() => setMobileMenu(false)}>
           <a className="active"><Home /> Ringkasan</a>
-          <a href="#anomalies"><CircleAlert /> Peringatan & Anomali</a>
+
           {hasGsc && <a href="#search"><Search /> Kinerja di Google</a>}
           {hasGa && <a href="#traffic"><Users /> Traffic & Pengunjung</a>}
           {hasGa && <a href="#engagement"><Activity /> Perilaku Pengunjung</a>}
@@ -176,22 +205,24 @@ export function DashboardApp({ publicToken }: { publicToken?: string }) {
       <main className="main-content">
         <header className="topbar">
           <button className="mobile-menu-button" onClick={() => setMobileMenu(!mobileMenu)} aria-label="Menu"><Menu /></button>
-          <div><p className="eyebrow">LAPORAN WEBSITE</p><h1>Ringkasan Kondisi Website</h1></div>
+          <div><p className="eyebrow">{data?.website?.name ? "LAPORAN WEBSITE" : ""}</p><h1>{data?.website?.name || "Ringkasan Kondisi Website"}</h1></div>
           <div className="top-actions">
             <button className="button secondary desktop-only" onClick={() => window.print()}><Download /> Export PDF</button>
+            {isAdmin && periodId && <button className="button secondary desktop-only" style={{color: "var(--red)"}} onClick={deletePeriod}><Trash2 /> Hapus</button>}
             {isAdmin && <button className="button secondary desktop-only" onClick={() => setUploadModal(true)}><Upload /> Upload report</button>}
-            {!isPublic && <button className="button secondary desktop-only" onClick={shareReport}><Share2 /> Bagikan</button>}
-            {!isPublic && data?.website?.public_token && <a className="button secondary desktop-only" href={`/report-data/${data.website.public_token}${periodId ? `?periodId=${periodId}` : ""}`}><Database /> Data lengkap</a>}
+            {isAdmin && <button className="button secondary desktop-only" onClick={shareReport}><Share2 /> Bagikan</button>}
+            {isAdmin && data?.website?.public_token && <a className="button secondary desktop-only" href={`/report-data/${data.website.public_token}${periodId ? `?periodId=${periodId}` : ""}`}><Database /> Data lengkap</a>}
           </div>
         </header>
 
-        {!isPublic && <section className="control-bar">
-          <label>Website<select value={websiteId} onChange={(e) => setWebsiteId(e.target.value)}><option value="">Pilih website</option>{websites.map((website) => <option key={website.id} value={website.id}>{website.name} — {website.domain}</option>)}</select></label>
-          {isAdmin && <button className="button subtle" onClick={() => setWebsiteModal(true)}><Plus /> Tambah website</button>}
-          {data?.periods?.length > 0 && <label className="period-control">Periode<select value={periodId} onChange={(e) => { setPeriodId(e.target.value); loadDashboard(websiteId, e.target.value); }}>{data.periods.map((period: any) => <option key={period.id} value={period.id}>{period.period_label}</option>)}</select></label>}
-        </section>}
+          {(!isPublic || isClientMode) && <section className="control-bar">
+            <label>Website<select value={websiteId} onChange={(e) => setWebsiteId(e.target.value)}><option value="">Pilih website</option>{websites.map((website: any) => <option key={website.id} value={website.id}>{website.name} — {website.domain}</option>)}</select></label>
+            {!isClientMode && isAdmin && <button className="button subtle" onClick={() => setWebsiteModal(true)}><Plus /> Tambah website</button>}
+            {!isClientMode && isAdmin && <button className="button subtle" onClick={() => setClientModal(true)}><Users /> Kelola Klien</button>}
+            {data?.periods?.length > 0 && <label className="period-control">Periode<select value={periodId} onChange={(e) => { setPeriodId(e.target.value); loadDashboard(websiteId, e.target.value, websites); }}>{data.periods.map((period: any) => <option key={period.id} value={period.id}>{period.period_label}</option>)}</select></label>}
+          </section>}
 
-        {isPublic && data?.periods?.length > 0 && <section className="public-period"><span>{data.website.name} · {data.website.domain}</span><select value={periodId} onChange={(e) => setPeriodId(e.target.value)}>{data.periods.map((period: any) => <option key={period.id} value={period.id}>{period.period_label}</option>)}</select></section>}
+        {(isPublic && !isClientMode) && data?.periods?.length > 0 && <section className="public-period"><span>{data.website.name} · {data.website.domain}</span><select value={periodId} onChange={(e) => setPeriodId(e.target.value)}>{data.periods.map((period: any) => <option key={period.id} value={period.id}>{period.period_label}</option>)}</select></section>}
 
         {message && <div className="toast" onClick={() => setMessage("")}>{message}<X size={16}/></div>}
 
@@ -206,7 +237,7 @@ export function DashboardApp({ publicToken }: { publicToken?: string }) {
             <div className="health-copy"><p>{data.insights?.[0] || "Data periode ini sudah berhasil diproses."}</p><p>{data.insights?.[1] || "Gunakan kartu di bawah untuk memahami sumber perubahan."}</p></div>
           </section>
 
-          {data.anomalies?.length > 0 && <AnomalyList anomalies={data.anomalies} partial={data.isPartialMonth} />}
+          <div className="analyst-wrap"><AnalystNotes notes={data.analystNotes || []} /></div>
 
           {data.monthlySeries?.length > 1 && <MonthlyTrend data={data} />}
 
@@ -237,7 +268,12 @@ export function DashboardApp({ publicToken }: { publicToken?: string }) {
           </section>
 
           <div className="dash-grid">
-          <section className="section-card g-change"><div className="section-heading"><div><p className="eyebrow">PERUBAHAN UTAMA</p><h2>Apa yang berubah dibanding bulan lalu?</h2></div></div><div className="insight-grid">{(data.insights || []).slice(0, 4).map((insight: string, i: number) => <article key={insight}><span className={i === 1 ? "insight-icon down" : "insight-icon"}>{i === 1 ? <TrendingDown/> : <TrendingUp/>}</span><p>{insight}</p></article>)}</div>{data.isPartialMonth && <p className="partial-note"><CircleAlert size={14} /> Periode ini belum berakhir (masih berjalan). Angka dibandingkan dengan bulan lalu mungkin belum mencerminkan kondisi akhir bulan.</p>}</section>
+          <section className="section-card g-change"><div className="section-heading"><div><p className="eyebrow">PERUBAHAN UTAMA</p><h2>Apa yang berubah dibanding bulan lalu?</h2></div></div><div className="insight-grid" style={{ marginBottom: "24px" }}>{(data.insights || []).slice(0, 4).map((insight: string, i: number) => <article key={insight}><span className={i === 1 ? "insight-icon down" : "insight-icon"}>{i === 1 ? <TrendingDown/> : <TrendingUp/>}</span><p>{insight}</p></article>)}</div>{data.isPartialMonth && <p className="partial-note"><CircleAlert size={14} /> Periode ini belum berakhir (masih berjalan). Angka dibandingkan dengan bulan lalu mungkin belum mencerminkan kondisi akhir bulan.</p>}
+            <div className="quality-section-inner">
+              <div className="section-heading"><div><p className="eyebrow">KUALITAS DATA</p><h2>Seberapa lengkap laporan ini?</h2></div></div>
+              <div className="quality-grid">{data.dataQuality.map((item:any)=><article key={item.label}><span className={`quality-icon ${item.status}`}>{item.status === "ok" ? <Check/> : <CircleAlert/>}</span><div><b>{item.label}</b><p>{item.detail}</p></div></article>)}</div>
+            </div>
+          </section>
 
           <section className="section-card full opp" id="opportunities"><div className="section-heading"><div><p className="eyebrow">PRIORITAS BULAN DEPAN</p><h2>Peluang terbaik yang dapat dikerjakan</h2></div><button className="link-button" onClick={() => openFull("queries", "Semua Kata Kunci")}><ExternalLink size={14} /> Lihat semua</button></div><div className="opportunity-grid">
             {hasGsc && <OpportunityCard number="1" title="Perbaiki CTR keyword potensial"><p>Keyword sudah berada dekat posisi teratas, tetapi belum menghasilkan klik maksimal.</p><div className="responsive-table"><table><thead><tr><th>Keyword</th><th>Posisi</th><th>CTR</th><th>Impr.</th></tr></thead><tbody>{(data.opportunities || []).slice(0,4).map((row:any)=><tr key={row.query}><td>{row.query}</td><td>{dec.format(row.averagePosition)}</td><td>{percent(row.ctr,true)}</td><td>{fmt.format(row.impressions)}</td></tr>)}</tbody></table></div></OpportunityCard>}
@@ -245,12 +281,11 @@ export function DashboardApp({ publicToken }: { publicToken?: string }) {
             {hasGa && <OpportunityCard number="3" title="Perkuat pengukuran konversi"><p>Pastikan tindakan bisnis penting ditandai sebagai key event di GA4.</p>{(data.events || []).slice(0,5).map((row:any)=><div className="event-row" key={row.name}><span>{row.name}</span><b>{fmt.format(row.count)}</b></div>)}</OpportunityCard>}
           </div></section>
 
-          {hasGsc && <section className="section-card g-devices" id="devices"><div className="section-heading"><div><p className="eyebrow">PERANGKAT & HALAMAN</p><h2>Dari mana traffic datang & halaman apa paling diminati?</h2></div><button className="link-button" onClick={() => openFull("pages", "Semua Halaman Terpopuler")}><ExternalLink size={14} /> Lihat semua</button></div><div className="split-grid">
-            <div className="split-col"><h3 className="sub-head"><Globe2 size={16} /> Kinerja per Perangkat</h3><DeviceList devices={data.devices || []} /></div>
-            <div className="split-col"><h3 className="sub-head"><FileSpreadsheet size={16} /> Halaman Terpopuler</h3><TopPagesList pages={data.topPages || []} /></div>
-          </div></section>}
+          {hasGsc && <section className="section-card g-devices" id="devices"><div className="section-heading"><div><p className="eyebrow">PERANGKAT</p><h2>Dari mana traffic datang berdasarkan perangkat?</h2></div></div><DeviceList devices={data.devices || []} /></section>}
 
-          {hasGa && <section className="section-card g-devices-visitor" id="devices-visitor"><div className="section-heading"><div><p className="eyebrow">PERANGKAT PENGUNJUNG</p><h2>Model perangkat yang dipakai pengunjung</h2></div><button className="link-button" onClick={() => openFull("deviceModels", "Semua Model Perangkat")}><ExternalLink size={14} /> Lihat semua</button></div><DeviceModelList models={data.deviceModels || []} /><p className="device-foot">Data dari Google Analytics berdasarkan pengguna aktif.</p></section>}
+          {hasGa && <section className="section-card g-pages" id="pages"><div className="section-heading"><div><p className="eyebrow">HALAMAN TERPOPULER</p><h2>Halaman apa yang paling banyak dikunjungi?</h2></div><button className="link-button" onClick={() => openFull("pages", "Semua Halaman Terpopuler")}><ExternalLink size={14} /> Lihat semua</button></div><TopPagesList pages={data.topPages || []} /></section>}
+
+          {hasGa && <section className="section-card g-devices-visitor" id="devices-visitor"><div className="section-heading"><div><p className="eyebrow">PERANGKAT PENGUNJUNG</p><h2>Model perangkat yang dipakai pengunjung</h2></div><button className="link-button" onClick={() => openFull("deviceModels", "Semua Model Perangkat")}><ExternalLink size={14} /> Lihat semua</button></div><DeviceModelList models={(data.deviceModels || []).slice(0, 7)} /><p className="device-foot">Data dari Google Analytics berdasarkan pengguna aktif.</p></section>}
 
           {hasGsc && <section className="section-card g-geography" id="geography"><div className="section-heading"><div><p className="eyebrow">GEOGRAFI & TAMPILAN</p><h2>Dari wilayah mana audiens berasal & bagaimana website muncul di pencarian?</h2></div></div><div className="split-grid">
             <div className="split-col"><h3 className="sub-head"><Globe2 size={16} /> Negara (Wilayah)</h3><CountryList countries={data.countries || []} /></div>
@@ -259,9 +294,8 @@ export function DashboardApp({ publicToken }: { publicToken?: string }) {
 
           {hasGa && <section className="section-card g-cities" id="cities"><div className="section-heading"><div><p className="eyebrow">GEOGRAFI PENGUNJUNG</p><h2>Kota asal pengunjung website</h2></div><button className="link-button" onClick={() => openFull("cities", "Semua Kota")}><ExternalLink size={14} /> Lihat semua</button></div><CityList cities={data.topCities || []} /><p className="device-foot">Kota diurutkan dari jumlah pengguna aktif terbanyak, berdasarkan data Google Analytics.</p></section>}
 
-          <section className="section-card g-quality" id="quality"><div className="section-heading"><div><p className="eyebrow">KUALITAS DATA</p><h2>Seberapa lengkap laporan ini?</h2></div></div><div className="quality-grid">{data.dataQuality.map((item:any)=><article key={item.label}><span className={`quality-icon ${item.status}`}>{item.status === "ok" ? <Check/> : <CircleAlert/>}</span><div><b>{item.label}</b><p>{item.detail}</p></div></article>)}</div>          </section>
 
-          <div className="full analyst-wrap"><AnalystNotes notes={data.analystNotes || []} /></div>
+
 
           {hasGsc && <section className="section-card g-topsearch" id="top-search"><div className="section-heading"><div><p className="eyebrow">HALAMAN PALING SERING DICARI</p><h2>Halaman apa yang paling banyak muncul di Google?</h2></div><button className="link-button" onClick={() => openFull("gscPages", "Semua Halaman Pencarian")}><ExternalLink size={14} /> Lihat semua</button></div><TopSearchPagesList pages={data.topGscPages || []} /></section>}
 
@@ -272,8 +306,9 @@ export function DashboardApp({ publicToken }: { publicToken?: string }) {
 
       {!isPublic && <nav className="mobile-bottom-nav"><button><Home/><span>Ringkasan</span></button>{isAdmin && <button onClick={() => setUploadModal(true)}><Upload/><span>Upload</span></button>}<button onClick={shareReport}><Share2/><span>Bagikan</span></button>{isAdmin && <button onClick={() => setWebsiteModal(true)}><Globe2/><span>Website</span></button>}</nav>}
 
-      <WebsiteModal open={websiteModal} onClose={() => setWebsiteModal(false)} onCreated={async () => { setWebsiteModal(false); await loadWebsites(); setMessage("Website berhasil ditambahkan."); }}/>
-      <UploadModal open={uploadModal} websiteId={websiteId} onClose={() => setUploadModal(false)} onDone={async (result) => { setUploadModal(false); const totalWarnings=(result.results||[]).reduce((sum:number,r:any)=>sum+(r.warnings?.length||0),0); if(!result.periodId){setMessage(`${result.succeeded} berhasil, ${result.failed} gagal.`);return;} setPeriodId(result.periodId); await loadDashboard(websiteId, result.periodId); setMessage(totalWarnings?`${result.succeeded} report diproses dengan ${totalWarnings} catatan.`:`${result.succeeded} report berhasil diproses.`); }}/>
+        {websiteModal && <WebsiteModal open={websiteModal} clients={clients} onClose={() => setWebsiteModal(false)} onCreated={() => { setWebsiteModal(false); loadWebsites(); }} />}
+        {clientModal && <ClientModal open={clientModal} clients={clients} onClose={() => setClientModal(false)} onCreated={() => { fetch("/api/clients").then(r => r.json()).then(res => setClients(res.clients||[])); }} />}
+        {uploadModal && <UploadModal open={uploadModal} websiteId={websiteId} onClose={() => setUploadModal(false)} onDone={async (result) => { setUploadModal(false); const totalWarnings=(result.results||[]).reduce((sum:number,r:any)=>sum+(r.warnings?.length||0),0); if(!result.periodId){setMessage(`${result.succeeded} berhasil, ${result.failed} gagal.`);return;} setPeriodId(result.periodId); await loadDashboard(websiteId, result.periodId); setMessage(totalWarnings?`${result.succeeded} report diproses dengan ${totalWarnings} catatan.`:`${result.succeeded} report berhasil diproses.`); }}/>}
       {fullModal?.open && <DataModal open={fullModal.open} title={fullModal.title} columns={fullModal.columns} rows={fullModal.rows} filename={fullModal.filename} onClose={() => setFullModal(null)} />}
     </div>
   );
@@ -283,17 +318,33 @@ function EmptyState({ onAdd, onUpload, isPublic, isAdmin }: { onAdd:()=>void; on
   return <section className="empty-state"><FileSpreadsheet/><h2>Belum ada laporan untuk ditampilkan</h2><p>{isPublic ? "Pemilik dashboard belum mengunggah data periode ini." : "Tambahkan website, lalu upload report GSC atau Google Analytics dalam format XLSX/CSV."}</p>{isAdmin && <div><button className="button secondary" onClick={onAdd}><Plus/>Tambah website</button><button className="button primary" onClick={onUpload}><Upload/>Upload report</button></div>}</section>;
 }
 
-function WebsiteModal({ open, onClose, onCreated }: { open:boolean; onClose:()=>void; onCreated:()=>void }) {
+function WebsiteModal({ open, onClose, onCreated, clients }: { open:boolean; onClose:()=>void; onCreated:()=>void; clients: any[] }) {
   const [error,setError]=useState(""); const [loading,setLoading]=useState(false);
-  async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setLoading(true);setError("");const form=new FormData(e.currentTarget);const response=await fetch('/api/websites',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:form.get('name'),domain:form.get('domain'),timezone:'Asia/Jakarta'})});const result=await response.json();setLoading(false);if(!response.ok)return setError(result.error);onCreated();}
-  return <Modal open={open} title="Tambah website" onClose={onClose}><form className="form-stack" onSubmit={submit}><label>Nama website<input name="name" placeholder="Contoh: Erihome" required/></label><label>Domain<input name="domain" placeholder="erihome.id" required/></label>{error&&<p className="form-error">{error}</p>}<button className="button primary wide" disabled={loading}>{loading?'Menyimpan…':'Simpan website'}</button></form></Modal>;
+  async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setLoading(true);setError("");const form=new FormData(e.currentTarget);const response=await fetch('/api/websites',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:form.get('name'),domain:form.get('domain'),timezone:'Asia/Jakarta',client_id:form.get('client_id')})});const result=await response.json();setLoading(false);if(!response.ok)return setError(result.error);onCreated();}
+  return <Modal open={open} title="Tambah website" onClose={onClose}><form className="form-stack" onSubmit={submit}><label>Klien Pemilik (Opsional)<select name="client_id"><option value="">-- Tanpa Klien --</option>{clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label><label>Nama website<input name="name" placeholder="Contoh: Erihome" required/></label><label>Domain<input name="domain" placeholder="erihome.id" required/></label>{error&&<p className="form-error">{error}</p>}<button className="button primary wide" disabled={loading}>{loading?'Menyimpan…':'Simpan website'}</button></form></Modal>;
+}
+
+function ClientModal({ open, onClose, onCreated, clients }: { open:boolean; onClose:()=>void; onCreated:()=>void; clients: any[] }) {
+  const [error,setError]=useState(""); const [loading,setLoading]=useState(false);
+  async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setLoading(true);setError("");const form=new FormData(e.currentTarget);const response=await fetch('/api/clients',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:form.get('name')})});const result=await response.json();setLoading(false);if(!response.ok)return setError(result.error);onCreated();}
+  return <Modal open={open} title="Kelola Klien" onClose={onClose}>
+    <div className="client-list" style={{ marginBottom: 24, maxHeight: 200, overflowY: "auto" }}>
+      {clients.length === 0 ? <p className="empty-note">Belum ada klien.</p> : <table className="data-table"><thead><tr><th>Nama Klien</th><th>Website</th><th>Portfolio Link</th></tr></thead><tbody>{clients.map(c => <tr key={c.id}><td>{c.name}</td><td>{c.website_count}</td><td><button type="button" className="button subtle" onClick={() => { navigator.clipboard.writeText(location.origin + "/client/" + c.public_token); alert("Link disalin"); }}>Copy Link</button></td></tr>)}</tbody></table>}
+    </div>
+    <form className="form-stack" onSubmit={submit}>
+      <h3 className="sub-head">Tambah Klien Baru</h3>
+      <label>Nama Perusahaan / Klien<input name="name" placeholder="Contoh: PT Maju Jaya" required/></label>
+      {error&&<p className="form-error">{error}</p>}
+      <button className="button primary wide" disabled={loading}>{loading?'Menyimpan…':'Simpan Klien'}</button>
+    </form>
+  </Modal>;
 }
 
 function UploadModal({ open, websiteId, onClose, onDone }: { open:boolean; websiteId:string; onClose:()=>void; onDone:(r:any)=>void }) {
   const [files,setFiles]=useState<File[]>([]); const [error,setError]=useState(""); const [loading,setLoading]=useState(false); const input=useRef<HTMLInputElement>(null);
   function addFiles(list:FileList|null){if(list&&list.length)setFiles((prev)=>[...prev,...Array.from(list)]);}
   async function submit(e:FormEvent){e.preventDefault();if(!files.length||!websiteId)return setError('Pilih website dan minimal satu file terlebih dahulu.');setLoading(true);setError('');const form=new FormData();form.set('websiteId',websiteId);for(const f of files)form.append('file',f);const response=await fetch('/api/upload',{method:'POST',body:form});const result=await response.json();setLoading(false);if(!response.ok)return setError(result.error||'Upload gagal.');setFiles([]);onDone(result);}
-  return <Modal open={open} title="Upload report mentah" onClose={onClose}><form className="form-stack" onSubmit={submit}><button type="button" className={`dropzone ${files.length?'selected':''}`} onClick={()=>input.current?.click()} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();addFiles(e.dataTransfer.files);}}><input ref={input} hidden type="file" accept=".xlsx,.csv" multiple onChange={e=>addFiles(e.target.files)}/><Upload/>{files.length?<><b>{files.length} file dipilih</b><span>{files.map(f=>f.name).join(', ').slice(0,90)}</span></>:<><b>Tarik file ke sini</b><span>atau klik untuk memilih XLSX / CSV (bisa lebih dari satu)</span></>}</button>{files.length>0&&<ul className="file-list">{files.map((f,i)=><li key={`${f.name}-${i}`}><span className="file-name">{f.name}</span><span className="file-size">{(f.size/1024).toFixed(1)} KB</span><button type="button" className="file-remove" onClick={()=>setFiles(files.filter((_,j)=>j!==i))} aria-label={`Hapus ${f.name}`}><X size={14}/></button></li>)}</ul>}<div className="upload-note"><Check/>Sumber & periode terdeteksi otomatis. Untuk ekspor GSC berbentuk beberapa CSV, seret semua file sekaligus.</div>{error&&<p className="form-error">{error}</p>}<button className="button primary wide" disabled={loading||!files.length}>{loading?'Memvalidasi dan memproses…':`Proses ${files.length} report`}</button></form></Modal>;
+  return <Modal open={open} title="Upload report mentah" onClose={onClose}><form className="form-stack" onSubmit={submit}><button type="button" className={`dropzone ${files.length?'selected':''}`} onClick={()=>input.current?.click()} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();addFiles(e.dataTransfer.files);}}><input ref={input} hidden type="file" accept=".xlsx,.csv" multiple onChange={e=>addFiles(e.target.files)}/><Upload/>{files.length?<><b>{files.length} file dipilih</b><span>{files.map(f=>f.name).join(', ').slice(0,90)}</span></>:<><b>Tarik file ke sini</b><span>atau klik untuk memilih XLSX / CSV (bisa lebih dari satu)</span></>}</button><div className="upload-note"><Check/>Sumber & periode terdeteksi otomatis. Untuk ekspor GSC berbentuk beberapa CSV, seret semua file sekaligus.</div>{error&&<p className="form-error">{error}</p>}<button className="button primary wide" disabled={loading||!files.length}>{loading?'Memvalidasi dan memproses…':`Proses ${files.length} report`}</button>{files.length>0&&<ul className="file-list" style={{ maxHeight: '35vh', overflowY: 'auto', marginTop: '16px' }}>{files.map((f,i)=><li key={`${f.name}-${i}`}><span className="file-name">{f.name}</span><span className="file-size">{(f.size/1024).toFixed(1)} KB</span><button type="button" className="file-remove" onClick={()=>setFiles(files.filter((_,j)=>j!==i))} aria-label={`Hapus ${f.name}`}><X size={14}/></button></li>)}</ul>}</form></Modal>;
 }
 
 function OpportunityCard({number,title,children}:{number:string;title:string;children:React.ReactNode}){return <article className="opportunity-card"><header><span>{number}</span><b>{title}</b></header>{children}</article>}

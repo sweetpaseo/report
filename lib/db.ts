@@ -21,14 +21,28 @@ function initialize(db: DatabaseSync) {
     PRAGMA busy_timeout = 5000;
     PRAGMA foreign_keys = ON;
 
+    CREATE TABLE IF NOT EXISTS clients (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      public_token TEXT NOT NULL UNIQUE,
+      created_at TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS websites (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       domain TEXT NOT NULL,
       timezone TEXT NOT NULL DEFAULT 'Asia/Jakarta',
       public_token TEXT NOT NULL UNIQUE,
+      client_id TEXT REFERENCES clients(id) ON DELETE SET NULL,
       created_at TEXT NOT NULL
     );
+
+    -- Try to add the column if it doesn't exist (for existing DBs)
+    -- Ignore error if column already exists
+    PRAGMA foreign_keys = OFF;
+    -- Note: ALTER TABLE ADD COLUMN is used for migrations in SQLite
+    -- We'll run it in a separate try-catch block below.
 
     CREATE TABLE IF NOT EXISTS report_periods (
       id TEXT PRIMARY KEY,

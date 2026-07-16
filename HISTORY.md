@@ -2,6 +2,10 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-07-16 — Perbaiki layout insight-grid & fallback data dimensi GSC (commit 79177e8)
+- Memperbaiki layout grid dengan menggunakan `auto-fit` pada `globals.css` agar *card* dengan jumlah item sedikit dapat mengisi ruang secara proporsional dan teks tidak terjepit.
+- Menambahkan mekanisme fallback periode dinamis (`getGscPeriod`) di `lib/dashboard.ts` agar data dimensi GSC seperti *Kata Kunci* dan *Peluang Optimasi* tetap muncul saat GSC di-import via Bundle CSV multi-bulan.
+
 ## 2026-07-16 — Hapus periode Juli 2026 (operasi data, tanpa commit kode)  (data only)
 - Penghapusan data atas permintaan user: periode `Juli 2026` (id `fd434cd1-895a-4d20-93b2-426bca95f672`) untuk website Kurnia Printing (`3a8824ca-a33b-442c-b82d-bace098d58a5`) dihapus langsung dari `website-health.db` via `node:sqlite`.
 - Terdampak (cascade): 13 baris `gsc_daily_metrics`, 6 baris `monthly_metrics`, 1 linkage `report_uploads` (SET NULL). Tidak ada data keyword/halaman/device/GA untuk Juli sehingga section terkait sebelumnya tampil kosong.

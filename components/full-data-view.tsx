@@ -28,6 +28,8 @@ type FullData = {
 };
 
 export function FullDataView({ token }: { token: string }) {
+  const [role, setRole] = useState<"admin" | "client" | "">("");
+  const isAdmin = role === "admin";
   const [data, setData] = useState<FullData | null>(null);
   const [periodId, setPeriodId] = useState("");
   const [loading, setLoading] = useState(true);
@@ -43,6 +45,11 @@ export function FullDataView({ token }: { token: string }) {
   }
 
   useEffect(() => { load(); }, []);
+  useEffect(() => {
+    fetch("/api/auth/me").then((r) => (r.ok ? r.json() : null)).then((d) => {
+      setRole(d?.role || "client");
+    }).catch(() => setRole("client"));
+  }, []);
 
   if (loading && !data) return <div className="loading-screen"><div className="loader" /><p>Menyiapkan data…</p></div>;
   if (!data) return <div className="full-data"><p>Laporan tidak ditemukan.</p></div>;
@@ -105,7 +112,10 @@ export function FullDataView({ token }: { token: string }) {
           <p className="eyebrow">DATA LENGKAP</p>
           <h1>{data.website?.name ?? "Laporan"} · {domain}</h1>
         </div>
-        <a className="button secondary" href={`/report/${token}`}><ExternalLink size={16} /> Lihat laporan</a>
+        <div style={{ display: "flex", gap: "8px" }}>
+          {isAdmin && <a className="button secondary" href="/dashboard">Kembali ke Dashboard</a>}
+          <a className="button secondary" href={`/report/${token}`}><ExternalLink size={16} /> Lihat laporan</a>
+        </div>
       </header>
       {data.periods?.length > 0 && (
         <div className="public-period">

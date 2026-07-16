@@ -34,6 +34,8 @@ export type ParsedReport = {
     queries: GscDimension[];
     pages: GscDimension[];
     devices: GscDimension[];
+    countries?: GscDimension[];
+    appearances?: GscDimension[];
   };
   ga?: {
     daily: DailyGa[];

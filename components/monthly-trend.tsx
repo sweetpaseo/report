@@ -49,13 +49,24 @@ export function MonthlyTrend({ data }: { data: any }) {
     () => series.map((point) => Number(point.metrics?.[metricKey] || 0)),
     [series, metricKey],
   );
-  const maxValue = Math.max(...values, 1);
+  let minVal = values.length ? Math.min(...values) : 0;
+  let maxVal = values.length ? Math.max(...values) : 1;
+  if (minVal === maxVal) {
+    if (maxVal > 0) minVal = 0;
+    else maxVal = 1;
+  } else {
+    const range = maxVal - minVal;
+    minVal = Math.max(0, minVal - range * 0.1);
+    maxVal = maxVal + range * 0.1;
+  }
+  const yRange = maxVal - minVal;
+  
   const innerWidth = WIDTH - PAD_X * 2;
   const innerHeight = HEIGHT - PAD_TOP - PAD_BOTTOM;
 
   const xAt = (index: number) =>
     PAD_X + (values.length <= 1 ? innerWidth / 2 : (index / (values.length - 1)) * innerWidth);
-  const yAt = (value: number) => PAD_TOP + innerHeight - (value / maxValue) * innerHeight;
+  const yAt = (value: number) => PAD_TOP + innerHeight - ((value - minVal) / yRange) * innerHeight;
 
   const linePoints = values.map((value, index) => `${xAt(index)},${yAt(value)}`).join(" ");
   const baseline = PAD_TOP + innerHeight;
@@ -66,7 +77,7 @@ export function MonthlyTrend({ data }: { data: any }) {
   const change = last - first;
   const changePercent = first ? (change / first) * 100 : null;
   const positive = change >= 0;
-  const ticks = [0, 0.25, 0.5, 0.75, 1].map((ratio) => Math.round(maxValue * ratio));
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map((ratio) => Math.round(minVal + yRange * ratio));
 
   const prevVal = values.length > 1 ? values[values.length - 2] : 0;
   const mom = last - prevVal;
