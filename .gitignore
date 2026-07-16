@@ -9,3 +9,5 @@ data
 tsconfig.tsbuildinfo
 *.db
 scratch/
+source_for_hosting.zip
+deploy.zip
