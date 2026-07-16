@@ -11,5 +11,6 @@ tsconfig.tsbuildinfo
 scratch/
 source_for_hosting.zip
 deploy.zip
+project_source.zip
 deploy_bundle.zip
 deploy_bundle/
