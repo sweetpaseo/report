@@ -2,6 +2,12 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-07-16 — Hapus periode Juli 2026 (operasi data, tanpa commit kode)  (data only)
+- Penghapusan data atas permintaan user: periode `Juli 2026` (id `fd434cd1-895a-4d20-93b2-426bca95f672`) untuk website Kurnia Printing (`3a8824ca-a33b-442c-b82d-bace098d58a5`) dihapus langsung dari `website-health.db` via `node:sqlite`.
+- Terdampak (cascade): 13 baris `gsc_daily_metrics`, 6 baris `monthly_metrics`, 1 linkage `report_uploads` (SET NULL). Tidak ada data keyword/halaman/device/GA untuk Juli sehingga section terkait sebelumnya tampil kosong.
+- Sisa 13 periode; dashboard kini memilih `Juni 2026` sebagai periode terbaru. Tindakan tidak dapat dibatalkan.
+- Bukan perubahan kode, sehingga tidak ada commit source; hanya dicatat di sini sebagai log data.
+
 ## 2026-07-16 — Fix modal "Lihat semua" cocok dengan periode terpilih  (commit 2b6e21f0093f5b4b3fea2874e4d046367c00f8c4)
 - Bug: section inline (mis. Kata Kunci) menampilkan "Belum ada data" untuk periode terpilih, tapi modal "Lihat semua" menampilkan data dari bulan lain karena `getFullReportData` + `effectivePeriodId` melakukan fallback diam ke periode terbaru yang punya data.
 - Perbaikan: `getFullReportData` sekarang query langsung terhadap `selected.id` (tanpa fallback) untuk semua tabel, dan mengembalikan `selectedPeriod` agar modal selalu sama dengan periode dashboard. Hapus fungsi `effectivePeriodId`.
