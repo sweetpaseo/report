@@ -135,6 +135,7 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
   const gaValues = useMemo(() => (data?.trends?.ga || []).map((row: any) => Number(row.activeUsers || 0)), [data]);
   const engagementValues = useMemo(() => (data?.trends?.ga || []).map((row: any) => Number(row.engagementSeconds || 0)), [data]);
   const hasGsc = searchType === "aigen" ? (data?.metrics?.["gsc-aigen.impressions"] || 0) > 0 : (data?.metrics?.["gsc.impressions"] || 0) > 0;
+  const hasAnyGsc = (data?.metrics?.["gsc.impressions"] || 0) > 0 || (data?.metrics?.["gsc-aigen.impressions"] || 0) > 0;
   const hasGa = (data?.metrics?.["ga.sessions"] || 0) > 0;
 
   async function logout() { await fetch("/api/auth/logout", { method: "POST" }); location.href = "/login"; }
@@ -223,10 +224,10 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
             {!isClientMode && isAdmin && <button className="button subtle" onClick={() => setWebsiteModal(true)}><Plus /> Tambah website</button>}
             {!isClientMode && isAdmin && <button className="button subtle" onClick={() => setClientModal(true)}><Users /> Kelola Klien</button>}
             {data?.periods?.length > 0 && <label className="period-control">Periode<select value={periodId} onChange={(e) => { setPeriodId(e.target.value); loadDashboard(websiteId, e.target.value, websites, searchType); }}>{data.periods.map((period: any) => <option key={period.id} value={period.id}>{period.period_label}</option>)}</select></label>}
-            {hasGsc && <label className="period-control">Search<select value={searchType} onChange={(e) => setSearchType(e.target.value as "web" | "aigen")}><option value="web">Web (Organik)</option><option value="aigen">AI Overviews (SGE)</option></select></label>}
+            {hasAnyGsc && <label className="period-control">Search<select value={searchType} onChange={(e) => setSearchType(e.target.value as "web" | "aigen")}><option value="web">Web (Organik)</option><option value="aigen">AI Overviews (SGE)</option></select></label>}
           </section>}
 
-          {(isPublic && !isClientMode) && data?.periods?.length > 0 && <section className="public-period"><span>{data.website.name} · {data.website.domain}</span><select value={periodId} onChange={(e) => setPeriodId(e.target.value)}>{data.periods.map((period: any) => <option key={period.id} value={period.id}>{period.period_label}</option>)}</select>{hasGsc && <select value={searchType} onChange={(e) => setSearchType(e.target.value as "web" | "aigen")} style={{marginLeft: 12}}><option value="web">Web (Organik)</option><option value="aigen">AI Overviews</option></select>}</section>}
+          {(isPublic && !isClientMode) && data?.periods?.length > 0 && <section className="public-period"><span>{data.website.name} · {data.website.domain}</span><select value={periodId} onChange={(e) => setPeriodId(e.target.value)}>{data.periods.map((period: any) => <option key={period.id} value={period.id}>{period.period_label}</option>)}</select>{hasAnyGsc && <select value={searchType} onChange={(e) => setSearchType(e.target.value as "web" | "aigen")} style={{marginLeft: 12}}><option value="web">Web (Organik)</option><option value="aigen">AI Overviews</option></select>}</section>}
         </div>
 
         {message && <div className="toast" onClick={() => setMessage("")}>{message}<X size={16}/></div>}
