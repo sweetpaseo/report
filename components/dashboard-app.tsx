@@ -72,6 +72,7 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
   const [websites, setWebsites] = useState<any[]>([]);
   const [websiteId, setWebsiteId] = useState("");
   const [periodId, setPeriodId] = useState("");
+  const [searchType, setSearchType] = useState<"web" | "aigen">("web");
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -95,18 +96,18 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
     if (!firstId) setLoading(false);
   }
 
-  async function loadDashboard(targetWebsite = websiteId, targetPeriod = periodId, currentWebsites = websites) {
+  async function loadDashboard(targetWebsite = websiteId, targetPeriod = periodId, currentWebsites = websites, targetSearchType = searchType) {
     if ((!isPublic || isClientMode) && !targetWebsite) { setLoading(false); setData(null); return; }
     setLoading(true);
     let endpoint = "";
     if (isClientMode) {
       const wToken = currentWebsites.find((w: any) => w.id === targetWebsite)?.public_token;
       if (!wToken) { setLoading(false); return; }
-      endpoint = `/api/public/report/${wToken}${targetPeriod ? `?periodId=${targetPeriod}` : ""}`;
+      endpoint = `/api/public/report-data/${wToken}${targetPeriod ? `?periodId=${targetPeriod}&` : "?"}searchType=${targetSearchType}`;
     } else if (isPublic) {
-      endpoint = `/api/public/report/${publicToken}${targetPeriod ? `?periodId=${targetPeriod}` : ""}`;
+      endpoint = `/api/public/report-data/${publicToken}${targetPeriod ? `?periodId=${targetPeriod}&` : "?"}searchType=${targetSearchType}`;
     } else {
-      endpoint = `/api/dashboard?websiteId=${targetWebsite}${targetPeriod ? `&periodId=${targetPeriod}` : ""}`;
+      endpoint = `/api/dashboard?websiteId=${targetWebsite}${targetPeriod ? `&periodId=${targetPeriod}` : ""}&searchType=${targetSearchType}`;
     }
     const response = await fetch(endpoint, { cache: "no-store" });
     const result = await response.json();
@@ -125,8 +126,9 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
       }
     }).catch(() => setRole("client"));
   }, []);
-  useEffect(() => { if ((!isPublic || isClientMode) && websiteId) { setPeriodId(""); loadDashboard(websiteId, "", websites); } }, [websiteId, websites]);
-  useEffect(() => { if (isPublic && !isClientMode && periodId) loadDashboard("", periodId, websites); }, [periodId]);
+  useEffect(() => { if ((!isPublic || isClientMode) && websiteId) { setPeriodId(""); loadDashboard(websiteId, "", websites, searchType); } }, [websiteId, websites]);
+  useEffect(() => { if (isPublic && !isClientMode && periodId) loadDashboard("", periodId, websites, searchType); }, [periodId]);
+  useEffect(() => { if (websiteId || (isPublic && !isClientMode)) loadDashboard(websiteId, periodId, websites, searchType); }, [searchType]);
 
   const gscValues = useMemo(() => (data?.trends?.gsc || []).map((row: any) => Number(row.impressions || 0)), [data]);
   const clickValues = useMemo(() => (data?.trends?.gsc || []).map((row: any) => Number(row.clicks || 0)), [data]);
@@ -163,8 +165,8 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
   async function openFull(kind: "queries" | "gscPages" | "pages" | "cities" | "deviceModels", title: string): Promise<void> {
     if (!data?.website?.public_token) return;
     const endpoint = isPublic
-      ? `/api/public/report-data/${data.website.public_token}${periodId ? `?periodId=${periodId}` : ""}`
-      : `/api/report-data?websiteId=${websiteId}${periodId ? `&periodId=${periodId}` : ""}`;
+      ? `/api/public/report-data/${data.website.public_token}${periodId ? `?periodId=${periodId}&` : "?"}searchType=${searchType}`
+      : `/api/report-data?websiteId=${websiteId}${periodId ? `&periodId=${periodId}` : ""}&searchType=${searchType}`;
     const response = await fetch(endpoint, { cache: "no-store" });
     if (!response.ok) return;
     const full = await response.json();
@@ -219,10 +221,11 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
             <label>Website<select value={websiteId} onChange={(e) => setWebsiteId(e.target.value)}><option value="">Pilih website</option>{websites.map((website: any) => <option key={website.id} value={website.id}>{website.name} — {website.domain}</option>)}</select></label>
             {!isClientMode && isAdmin && <button className="button subtle" onClick={() => setWebsiteModal(true)}><Plus /> Tambah website</button>}
             {!isClientMode && isAdmin && <button className="button subtle" onClick={() => setClientModal(true)}><Users /> Kelola Klien</button>}
-            {data?.periods?.length > 0 && <label className="period-control">Periode<select value={periodId} onChange={(e) => { setPeriodId(e.target.value); loadDashboard(websiteId, e.target.value, websites); }}>{data.periods.map((period: any) => <option key={period.id} value={period.id}>{period.period_label}</option>)}</select></label>}
+            {data?.periods?.length > 0 && <label className="period-control">Periode<select value={periodId} onChange={(e) => { setPeriodId(e.target.value); loadDashboard(websiteId, e.target.value, websites, searchType); }}>{data.periods.map((period: any) => <option key={period.id} value={period.id}>{period.period_label}</option>)}</select></label>}
+            {hasGsc && <label className="period-control">Search<select value={searchType} onChange={(e) => setSearchType(e.target.value as "web" | "aigen")}><option value="web">Web (Organik)</option><option value="aigen">AI Overviews (SGE)</option></select></label>}
           </section>}
 
-        {(isPublic && !isClientMode) && data?.periods?.length > 0 && <section className="public-period"><span>{data.website.name} · {data.website.domain}</span><select value={periodId} onChange={(e) => setPeriodId(e.target.value)}>{data.periods.map((period: any) => <option key={period.id} value={period.id}>{period.period_label}</option>)}</select></section>}
+        {(isPublic && !isClientMode) && data?.periods?.length > 0 && <section className="public-period"><span>{data.website.name} · {data.website.domain}</span><select value={periodId} onChange={(e) => setPeriodId(e.target.value)}>{data.periods.map((period: any) => <option key={period.id} value={period.id}>{period.period_label}</option>)}</select>{hasGsc && <select value={searchType} onChange={(e) => setSearchType(e.target.value as "web" | "aigen")} style={{marginLeft: 12}}><option value="web">Web (Organik)</option><option value="aigen">AI Overviews</option></select>}</section>}
 
         {message && <div className="toast" onClick={() => setMessage("")}>{message}<X size={16}/></div>}
 
@@ -242,10 +245,10 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
           {data.monthlySeries?.length > 1 && <MonthlyTrend data={data} />}
 
           <section className="pillar-grid">
-            {hasGsc && <article className="pillar-card" id="search"><header><span className="pillar-number blue"><Search /></span><div><b>1. Ditemukan di Google</b><p>Visibilitas website di pencarian</p></div></header>
-              <Metric label="Impressions" value={fmt.format(data.metrics["gsc.impressions"] || 0)} comparison={data.comparisons["gsc.impressions"]} values={gscValues}/>
-              <Metric label="Clicks" value={fmt.format(data.metrics["gsc.clicks"] || 0)} comparison={data.comparisons["gsc.clicks"]} values={clickValues}/>
-              <div className="small-metrics"><div><span>CTR</span><b>{percent(data.metrics["gsc.ctr"], true)}</b></div><div><span>Posisi rata-rata</span><b>{dec.format(data.metrics["gsc.average_position"] || 0)}</b></div></div>
+            {hasGsc && <article className="pillar-card" id="search"><header><span className="pillar-number blue"><Search /></span><div><b>1. Ditemukan di Google {searchType === "aigen" ? "(AI Overviews)" : ""}</b><p>Visibilitas website di pencarian {searchType === "aigen" ? "AI Generative" : "Organik"}</p></div></header>
+              <Metric label="Impressions" value={fmt.format(data.metrics[searchType === "aigen" ? "gsc-aigen.impressions" : "gsc.impressions"] || 0)} comparison={data.comparisons[searchType === "aigen" ? "gsc-aigen.impressions" : "gsc.impressions"]} values={gscValues}/>
+              <Metric label="Clicks" value={searchType === "aigen" ? "0" : fmt.format(data.metrics["gsc.clicks"] || 0)} comparison={searchType === "aigen" ? undefined : data.comparisons["gsc.clicks"]} values={searchType === "aigen" ? [0,0,0] : clickValues}/>
+              <div className="small-metrics"><div><span>CTR</span><b>{searchType === "aigen" ? "0%" : percent(data.metrics["gsc.ctr"], true)}</b></div><div><span>Posisi rata-rata</span><b>{searchType === "aigen" ? "0" : dec.format(data.metrics["gsc.average_position"] || 0)}</b></div></div>
             </article>}
 
             {hasGa && <article className="pillar-card" id="traffic"><header><span className="pillar-number green"><Users /></span><div><b>2. Mendapatkan Pengunjung</b><p>Jumlah dan sumber traffic</p></div></header>
@@ -341,10 +344,10 @@ function ClientModal({ open, onClose, onCreated, clients }: { open:boolean; onCl
 }
 
 function UploadModal({ open, websiteId, onClose, onDone }: { open:boolean; websiteId:string; onClose:()=>void; onDone:(r:any)=>void }) {
-  const [files,setFiles]=useState<File[]>([]); const [error,setError]=useState(""); const [loading,setLoading]=useState(false); const input=useRef<HTMLInputElement>(null);
+  const [files,setFiles]=useState<File[]>([]); const [error,setError]=useState(""); const [loading,setLoading]=useState(false); const [isAiGen,setIsAiGen]=useState(false); const input=useRef<HTMLInputElement>(null);
   function addFiles(list:FileList|null){if(list&&list.length)setFiles((prev)=>[...prev,...Array.from(list)]);}
-  async function submit(e:FormEvent){e.preventDefault();if(!files.length||!websiteId)return setError('Pilih website dan minimal satu file terlebih dahulu.');setLoading(true);setError('');const form=new FormData();form.set('websiteId',websiteId);for(const f of files)form.append('file',f);const response=await fetch('/api/upload',{method:'POST',body:form});const result=await response.json();setLoading(false);if(!response.ok)return setError(result.error||'Upload gagal.');setFiles([]);onDone(result);}
-  return <Modal open={open} title="Upload report mentah" onClose={onClose}><form className="form-stack" onSubmit={submit}><button type="button" className={`dropzone ${files.length?'selected':''}`} onClick={()=>input.current?.click()} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();addFiles(e.dataTransfer.files);}}><input ref={input} hidden type="file" accept=".xlsx,.csv" multiple onChange={e=>addFiles(e.target.files)}/><Upload/>{files.length?<><b>{files.length} file dipilih</b><span>{files.map(f=>f.name).join(', ').slice(0,90)}</span></>:<><b>Tarik file ke sini</b><span>atau klik untuk memilih XLSX / CSV (bisa lebih dari satu)</span></>}</button><div className="upload-note"><Check/>Sumber & periode terdeteksi otomatis. Untuk ekspor GSC berbentuk beberapa CSV, seret semua file sekaligus.</div>{error&&<p className="form-error">{error}</p>}<button className="button primary wide" disabled={loading||!files.length}>{loading?'Memvalidasi dan memproses…':`Proses ${files.length} report`}</button>{files.length>0&&<ul className="file-list" style={{ maxHeight: '35vh', overflowY: 'auto', marginTop: '16px' }}>{files.map((f,i)=><li key={`${f.name}-${i}`}><span className="file-name">{f.name}</span><span className="file-size">{(f.size/1024).toFixed(1)} KB</span><button type="button" className="file-remove" onClick={()=>setFiles(files.filter((_,j)=>j!==i))} aria-label={`Hapus ${f.name}`}><X size={14}/></button></li>)}</ul>}</form></Modal>;
+  async function submit(e:FormEvent){e.preventDefault();if(!files.length||!websiteId)return setError('Pilih website dan minimal satu file terlebih dahulu.');setLoading(true);setError('');const form=new FormData();form.set('websiteId',websiteId);form.set('isAiGen',String(isAiGen));for(const f of files)form.append('file',f);const response=await fetch('/api/upload',{method:'POST',body:form});const result=await response.json();setLoading(false);if(!response.ok)return setError(result.error||'Upload gagal.');setFiles([]);setIsAiGen(false);onDone(result);}
+  return <Modal open={open} title="Upload report mentah" onClose={onClose}><form className="form-stack" onSubmit={submit}><button type="button" className={`dropzone ${files.length?'selected':''}`} onClick={()=>input.current?.click()} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();addFiles(e.dataTransfer.files);}}><input ref={input} hidden type="file" accept=".xlsx,.csv" multiple onChange={e=>addFiles(e.target.files)}/><Upload/>{files.length?<><b>{files.length} file dipilih</b><span>{files.map(f=>f.name).join(', ').slice(0,90)}</span></>:<><b>Tarik file ke sini</b><span>atau klik untuk memilih XLSX / CSV (bisa lebih dari satu)</span></>}</button><div className="upload-note"><Check/>Sumber & periode terdeteksi otomatis. Untuk ekspor GSC berbentuk beberapa CSV, seret semua file sekaligus.</div><label style={{display:"flex",alignItems:"center",gap:8,fontSize:"0.9rem"}}><input type="checkbox" checked={isAiGen} onChange={e=>setIsAiGen(e.target.checked)}/> Khusus data AI Generative (SGE)</label>{error&&<p className="form-error">{error}</p>}<button className="button primary wide" disabled={loading||!files.length}>{loading?'Memvalidasi dan memproses…':`Proses ${files.length} report`}</button>{files.length>0&&<ul className="file-list" style={{ maxHeight: '35vh', overflowY: 'auto', marginTop: '16px' }}>{files.map((f,i)=><li key={`${f.name}-${i}`}><span className="file-name">{f.name}</span><span className="file-size">{(f.size/1024).toFixed(1)} KB</span><button type="button" className="file-remove" onClick={()=>setFiles(files.filter((_,j)=>j!==i))} aria-label={`Hapus ${f.name}`}><X size={14}/></button></li>)}</ul>}</form></Modal>;
 }
 
 function OpportunityCard({number,title,children}:{number:string;title:string;children:React.ReactNode}){return <article className="opportunity-card"><header><span>{number}</span><b>{title}</b></header>{children}</article>}

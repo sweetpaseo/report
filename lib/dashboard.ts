@@ -54,11 +54,12 @@ function dimensionRows(
   selectedId: string,
   table: string,
   column: string,
+  searchType: "web" | "aigen" = "web"
 ): DimensionRow[] {
   const periodId = getGscPeriod(db, websiteId, selectedId, table);
   return db.prepare(
-    `SELECT ${column} AS name, clicks, impressions, ctr, average_position AS averagePosition FROM ${table} WHERE website_id = ? AND report_period_id = ? ORDER BY impressions DESC`,
-  ).all(websiteId, periodId) as DimensionRow[];
+    `SELECT ${column} AS name, clicks, impressions, ctr, average_position AS averagePosition FROM ${table} WHERE website_id = ? AND report_period_id = ? AND search_type = ? ORDER BY impressions DESC`,
+  ).all(websiteId, periodId, searchType) as DimensionRow[];
 }
 
 type PeriodContext = { periods: PeriodRow[]; selected: PeriodRow; previous?: PeriodRow; isPartialMonth: boolean };
@@ -80,7 +81,7 @@ function resolvePeriodContext(db: DatabaseSync, websiteId: string, requestedPeri
   return { periods, selected, previous, isPartialMonth };
 }
 
-export function getDashboard(db: DatabaseSync, websiteId: string, requestedPeriodId?: string) {
+export function getDashboard(db: DatabaseSync, websiteId: string, requestedPeriodId?: string, searchType: "web" | "aigen" = "web") {
   const website = db.prepare("SELECT * FROM websites WHERE id = ?").get(websiteId) as Record<string, string> | undefined;
   if (!website) return null;
 
@@ -109,8 +110,9 @@ export function getDashboard(db: DatabaseSync, websiteId: string, requestedPerio
     ? metricMap(db.prepare("SELECT source_type, metric_key, metric_value FROM monthly_metrics WHERE website_id = ? AND report_period_id = ?").all(websiteId, previous.id) as MetricRow[])
     : {};
 
+  const src = searchType === "aigen" ? "gsc-aigen" : "gsc";
   const keys = [
-    "gsc.impressions", "gsc.clicks", "gsc.ctr", "gsc.average_position",
+    `${src}.impressions`, `${src}.clicks`, `${src}.ctr`, `${src}.average_position`,
     "ga.sessions", "ga.active_users", "ga.new_users", "ga.page_views", "ga.pages_per_session",
     "ga.average_engagement_seconds", "ga.click_to_chat", "ga.chat_conversion_rate", "ga.revenue",
   ];
@@ -118,8 +120,8 @@ export function getDashboard(db: DatabaseSync, websiteId: string, requestedPerio
 
   const gscTrend = db.prepare(`
     SELECT metric_date AS date, clicks, impressions, ctr, average_position AS averagePosition
-    FROM gsc_daily_metrics WHERE website_id = ? AND report_period_id = ? ORDER BY metric_date
-  `).all(websiteId, selected.id);
+    FROM gsc_daily_metrics WHERE website_id = ? AND report_period_id = ? AND search_type = ? ORDER BY metric_date
+  `).all(websiteId, selected.id, searchType);
   const gaTrend = db.prepare(`
     SELECT metric_date AS date, active_users AS activeUsers, new_users AS newUsers, engagement_seconds AS engagementSeconds
     FROM ga_daily_metrics WHERE website_id = ? AND report_period_id = ? ORDER BY metric_date
@@ -132,22 +134,22 @@ export function getDashboard(db: DatabaseSync, websiteId: string, requestedPerio
   const opportunities = db.prepare(`
     SELECT query, clicks, impressions, ctr, average_position AS averagePosition
     FROM gsc_queries
-    WHERE website_id = ? AND report_period_id = ?
+    WHERE website_id = ? AND report_period_id = ? AND search_type = ?
       AND average_position BETWEEN 4 AND 10 AND impressions >= 10 AND ctr <= 0.05
     ORDER BY impressions DESC LIMIT 6
-  `).all(websiteId, queryPeriodId);
+  `).all(websiteId, queryPeriodId, searchType);
   const topQueries = db.prepare(`
     SELECT query, clicks, impressions, ctr, average_position AS averagePosition
-    FROM gsc_queries WHERE website_id = ? AND report_period_id = ?
+    FROM gsc_queries WHERE website_id = ? AND report_period_id = ? AND search_type = ?
     ORDER BY impressions DESC LIMIT 10
-  `).all(websiteId, queryPeriodId) as QueryRow[];
-  const devices = dimensionRows(db, websiteId, selected.id, "gsc_devices", "device").map((row) => ({ device: row.name, clicks: row.clicks, impressions: row.impressions, ctr: row.ctr, averagePosition: row.averagePosition }));
-  const topGscPages = dimensionRows(db, websiteId, selected.id, "gsc_pages", "page")
+  `).all(websiteId, queryPeriodId, searchType) as QueryRow[];
+  const devices = dimensionRows(db, websiteId, selected.id, "gsc_devices", "device", searchType).map((row) => ({ device: row.name, clicks: row.clicks, impressions: row.impressions, ctr: row.ctr, averagePosition: row.averagePosition }));
+  const topGscPages = dimensionRows(db, websiteId, selected.id, "gsc_pages", "page", searchType)
     .map((row) => ({ page: row.name, clicks: row.clicks, impressions: row.impressions, ctr: row.ctr }))
     .sort((a, b) => b.clicks - a.clicks)
     .slice(0, 10);
-  const countries = dimensionRows(db, websiteId, selected.id, "gsc_countries", "country");
-  const appearances = dimensionRows(db, websiteId, selected.id, "gsc_appearance", "appearance");
+  const countries = dimensionRows(db, websiteId, selected.id, "gsc_countries", "country", searchType);
+  const appearances = dimensionRows(db, websiteId, selected.id, "gsc_appearance", "appearance", searchType);
   const topPages = db.prepare(`
     SELECT page_title AS title, views FROM ga_pages
     WHERE website_id = ? AND report_period_id = ? ORDER BY views DESC LIMIT 10
@@ -165,10 +167,10 @@ export function getDashboard(db: DatabaseSync, websiteId: string, requestedPerio
     WHERE website_id = ? AND report_period_id = ? ORDER BY active_users DESC LIMIT 12
   `).all(websiteId, selected.id) as DeviceModelRow[];
 
-  const impressionsChange = comparisons["gsc.impressions"].percent;
+  const impressionsChange = comparisons[`${src}.impressions`].percent;
   const sessionsChange = comparisons["ga.sessions"].percent;
   const chatChange = comparisons["ga.click_to_chat"].percent;
-  const hasGsc = (currentMetrics["gsc.impressions"] || 0) > 0;
+  const hasGsc = (currentMetrics[`${src}.impressions`] || 0) > 0;
   const hasGa = (currentMetrics["ga.sessions"] || 0) > 0;
   const positiveSignals = [impressionsChange, sessionsChange, chatChange].filter((value) => value !== null && value > 0).length;
   const status = !hasGsc && !hasGa ? "DATA BELUM LENGKAP" : positiveSignals >= 2 ? "BERTUMBUH" : positiveSignals === 0 ? "PERLU PERHATIAN" : "STABIL";
@@ -179,13 +181,17 @@ export function getDashboard(db: DatabaseSync, websiteId: string, requestedPerio
     anomalies.push({ severity: "critical", text: `${label} anjlok ${Math.abs(drop).toFixed(1)}% dibanding bulan lalu — ${reason}.` });
   };
   pushMonthDrop("Tayangan Google", impressionsChange, "visibilitas organik melemah");
-  pushMonthDrop("Klik organik", comparisons["gsc.clicks"].percent, "traffic pencarian menurun");
+  pushMonthDrop("Klik organik", comparisons[`${src}.clicks`]?.percent ?? null, "traffic pencarian menurun");
   pushMonthDrop("Sesi website", sessionsChange, "jumlah pengunjung menurun");
-  if (comparisons["gsc.ctr"].percent !== null && comparisons["gsc.ctr"].percent <= -20) {
-    anomalies.push({ severity: "warning", text: `CTR Google turun ${Math.abs(comparisons["gsc.ctr"].percent).toFixed(1)}% — judul dan meta description kurang mengundang klik.` });
+  
+  const ctrComp = comparisons[`${src}.ctr`];
+  if (ctrComp && ctrComp.percent !== null && ctrComp.percent <= -20) {
+    anomalies.push({ severity: "warning", text: `CTR Google turun ${Math.abs(ctrComp.percent).toFixed(1)}% — judul dan meta description kurang mengundang klik.` });
   }
-  if (comparisons["gsc.average_position"].percent !== null && comparisons["gsc.average_position"].percent >= 10) {
-    anomalies.push({ severity: "warning", text: `Posisi rata-rata memburuk ${comparisons["gsc.average_position"].percent.toFixed(1)}% — halaman kehilangan peringkat.` });
+  
+  const posComp = comparisons[`${src}.average_position`];
+  if (posComp && posComp.percent !== null && posComp.percent >= 10) {
+    anomalies.push({ severity: "warning", text: `Posisi rata-rata memburuk ${posComp.percent.toFixed(1)}% — halaman kehilangan peringkat.` });
   }
 
   const dailyRows = (gscTrend as Array<{ date: string; impressions: number }>)
@@ -208,14 +214,14 @@ export function getDashboard(db: DatabaseSync, websiteId: string, requestedPerio
   const homepage = topGscPages.find((row) => {
     try { return new URL(row.page).pathname === "/"; } catch { return false; }
   });
-  const homepageShare = currentMetrics["gsc.clicks"] ? ((homepage?.clicks || 0) / currentMetrics["gsc.clicks"]) * 100 : 0;
+  const homepageShare = currentMetrics[`${src}.clicks`] ? ((homepage?.clicks || 0) / currentMetrics[`${src}.clicks`]) * 100 : 0;
   const organicSessions = (channels as Array<{ channel: string; sessions: number }>).find((row) => /organic/i.test(row.channel))?.sessions || 0;
   const paidSessions = (channels as Array<{ channel: string; sessions: number }>).find((row) => /paid/i.test(row.channel))?.sessions || 0;
   const sessions = currentMetrics["ga.sessions"] || 0;
 
   const insights = [
     impressionsChange !== null && impressionsChange > 10 ? `Tayangan Google naik ${impressionsChange.toFixed(1)}%. Website semakin sering ditemukan.` : null,
-    comparisons["gsc.ctr"].absolute < 0 ? `CTR Google turun ${Math.abs(comparisons["gsc.ctr"].absolute * 100).toFixed(2)} poin. Judul dan deskripsi perlu diperkuat.` : null,
+    ctrComp && ctrComp.absolute !== null && ctrComp.absolute < 0 ? `CTR Google turun ${Math.abs(ctrComp.absolute * 100).toFixed(2)} poin. Judul dan deskripsi perlu diperkuat.` : null,
     sessions && organicSessions ? `Organic Search menyumbang ${((organicSessions / sessions) * 100).toFixed(1)}% dari sesi.` : null,
     homepageShare > 50 ? `${homepageShare.toFixed(1)}% klik organik masih menuju homepage. Distribusi ke halaman layanan perlu ditingkatkan.` : null,
     sessions && paidSessions / sessions > 0.5 ? `Traffic berbayar masih dominan sebesar ${((paidSessions / sessions) * 100).toFixed(1)}% sesi.` : null,
@@ -249,14 +255,14 @@ export function getDashboard(db: DatabaseSync, websiteId: string, requestedPerio
     }
   }
   if (topGscPages.length) {
-    const totalClicks = currentMetrics["gsc.clicks"] || 0;
+    const totalClicks = currentMetrics[`${src}.clicks`] || 0;
     const top = topGscPages[0];
     if (totalClicks > 0 && top.clicks / totalClicks > 0.4) {
       analystNotes.push(`Traffic organik terkonsentrasi pada satu halaman ("${shortLabel(top.page)}" menyumbang ${(top.clicks / totalClicks * 100).toFixed(0)}% dari seluruh klik). Ini menjadi titik rentan: bila halaman ini turun peringkat, trafik ikut anjlok. Sebarkan otoritas dengan internal link dan konten pendukung.`);
     }
   }
-  const avgPos = currentMetrics["gsc.average_position"] || 0;
-  const ctr = currentMetrics["gsc.ctr"] || 0;
+  const avgPos = currentMetrics[`${src}.average_position`] || 0;
+  const ctr = currentMetrics[`${src}.ctr`] || 0;
   if (avgPos > 5 && ctr < 0.05) {
     analystNotes.push(`Posisi rata-rata berada di ${avgPos.toFixed(1)} namun CTR hanya ${(ctr * 100).toFixed(2)}%. Artinya halaman sudah muncul di halaman pertama, namun judul dan meta description belum cukup mengundang klik. Optimasi snippet berpotensi menaikkan trafik tanpa harus naik peringkat.`);
   }
@@ -333,6 +339,7 @@ export function getFullReportData(
   db: DatabaseSync,
   websiteId: string,
   requestedPeriodId?: string,
+  searchType: "web" | "aigen" = "web"
 ): FullReportData | null {
   const website = db.prepare("SELECT * FROM websites WHERE id = ?").get(websiteId) as Record<string, string> | undefined;
   if (!website) return null;
@@ -342,19 +349,19 @@ export function getFullReportData(
   const queryPeriodId = getGscPeriod(db, websiteId, selected.id, "gsc_queries");
   const queries = db.prepare(`
     SELECT query, clicks, impressions, ctr, average_position AS averagePosition
-    FROM gsc_queries WHERE website_id = ? AND report_period_id = ? ORDER BY impressions DESC LIMIT ?
-  `).all(websiteId, queryPeriodId, FULL_DATA_LIMIT) as FullQueryRow[];
+    FROM gsc_queries WHERE website_id = ? AND report_period_id = ? AND search_type = ? ORDER BY impressions DESC LIMIT ?
+  `).all(websiteId, queryPeriodId, searchType, FULL_DATA_LIMIT) as FullQueryRow[];
   const pagePeriodId = getGscPeriod(db, websiteId, selected.id, "gsc_pages");
   const gscPages = db.prepare(`
     SELECT page, clicks, impressions, ctr, average_position AS averagePosition
-    FROM gsc_pages WHERE website_id = ? AND report_period_id = ? ORDER BY impressions DESC LIMIT ?
-  `).all(websiteId, pagePeriodId, FULL_DATA_LIMIT) as FullGscPageRow[];
+    FROM gsc_pages WHERE website_id = ? AND report_period_id = ? AND search_type = ? ORDER BY impressions DESC LIMIT ?
+  `).all(websiteId, pagePeriodId, searchType, FULL_DATA_LIMIT) as FullGscPageRow[];
   const pages = db.prepare(`
     SELECT page_title AS title, views FROM ga_pages WHERE website_id = ? AND report_period_id = ? ORDER BY views DESC LIMIT ?
   `).all(websiteId, selected.id, FULL_DATA_LIMIT) as FullPageRow[];
-  const devices = dimensionRows(db, websiteId, selected.id, "gsc_devices", "device");
-  const countries = dimensionRows(db, websiteId, selected.id, "gsc_countries", "country");
-  const appearances = dimensionRows(db, websiteId, selected.id, "gsc_appearance", "appearance");
+  const devices = dimensionRows(db, websiteId, selected.id, "gsc_devices", "device", searchType);
+  const countries = dimensionRows(db, websiteId, selected.id, "gsc_countries", "country", searchType);
+  const appearances = dimensionRows(db, websiteId, selected.id, "gsc_appearance", "appearance", searchType);
   const events = db.prepare(`
     SELECT event_name AS name, event_count AS count, key_event_count AS keyCount
     FROM ga_events WHERE website_id = ? AND report_period_id = ? ORDER BY event_count DESC LIMIT ?

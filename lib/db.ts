@@ -89,12 +89,13 @@ function initialize(db: DatabaseSync) {
     CREATE TABLE IF NOT EXISTS gsc_daily_metrics (
       website_id TEXT NOT NULL,
       report_period_id TEXT NOT NULL,
+      search_type TEXT NOT NULL DEFAULT 'web',
       metric_date TEXT NOT NULL,
       clicks REAL NOT NULL DEFAULT 0,
       impressions REAL NOT NULL DEFAULT 0,
       ctr REAL NOT NULL DEFAULT 0,
       average_position REAL NOT NULL DEFAULT 0,
-      PRIMARY KEY(website_id, report_period_id, metric_date),
+      PRIMARY KEY(website_id, report_period_id, search_type, metric_date),
       FOREIGN KEY(website_id) REFERENCES websites(id) ON DELETE CASCADE,
       FOREIGN KEY(report_period_id) REFERENCES report_periods(id) ON DELETE CASCADE
     );
@@ -103,6 +104,7 @@ function initialize(db: DatabaseSync) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       website_id TEXT NOT NULL,
       report_period_id TEXT NOT NULL,
+      search_type TEXT NOT NULL DEFAULT 'web',
       query TEXT NOT NULL,
       clicks REAL NOT NULL DEFAULT 0,
       impressions REAL NOT NULL DEFAULT 0,
@@ -117,6 +119,7 @@ function initialize(db: DatabaseSync) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       website_id TEXT NOT NULL,
       report_period_id TEXT NOT NULL,
+      search_type TEXT NOT NULL DEFAULT 'web',
       page TEXT NOT NULL,
       clicks REAL NOT NULL DEFAULT 0,
       impressions REAL NOT NULL DEFAULT 0,
@@ -130,6 +133,7 @@ function initialize(db: DatabaseSync) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       website_id TEXT NOT NULL,
       report_period_id TEXT NOT NULL,
+      search_type TEXT NOT NULL DEFAULT 'web',
       device TEXT NOT NULL,
       clicks REAL NOT NULL DEFAULT 0,
       impressions REAL NOT NULL DEFAULT 0,
@@ -188,6 +192,7 @@ function initialize(db: DatabaseSync) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       website_id TEXT NOT NULL,
       report_period_id TEXT NOT NULL,
+      search_type TEXT NOT NULL DEFAULT 'web',
       country TEXT NOT NULL,
       clicks REAL NOT NULL DEFAULT 0,
       impressions REAL NOT NULL DEFAULT 0,
@@ -201,6 +206,7 @@ function initialize(db: DatabaseSync) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       website_id TEXT NOT NULL,
       report_period_id TEXT NOT NULL,
+      search_type TEXT NOT NULL DEFAULT 'web',
       appearance TEXT NOT NULL,
       clicks REAL NOT NULL DEFAULT 0,
       impressions REAL NOT NULL DEFAULT 0,
@@ -258,6 +264,17 @@ function initialize(db: DatabaseSync) {
   } catch (e) {
     // Ignore if column already exists
   }
+  
+  // search_type for GSC tables (migration for existing DBs, ignoring errors)
+  const gscTables = ["gsc_queries", "gsc_pages", "gsc_devices", "gsc_countries", "gsc_appearance"];
+  for (const table of gscTables) {
+    try {
+      db.exec(`ALTER TABLE ${table} ADD COLUMN search_type TEXT NOT NULL DEFAULT 'web';`);
+    } catch (e) {}
+  }
+  // Note: gsc_daily_metrics search_type migration requires recreating the table.
+  // We assume the admin runs the migration script (scratch/migrate-db.js) manually for existing DBs,
+  // since changing a primary key via code on-the-fly in SQLite is risky without proper transaction handling.
 }
 
 export function getDb() {

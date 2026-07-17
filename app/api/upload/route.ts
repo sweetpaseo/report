@@ -41,6 +41,7 @@ export async function POST(request: Request) {
   }
   const form = await request.formData();
   const websiteId = String(form.get("websiteId") || "");
+  const isAiGen = form.get("isAiGen") === "true";
   const files = (form.getAll("file") as unknown[]).filter((item): item is File => item instanceof File);
   if (!websiteId) return NextResponse.json({ error: "Website wajib dipilih." }, { status: 400 });
   if (files.length === 0) return NextResponse.json({ error: "Pilih minimal satu file." }, { status: 400 });
@@ -103,7 +104,8 @@ export async function POST(request: Request) {
 
     try {
       const bundle = parseGscBundle(textFiles);
-      const imported = importGscBundle(db, websiteId, uploadId, bundle);
+      const searchType = isAiGen ? "aigen" : "web";
+      const imported = importGscBundle(db, websiteId, uploadId, bundle, searchType);
       results.push({
         ok: true,
         filename: `GSC bundle (${csvFiles.length} file)`,

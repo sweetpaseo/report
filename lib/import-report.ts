@@ -118,7 +118,7 @@ export function importReport(db: DatabaseSync, websiteId: string, uploadId: stri
   return periodId;
 }
 
-export function importGscBundle(db: DatabaseSync, websiteId: string, uploadId: string, bundle: GscBundle) {
+export function importGscBundle(db: DatabaseSync, websiteId: string, uploadId: string, bundle: GscBundle, searchType: "web" | "aigen" = "web") {
   const now = new Date().toISOString();
 
   const monthMap = new Map<string, DailyGsc[]>();
@@ -158,16 +158,16 @@ export function importGscBundle(db: DatabaseSync, websiteId: string, uploadId: s
       const periodId = resolvePeriod(start, end, label);
 
       for (const table of ["gsc_daily_metrics", ...dimensionTables]) {
-        db.prepare(`DELETE FROM ${table} WHERE website_id = ? AND report_period_id = ?`).run(websiteId, periodId);
+        db.prepare(`DELETE FROM ${table} WHERE website_id = ? AND report_period_id = ? AND search_type = ?`).run(websiteId, periodId, searchType);
       }
-      db.prepare(`DELETE FROM monthly_metrics WHERE website_id = ? AND report_period_id = ? AND source_type = 'gsc'`).run(websiteId, periodId);
+      db.prepare(`DELETE FROM monthly_metrics WHERE website_id = ? AND report_period_id = ? AND source_type = ?`).run(websiteId, periodId, searchType === "aigen" ? "gsc-aigen" : "gsc");
 
-      const dailyInsert = db.prepare(`INSERT INTO gsc_daily_metrics(website_id, report_period_id, metric_date, clicks, impressions, ctr, average_position) VALUES (?, ?, ?, ?, ?, ?, ?)`);
+      const dailyInsert = db.prepare(`INSERT INTO gsc_daily_metrics(website_id, report_period_id, search_type, metric_date, clicks, impressions, ctr, average_position) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
       let impressions = 0;
       let clicks = 0;
       let weightedPosition = 0;
       for (const row of rows) {
-        dailyInsert.run(websiteId, periodId, row.date, row.clicks, row.impressions, row.ctr, row.averagePosition);
+        dailyInsert.run(websiteId, periodId, searchType, row.date, row.clicks, row.impressions, row.ctr, row.averagePosition);
         impressions += row.impressions;
         clicks += row.clicks;
         weightedPosition += row.averagePosition * row.impressions;
@@ -175,12 +175,13 @@ export function importGscBundle(db: DatabaseSync, websiteId: string, uploadId: s
       const averagePosition = impressions > 0 ? weightedPosition / impressions : 0;
       const ctr = impressions > 0 ? clicks / impressions : 0;
       const metricInsert = db.prepare(`INSERT INTO monthly_metrics(website_id, report_period_id, source_type, metric_key, metric_value) VALUES (?, ?, ?, ?, ?)`);
-      metricInsert.run(websiteId, periodId, "gsc", "impressions", impressions);
-      metricInsert.run(websiteId, periodId, "gsc", "clicks", clicks);
-      metricInsert.run(websiteId, periodId, "gsc", "ctr", ctr);
-      metricInsert.run(websiteId, periodId, "gsc", "average_position", averagePosition);
-      metricInsert.run(websiteId, periodId, "gsc", "query_count", bundle.queries.length);
-      metricInsert.run(websiteId, periodId, "gsc", "page_count", bundle.pages.length);
+      const srcType = searchType === "aigen" ? "gsc-aigen" : "gsc";
+      metricInsert.run(websiteId, periodId, srcType, "impressions", impressions);
+      metricInsert.run(websiteId, periodId, srcType, "clicks", clicks);
+      metricInsert.run(websiteId, periodId, srcType, "ctr", ctr);
+      metricInsert.run(websiteId, periodId, srcType, "average_position", averagePosition);
+      metricInsert.run(websiteId, periodId, srcType, "query_count", bundle.queries.length);
+      metricInsert.run(websiteId, periodId, srcType, "page_count", bundle.pages.length);
 
       if (key === months[months.length - 1]) lastPeriodId = periodId;
     }
@@ -191,11 +192,11 @@ export function importGscBundle(db: DatabaseSync, websiteId: string, uploadId: s
       `${periodLabel(bundle.periodStart)} – ${periodLabel(bundle.periodEnd)}`,
     );
     for (const table of dimensionTables) {
-      db.prepare(`DELETE FROM ${table} WHERE website_id = ? AND report_period_id = ?`).run(websiteId, bundlePeriodId);
+      db.prepare(`DELETE FROM ${table} WHERE website_id = ? AND report_period_id = ? AND search_type = ?`).run(websiteId, bundlePeriodId, searchType);
     }
     const insertDimension = (table: string, column: string, rows: GscDimension[]) => {
-      const stmt = db.prepare(`INSERT INTO ${table}(website_id, report_period_id, ${column}, clicks, impressions, ctr, average_position) VALUES (?, ?, ?, ?, ?, ?, ?)`);
-      rows.forEach((row) => stmt.run(websiteId, bundlePeriodId, row.name, row.clicks, row.impressions, row.ctr, row.averagePosition));
+      const stmt = db.prepare(`INSERT INTO ${table}(website_id, report_period_id, search_type, ${column}, clicks, impressions, ctr, average_position) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+      rows.forEach((row) => stmt.run(websiteId, bundlePeriodId, searchType, row.name, row.clicks, row.impressions, row.ctr, row.averagePosition));
     };
     insertDimension("gsc_queries", "query", bundle.queries);
     insertDimension("gsc_pages", "page", bundle.pages);
@@ -204,10 +205,10 @@ export function importGscBundle(db: DatabaseSync, websiteId: string, uploadId: s
     insertDimension("gsc_appearance", "appearance", bundle.appearances || []);
 
     db.prepare(`UPDATE report_uploads SET report_period_id = ?, source_type = ?, status = ?, warning_message = ?, processed_at = ? WHERE id = ?`)
-      .run(lastPeriodId, "gsc-csv-bundle", bundle.warnings.length ? "COMPLETED_WITH_WARNINGS" : "COMPLETED", bundle.warnings.join("\n") || null, now, uploadId);
+      .run(lastPeriodId, searchType === "aigen" ? "gsc-aigen-csv-bundle" : "gsc-csv-bundle", bundle.warnings.length ? "COMPLETED_WITH_WARNINGS" : "COMPLETED", bundle.warnings.join("\n") || null, now, uploadId);
 
     db.exec("COMMIT");
-    return { periodId: lastPeriodId, bundlePeriodId, warnings: bundle.warnings, source: "gsc-csv-bundle" as const };
+    return { periodId: lastPeriodId, bundlePeriodId, warnings: bundle.warnings, source: searchType === "aigen" ? "gsc-aigen-csv-bundle" : "gsc-csv-bundle" };
   } catch (error) {
     db.exec("ROLLBACK");
     throw error;
