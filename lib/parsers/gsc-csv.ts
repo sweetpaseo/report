@@ -37,19 +37,30 @@ function detectKind(name: string): "bagan" | "queries" | "pages" | "devices" | "
   return "ignore";
 }
 
-function toDimension(row: unknown[]): GscDimension {
+function findMetric(row: Record<string, string>, pattern: RegExp): number {
+  for (const k of Object.keys(row)) {
+    if (pattern.test(k.toLowerCase())) {
+      return numberValue(row[k]);
+    }
+  }
+  return 0;
+}
+
+function toDimension(row: Record<string, string>): GscDimension {
+  const keys = Object.keys(row);
+  const nameKey = keys[0];
   return {
-    name: String(row[0] ?? "").trim(),
-    clicks: numberValue(row[1]),
-    impressions: numberValue(row[2]),
-    ctr: numberValue(row[3]),
-    averagePosition: numberValue(row[4]),
+    name: String(row[nameKey] ?? "").trim(),
+    clicks: findMetric(row, /klik|click/i),
+    impressions: findMetric(row, /tayangan|impression/i),
+    ctr: findMetric(row, /ctr|rkt/i),
+    averagePosition: findMetric(row, /posisi|position/i),
   };
 }
 
-function parseRows(file: BundleFile): string[][] {
+function parseRows(file: BundleFile): Record<string, string>[] {
   const clean = file.content.replace(/^\uFEFF/, "");
-  return parse(clean, { relax_column_count: true, skip_empty_lines: true }) as string[][];
+  return parse(clean, { columns: true, relax_column_count: true, skip_empty_lines: true }) as Record<string, string>[];
 }
 
 export function parseGscBundle(files: BundleFile[]): GscBundle {
@@ -59,21 +70,25 @@ export function parseGscBundle(files: BundleFile[]): GscBundle {
     byKind("bagan") ??
     files.find((file) => {
       const header = (file.content.split(/\r?\n/)[0] || "").toLowerCase();
-      return /tanggal/.test(header) && /klik/.test(header);
+      return /tanggal/.test(header) && /tayangan|impression|klik|click/.test(header);
     });
   if (!bagan) {
     throw new Error("File Bagan (data harian) tidak ditemukan. Sertakan Bagan.csv dari ekspor Google Search Console.");
   }
 
-  const baganRows = parseRows(bagan).slice(1, 1 + MAX_PARSE_ROWS);
+  const baganRows = parseRows(bagan).slice(0, MAX_PARSE_ROWS);
   const daily = baganRows
-    .map((row) => ({
-      date: isoDate(row[0]) || "",
-      clicks: numberValue(row[1]),
-      impressions: numberValue(row[2]),
-      ctr: numberValue(row[3]),
-      averagePosition: numberValue(row[4]),
-    }))
+    .map((row) => {
+      const keys = Object.keys(row);
+      const dateKey = keys[0];
+      return {
+        date: isoDate(row[dateKey]) || "",
+        clicks: findMetric(row, /klik|click/i),
+        impressions: findMetric(row, /tayangan|impression/i),
+        ctr: findMetric(row, /ctr|rkt/i),
+        averagePosition: findMetric(row, /posisi|position/i),
+      };
+    })
     .filter((item) => item.date);
   if (!daily.length) throw new Error("Bagan tidak memiliki data tanggal yang dapat dibaca.");
 
@@ -84,7 +99,7 @@ export function parseGscBundle(files: BundleFile[]): GscBundle {
       warnings.push(`File ${kind} tidak ditemukan dalam bundle.`);
       return [];
     }
-    return parseRows(file).slice(1, 1 + MAX_PARSE_ROWS).map(toDimension).filter((item) => item.name);
+    return parseRows(file).slice(0, MAX_PARSE_ROWS).map(toDimension).filter((item) => item.name);
   };
 
   const queries = collect("queries");
@@ -109,3 +124,4 @@ export function parseGscBundle(files: BundleFile[]): GscBundle {
     appearances,
   };
 }
+
