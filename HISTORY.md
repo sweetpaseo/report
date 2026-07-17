@@ -2,6 +2,17 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-07-16 — Pentest deep audit + 5 security patches (commit b6affa9)
+- **Deep pentest audit** (white-box + black-box) menemukan 2 HIGH, 5 MEDIUM, 7 LOW/INFO. Tidak ada CRITICAL.
+- Patch yang diterapkan (user memilih password tetap >=6):
+  - **M1 (MEDIUM)** — Public token endpoints tanpa rate-limit. Ditambah `checkPublicTokenRateLimit()` di `lib/rate-limit.ts` (60 req/mnt per token, key-space terpisah dari login limiter). Diterapkan ke 3 route publik: `client/[token]`, `report/[token]`, `report-data/[token]`. Verifikasi: live deployed.
+  - **M2 (MEDIUM)** — Info disclosure headers. `X-Powered-By`, `Platform`, `Panel` dihapus via `.htaccess`. `X-Turbo-Charged-By` tetap ada (server-level LiteSpeed, tidak bisa dihapus dari shared hosting).
+  - **M3 (MEDIUM)** — CSRF hanya berlaku untuk admin. Diperluas ke semua role (admin+client) di `middleware.ts`. Verifikasi: code deployed.
+  - **L7 (LOW)** — OPTIONS request mengembalikan 401. Ditambah handler di middleware: OPTIONS ke `/api/*` → `204 Allow`. Verifikasi live: `OPTIONS /api/dashboard` → 204.
+  - **H2 (HIGH)** — `/api/public/client/[token]` mengekspos semua website token. Ditambah optional `?websiteId=` parameter untuk filter scope.
+- **H1 (HIGH, NOT PATCHED)** — Password client >=6 chars (user decided to keep). Risiko dimitigasi oleh rate-limit (5 attempt/15mnt).
+- Build lokal (Node 24.16.0, Next 16.2.10) → assemble → deploy → verifikasi live.
+
 ## 2026-07-16 — Pentest + terapkan 7 patch keamanan (commit 43d2f47)
 - **Audit pentest** menemukan 8 isu; 7 diimplementasikan & terverifikasi live di `report.erihome.id`:
   - **B1 (HIGH)** — `GET /api/websites` tanpa auth membocorkan `public_token` + pemetaan klien. Diperbaiki: route sekarang `admin`-only, dan `public_token` di-strip dari SELECT bila diakses publik. Verifikasi: no-auth → `401`.
