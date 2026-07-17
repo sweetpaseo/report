@@ -2,6 +2,16 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-07-17 — Perbaikan kegagalan login karena efek CSP ketat & proxy (commit 6436859 & a19197e)
+- **Bug 1 (CSP Memblokir Hydration)**: Aturan keamanan CSP (`script-src 'self'`) dari pembaruan sebelumnya ternyata memblokir skrip *inline* milik Next.js. Hal ini menyebabkan *handler* `onSubmit` pada *form* login tidak pernah berjalan, memicu *refresh* halaman terus-menerus.
+  - *Perbaikan*: Melonggarkan sedikit CSP menjadi `script-src 'self' 'unsafe-inline' 'unsafe-eval'` pada `middleware.ts`. Karena `public_html/.htaccess` di server produksi ikut "menimpa" CSP bawaan, saya juga membuat *script* perbaikan `.htaccess` khusus (`scratch/fix-htaccess.js`) dan menerapkannya langsung ke *live server* via *ssh/plink*.
+- **Bug 2 (Spasi Ekstra di Password)**: Jika fungsi *auto-complete* pada gawai *mobile* menambahkan spasi kosong (*trailing space*) pada input sandi, pencocokan sandi menjadi gagal.
+  - *Perbaikan*: Menambahkan pembersihan spasi menggunakan fungsi `.trim()` pada sandi masukan sebelum divalidasi di `app/api/auth/login/route.ts`.
+- **Bug 3 (Proksi Cloudflare Ganda)**: Cek protokol aman via header `x-forwarded-proto` bisa mendapatkan susunan berlapis (contoh `https, http`), sehingga cek kaku `=== "https"` dapat gagal mendeteksi HTTPS, yang menyebabkan tidak dipasangnya penanda `Secure` pada *cookie*.
+  - *Perbaikan*: Menghaluskan baris kode cek menjadi pengecekan luwes `.includes("https")` di *route* login.
+- Telah ter-deploy otomatis dan saya verifikasi berhasil mengakses dasbor di peladen produksi (*live server*) lewat simulasi skrip *PowerShell*.
+
+
 ## 2026-07-16 — Pentest deep audit + 5 security patches (commit b6affa9)
 - **Deep pentest audit** (white-box + black-box) menemukan 2 HIGH, 5 MEDIUM, 7 LOW/INFO. Tidak ada CRITICAL.
 - Patch yang diterapkan (user memilih password tetap >=6):
