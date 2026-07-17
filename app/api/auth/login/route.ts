@@ -10,7 +10,9 @@ function safeEqual(left: string, right: string) {
 }
 
 export async function POST(request: Request) {
-  const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  const realIp = request.headers.get("x-real-ip");
+  const clientIp = forwardedFor?.split(",")[0]?.trim() || realIp || "unknown";
   const limit = checkRateLimit(`login:${clientIp}`);
   if (!limit.allowed) {
     return NextResponse.json(
@@ -19,8 +21,8 @@ export async function POST(request: Request) {
     );
   }
   const { password } = await request.json().catch(() => ({ password: "" }));
-  const adminExpected = process.env.ADMIN_PASSWORD;
-  const clientExpected = process.env.CLIENT_PASSWORD;
+  const adminExpected = process.env.ADMIN_PASSWORD?.trim();
+  const clientExpected = process.env.CLIENT_PASSWORD?.trim();
 
   if ((!adminExpected || adminExpected.length < 10) && (!clientExpected || clientExpected.length < 6)) {
     return NextResponse.json({ error: "ADMIN_PASSWORD belum dikonfigurasi dengan aman." }, { status: 500 });
@@ -35,10 +37,13 @@ export async function POST(request: Request) {
   resetRateLimit(`login:${clientIp}`);
 
   const response = NextResponse.json({ ok: true, role });
+  const isProd = process.env.NODE_ENV === "production";
+  const isHttps = request.headers.get("x-forwarded-proto") === "https" || request.url.startsWith("https://");
+
   response.cookies.set(SESSION_COOKIE, await createSessionToken(role), {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: isProd && isHttps,
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
   });

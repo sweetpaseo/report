@@ -21,7 +21,7 @@ function failsCsrfCheck(request: NextRequest): boolean {
   return !request.headers.get("x-requested-with");
 }
 
-const CSP = "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'";
+const CSP = "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'";
 
 function withSecurityHeaders(response: NextResponse): NextResponse {
   response.headers.delete("content-security-policy");
