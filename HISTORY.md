@@ -2,6 +2,18 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-07-16 — Pentest + terapkan 7 patch keamanan (commit 43d2f47)
+- **Audit pentest** menemukan 8 isu; 7 diimplementasikan & terverifikasi live di `report.erihome.id`:
+  - **B1 (HIGH)** — `GET /api/websites` tanpa auth membocorkan `public_token` + pemetaan klien. Diperbaiki: route sekarang `admin`-only, dan `public_token` di-strip dari SELECT bila diakses publik. Verifikasi: no-auth → `401`.
+  - **B2 (HIGH)** — Login tanpa rate-limit (brute-force). Ditambah `lib/rate-limit.ts` (fixed-window 5/15 mnt + lockout 15 mnt per IP) di `app/api/auth/login`. Verifikasi: attempt ke-6 → `429`.
+  - **B3 (MEDIUM)** — Tidak ada proteksi CSRF pada mutasi admin. Ditambah guard di `middleware.ts` (tolak bila `Origin` ≠ host ATAU tiada `x-requested-with`) untuk `/api/upload`, `/api/websites`, `/api/clients`, `/api/periods`. Verifikasi: tanpa header → `403`, dengan header → `201`.
+  - **B4 (MEDIUM)** — Tidak ada security headers (clickjacking/CSP). `next.config.ts` `headers()` DAN `middleware set()` keduanya di-override Next (Next menyuntik `upgrade-insecure-requests` di standalone). Solusi final: set CSP strict + `X-Frame-Options DENY`, `nosniff`, `Referrer-Policy`, `Permissions-Policy` via `public_html/.htaccess` (lapisan depan Passenger, PERSISTEN karena di luar `nodejs/`). Verifikasi: header strict muncul di `/login`.
+  - **B5 (MEDIUM/LOW)** — Token publik tak ada expiry/revoke. Ditambah kolom `public_token_expires_at` + `public_token_revoked` (migrasi `lib/db.ts`), helper `lib/public-tokens.ts`, dan route rotate/revoke admin di `app/api/websites/[id]/token` & `app/api/clients/[id]/token`. Verifikasi: token valid → `200` di 3 route publik.
+  - **B6 (LOW)** — `.env` plaintext di server. Script deploy kini `chmod 600` `.env` (sudah diterapkan).
+  - **B7 (LOW)** — Tidak ada batas agregat upload / parser. Ditambah `MAX_FILES_PER_REQUEST=20`, batas total bytes, dan `MAX_PARSE_ROWS=200_000` (cap di `gsc.ts`, `gsc-csv.ts`, `utils.ts`).
+- **B8 (bukan kerentanan)** — Tidak ditemukan SQLi (semua query parameterized) maupun path traversal (`storage_path` dari UUID server).
+- Catatan verifikasi: Next standalone men-strip `headers()` dari config; oleh karena itu CSP dipegang oleh `.htaccess` Apache, bukan Next.
+
 ## 2026-07-16 — Terapkan client password minimum 6 ke server (commit 7488aee)
 - Melonggarkan syarat panjang minimal password klien dari `>= 10` menjadi `>= 6` di `app/api/auth/login/route.ts` (permintaan user agar konsisten lokal & server). Gate admin tetap `>= 10`.
 - Di-deploy lewat alur satu perintah (`npm run build` → `assemble-deploy-bundle.js` → `deploy-to-server.js`). Build lokal Node 24.16.0 / Next 16.2.10.
