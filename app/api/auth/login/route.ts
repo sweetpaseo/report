@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "ADMIN_PASSWORD belum dikonfigurasi dengan aman." }, { status: 500 });
   }
 
-  const passwordStr = String(password || "");
+  const passwordStr = String(password || "").trim();
   let role: SessionRole | null = null;
   if (adminExpected && adminExpected.length >= 10 && safeEqual(passwordStr, adminExpected)) role = "admin";
   if (!role && clientExpected && clientExpected.length >= 6 && safeEqual(passwordStr, clientExpected)) role = "client";
@@ -38,7 +38,8 @@ export async function POST(request: Request) {
 
   const response = NextResponse.json({ ok: true, role });
   const isProd = process.env.NODE_ENV === "production";
-  const isHttps = request.headers.get("x-forwarded-proto") === "https" || request.url.startsWith("https://");
+  const forwardedProto = request.headers.get("x-forwarded-proto") || "";
+  const isHttps = forwardedProto.includes("https") || request.url.startsWith("https://");
 
   response.cookies.set(SESSION_COOKIE, await createSessionToken(role), {
     httpOnly: true,
