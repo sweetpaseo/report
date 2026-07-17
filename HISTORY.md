@@ -2,6 +2,14 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-07-17 — Perbaikan Hak Akses Client & CSRF Bypass (commit abc5e99)
+- **Bug 1 (Client Dashboard Kosong)**: Patch keamanan sebelumnya (B1) secara tidak sengaja membuat `GET /api/websites` hanya bisa diakses oleh `admin`. Hal ini memutus akses *role* `client` untuk mengambil daftar *website* di *dashboard*, sehingga *dashboard* selalu tampil kosong.
+  - *Perbaikan*: Melonggarkan cek *role* di `app/api/websites/route.ts` menjadi `if (!role)` sehingga baik `admin` maupun `client` bisa mengaksesnya. Rahasia `public_token` tetap aman karena disaring di tingkat *query* SQL (kecuali untuk admin).
+- **Bug 2 (CSRF Bypass di Route Dinamis)**: Mekanisme cek CSRF pada `middleware.ts` menggunakan pencocokan kaku (`Set.has()`). Akibatnya, rute dinamis yang mengandung ID (misalnya `DELETE /api/periods/[id]`) akan terlewat dari validasi CSRF.
+  - *Perbaikan*: Menambahkan logika `path.startsWith("/api/periods/")` di `middleware.ts` agar cek CSRF menangkap permintaan mutasi dinamis.
+- **Bug 3 (Deploy ke Server Gagal Update)**: Skrip deploy sebelumnya melempar zip lama karena skrip perakitan tidak dijalankan.
+  - *Perbaikan*: Memastikan eksekusi `node scripts/assemble-deploy-bundle.js` dijalankan sebelum transfer ke cPanel (`scripts/deploy-to-server.js`). Batas *timeout* HTTP pada skrip verifikasi server juga dilonggarkan dari 6 detik menjadi 15 detik agar Passenger punya waktu cukup untuk *restart*.
+
 ## 2026-07-17 — Perbaikan kegagalan login karena efek CSP ketat & proxy (commit 6436859 & a19197e)
 - **Bug 1 (CSP Memblokir Hydration)**: Aturan keamanan CSP (`script-src 'self'`) dari pembaruan sebelumnya ternyata memblokir skrip *inline* milik Next.js. Hal ini menyebabkan *handler* `onSubmit` pada *form* login tidak pernah berjalan, memicu *refresh* halaman terus-menerus.
   - *Perbaikan*: Melonggarkan sedikit CSP menjadi `script-src 'self' 'unsafe-inline' 'unsafe-eval'` pada `middleware.ts`. Karena `public_html/.htaccess` di server produksi ikut "menimpa" CSP bawaan, saya juga membuat *script* perbaikan `.htaccess` khusus (`scratch/fix-htaccess.js`) dan menerapkannya langsung ke *live server* via *ssh/plink*.

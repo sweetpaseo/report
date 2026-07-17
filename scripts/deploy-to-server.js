@@ -100,7 +100,7 @@ function httpsGet(pathname) {
 }
 
 (async () => {
-  await new Promise((r) => setTimeout(r, 6000));
+  await new Promise((r) => setTimeout(r, 15000));
   try {
     const login = await httpsGet('/login');
     const me = await httpsGet('/api/auth/me');
