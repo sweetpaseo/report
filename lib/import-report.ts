@@ -5,7 +5,7 @@ import type { ParsedReport } from "@/lib/parsers/types";
 import type { GscBundle } from "@/lib/parsers/gsc-csv";
 import { periodLabel } from "@/lib/parsers/utils";
 
-export function importReport(db: DatabaseSync, websiteId: string, uploadId: string, report: ParsedReport) {
+export function importReport(db: DatabaseSync, websiteId: string, uploadId: string, report: ParsedReport, searchType: "web" | "aigen" = "web") {
   const existing = db.prepare(`
     SELECT id FROM report_periods
     WHERE website_id = ? AND period_start = ? AND period_end = ?
@@ -23,13 +23,17 @@ export function importReport(db: DatabaseSync, websiteId: string, uploadId: stri
       `).run(periodId, websiteId, report.periodStart, report.periodEnd, periodLabel(report.periodStart), now);
     }
 
-    if (report.source === "gsc" && report.gsc) {
-      if (report.gsc.daily.length > 0) db.prepare(`DELETE FROM gsc_daily_metrics WHERE website_id = ? AND report_period_id = ?`).run(websiteId, periodId);
-      if (report.gsc.queries.length > 0) db.prepare(`DELETE FROM gsc_queries WHERE website_id = ? AND report_period_id = ?`).run(websiteId, periodId);
-      if (report.gsc.pages.length > 0) db.prepare(`DELETE FROM gsc_pages WHERE website_id = ? AND report_period_id = ?`).run(websiteId, periodId);
-      if (report.gsc.devices.length > 0) db.prepare(`DELETE FROM gsc_devices WHERE website_id = ? AND report_period_id = ?`).run(websiteId, periodId);
-      if (report.gsc.countries && report.gsc.countries.length > 0) db.prepare(`DELETE FROM gsc_countries WHERE website_id = ? AND report_period_id = ?`).run(websiteId, periodId);
-      if (report.gsc.appearances && report.gsc.appearances.length > 0) db.prepare(`DELETE FROM gsc_appearance WHERE website_id = ? AND report_period_id = ?`).run(websiteId, periodId);
+    if (report.source === "gsc") {
+      report.source = searchType === "aigen" ? "gsc-aigen" : "gsc";
+    }
+
+    if (report.source.startsWith("gsc") && report.gsc) {
+      if (report.gsc.daily.length > 0) db.prepare(`DELETE FROM gsc_daily_metrics WHERE website_id = ? AND report_period_id = ? AND search_type = ?`).run(websiteId, periodId, searchType);
+      if (report.gsc.queries.length > 0) db.prepare(`DELETE FROM gsc_queries WHERE website_id = ? AND report_period_id = ? AND search_type = ?`).run(websiteId, periodId, searchType);
+      if (report.gsc.pages.length > 0) db.prepare(`DELETE FROM gsc_pages WHERE website_id = ? AND report_period_id = ? AND search_type = ?`).run(websiteId, periodId, searchType);
+      if (report.gsc.devices.length > 0) db.prepare(`DELETE FROM gsc_devices WHERE website_id = ? AND report_period_id = ? AND search_type = ?`).run(websiteId, periodId, searchType);
+      if (report.gsc.countries && report.gsc.countries.length > 0) db.prepare(`DELETE FROM gsc_countries WHERE website_id = ? AND report_period_id = ? AND search_type = ?`).run(websiteId, periodId, searchType);
+      if (report.gsc.appearances && report.gsc.appearances.length > 0) db.prepare(`DELETE FROM gsc_appearance WHERE website_id = ? AND report_period_id = ? AND search_type = ?`).run(websiteId, periodId, searchType);
     }
     if (report.source === "ga" && report.ga) {
       if (report.ga.daily.length > 0) db.prepare(`DELETE FROM ga_daily_metrics WHERE website_id = ? AND report_period_id = ?`).run(websiteId, periodId);
@@ -49,17 +53,17 @@ export function importReport(db: DatabaseSync, websiteId: string, uploadId: stri
 
     if (report.gsc) {
       const dailyInsert = db.prepare(`
-        INSERT INTO gsc_daily_metrics(website_id, report_period_id, metric_date, clicks, impressions, ctr, average_position)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO gsc_daily_metrics(website_id, report_period_id, search_type, metric_date, clicks, impressions, ctr, average_position)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `);
-      report.gsc.daily.forEach((row) => dailyInsert.run(websiteId, periodId, row.date, row.clicks, row.impressions, row.ctr, row.averagePosition));
+      report.gsc.daily.forEach((row) => dailyInsert.run(websiteId, periodId, searchType, row.date, row.clicks, row.impressions, row.ctr, row.averagePosition));
 
       const insertDimension = (table: string, column: string, rows: typeof report.gsc.queries) => {
         const stmt = db.prepare(`
-          INSERT INTO ${table}(website_id, report_period_id, ${column}, clicks, impressions, ctr, average_position)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO ${table}(website_id, report_period_id, search_type, ${column}, clicks, impressions, ctr, average_position)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `);
-        rows.forEach((row) => stmt.run(websiteId, periodId, row.name, row.clicks, row.impressions, row.ctr, row.averagePosition));
+        rows.forEach((row) => stmt.run(websiteId, periodId, searchType, row.name, row.clicks, row.impressions, row.ctr, row.averagePosition));
       };
       insertDimension("gsc_queries", "query", report.gsc.queries);
       insertDimension("gsc_pages", "page", report.gsc.pages);

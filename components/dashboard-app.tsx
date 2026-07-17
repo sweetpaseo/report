@@ -134,7 +134,7 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
   const clickValues = useMemo(() => (data?.trends?.gsc || []).map((row: any) => Number(row.clicks || 0)), [data]);
   const gaValues = useMemo(() => (data?.trends?.ga || []).map((row: any) => Number(row.activeUsers || 0)), [data]);
   const engagementValues = useMemo(() => (data?.trends?.ga || []).map((row: any) => Number(row.engagementSeconds || 0)), [data]);
-  const hasGsc = (data?.metrics?.["gsc.impressions"] || 0) > 0;
+  const hasGsc = searchType === "aigen" ? (data?.metrics?.["gsc-aigen.impressions"] || 0) > 0 : (data?.metrics?.["gsc.impressions"] || 0) > 0;
   const hasGa = (data?.metrics?.["ga.sessions"] || 0) > 0;
 
   async function logout() { await fetch("/api/auth/logout", { method: "POST" }); location.href = "/login"; }
@@ -149,7 +149,7 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
   async function deletePeriod() {
     if (!periodId || !confirm("Apakah Anda yakin ingin menghapus seluruh data untuk periode ini? Tindakan ini tidak dapat dibatalkan.")) return;
     try {
-      const res = await fetch(`/api/periods/${periodId}`, { method: "DELETE" });
+      const res = await fetch(`/api/periods/${periodId}`, { method: "DELETE", headers: { "x-requested-with": "XMLHttpRequest" } });
       if (res.ok) {
         setMessage("Data periode berhasil dihapus.");
         setPeriodId("");
@@ -247,8 +247,8 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
           <section className="pillar-grid">
             {hasGsc && <article className="pillar-card" id="search"><header><span className="pillar-number blue"><Search /></span><div><b>1. Ditemukan di Google {searchType === "aigen" ? "(AI Overviews)" : ""}</b><p>Visibilitas website di pencarian {searchType === "aigen" ? "AI Generative" : "Organik"}</p></div></header>
               <Metric label="Impressions" value={fmt.format(data.metrics[searchType === "aigen" ? "gsc-aigen.impressions" : "gsc.impressions"] || 0)} comparison={data.comparisons[searchType === "aigen" ? "gsc-aigen.impressions" : "gsc.impressions"]} values={gscValues}/>
-              <Metric label="Clicks" value={searchType === "aigen" ? "0" : fmt.format(data.metrics["gsc.clicks"] || 0)} comparison={searchType === "aigen" ? undefined : data.comparisons["gsc.clicks"]} values={searchType === "aigen" ? [0,0,0] : clickValues}/>
-              <div className="small-metrics"><div><span>CTR</span><b>{searchType === "aigen" ? "0%" : percent(data.metrics["gsc.ctr"], true)}</b></div><div><span>Posisi rata-rata</span><b>{searchType === "aigen" ? "0" : dec.format(data.metrics["gsc.average_position"] || 0)}</b></div></div>
+              <Metric label="Clicks" value={fmt.format(data.metrics[searchType === "aigen" ? "gsc-aigen.clicks" : "gsc.clicks"] || 0)} comparison={data.comparisons[searchType === "aigen" ? "gsc-aigen.clicks" : "gsc.clicks"]} values={clickValues}/>
+              <div className="small-metrics"><div><span>CTR</span><b>{percent(data.metrics[searchType === "aigen" ? "gsc-aigen.ctr" : "gsc.ctr"], true)}</b></div><div><span>Posisi rata-rata</span><b>{dec.format(data.metrics[searchType === "aigen" ? "gsc-aigen.average_position" : "gsc.average_position"] || 0)}</b></div></div>
             </article>}
 
             {hasGa && <article className="pillar-card" id="traffic"><header><span className="pillar-number green"><Users /></span><div><b>2. Mendapatkan Pengunjung</b><p>Jumlah dan sumber traffic</p></div></header>
@@ -323,13 +323,13 @@ function EmptyState({ onAdd, onUpload, isPublic, isAdmin }: { onAdd:()=>void; on
 
 function WebsiteModal({ open, onClose, onCreated, clients }: { open:boolean; onClose:()=>void; onCreated:()=>void; clients: any[] }) {
   const [error,setError]=useState(""); const [loading,setLoading]=useState(false);
-  async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setLoading(true);setError("");const form=new FormData(e.currentTarget);const response=await fetch('/api/websites',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:form.get('name'),domain:form.get('domain'),timezone:'Asia/Jakarta',client_id:form.get('client_id')})});const result=await response.json();setLoading(false);if(!response.ok)return setError(result.error);onCreated();}
+  async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setLoading(true);setError("");const form=new FormData(e.currentTarget);const response=await fetch('/api/websites',{method:'POST',headers:{'Content-Type':'application/json', 'x-requested-with': 'XMLHttpRequest'},body:JSON.stringify({name:form.get('name'),domain:form.get('domain'),timezone:'Asia/Jakarta',client_id:form.get('client_id')})});const result=await response.json();setLoading(false);if(!response.ok)return setError(result.error);onCreated();}
   return <Modal open={open} title="Tambah website" onClose={onClose}><form className="form-stack" onSubmit={submit}><label>Klien Pemilik (Opsional)<select name="client_id"><option value="">-- Tanpa Klien --</option>{clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label><label>Nama website<input name="name" placeholder="Contoh: Erihome" required/></label><label>Domain<input name="domain" placeholder="erihome.id" required/></label>{error&&<p className="form-error">{error}</p>}<button className="button primary wide" disabled={loading}>{loading?'Menyimpan…':'Simpan website'}</button></form></Modal>;
 }
 
 function ClientModal({ open, onClose, onCreated, clients }: { open:boolean; onClose:()=>void; onCreated:()=>void; clients: any[] }) {
   const [error,setError]=useState(""); const [loading,setLoading]=useState(false);
-  async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setLoading(true);setError("");const form=new FormData(e.currentTarget);const response=await fetch('/api/clients',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:form.get('name')})});const result=await response.json();setLoading(false);if(!response.ok)return setError(result.error);onCreated();}
+  async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setLoading(true);setError("");const form=new FormData(e.currentTarget);const response=await fetch('/api/clients',{method:'POST',headers:{'Content-Type':'application/json', 'x-requested-with': 'XMLHttpRequest'},body:JSON.stringify({name:form.get('name')})});const result=await response.json();setLoading(false);if(!response.ok)return setError(result.error);onCreated();}
   return <Modal open={open} title="Kelola Klien" onClose={onClose}>
     <div className="client-list" style={{ marginBottom: 24, maxHeight: 200, overflowY: "auto" }}>
       {clients.length === 0 ? <p className="empty-note">Belum ada klien.</p> : <table className="data-table"><thead><tr><th>Nama Klien</th><th>Website</th><th>Portfolio Link</th></tr></thead><tbody>{clients.map(c => <tr key={c.id}><td>{c.name}</td><td>{c.website_count}</td><td><button type="button" className="button subtle" onClick={() => { navigator.clipboard.writeText(location.origin + "/client/" + c.public_token); alert("Link disalin"); }}>Copy Link</button></td></tr>)}</tbody></table>}
@@ -346,7 +346,7 @@ function ClientModal({ open, onClose, onCreated, clients }: { open:boolean; onCl
 function UploadModal({ open, websiteId, onClose, onDone }: { open:boolean; websiteId:string; onClose:()=>void; onDone:(r:any)=>void }) {
   const [files,setFiles]=useState<File[]>([]); const [error,setError]=useState(""); const [loading,setLoading]=useState(false); const [isAiGen,setIsAiGen]=useState(false); const input=useRef<HTMLInputElement>(null);
   function addFiles(list:FileList|null){if(list&&list.length)setFiles((prev)=>[...prev,...Array.from(list)]);}
-  async function submit(e:FormEvent){e.preventDefault();if(!files.length||!websiteId)return setError('Pilih website dan minimal satu file terlebih dahulu.');setLoading(true);setError('');const form=new FormData();form.set('websiteId',websiteId);form.set('isAiGen',String(isAiGen));for(const f of files)form.append('file',f);const response=await fetch('/api/upload',{method:'POST',body:form});const result=await response.json();setLoading(false);if(!response.ok)return setError(result.error||'Upload gagal.');setFiles([]);setIsAiGen(false);onDone(result);}
+  async function submit(e:FormEvent){e.preventDefault();if(!files.length||!websiteId)return setError('Pilih website dan minimal satu file terlebih dahulu.');setLoading(true);setError('');const form=new FormData();form.set('websiteId',websiteId);form.set('isAiGen',String(isAiGen));for(const f of files)form.append('file',f);const response=await fetch('/api/upload',{method:'POST',headers:{'x-requested-with': 'XMLHttpRequest'},body:form});const result=await response.json();setLoading(false);if(!response.ok)return setError(result.error||'Upload gagal.');setFiles([]);setIsAiGen(false);onDone(result);}
   return <Modal open={open} title="Upload report mentah" onClose={onClose}><form className="form-stack" onSubmit={submit}><button type="button" className={`dropzone ${files.length?'selected':''}`} onClick={()=>input.current?.click()} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();addFiles(e.dataTransfer.files);}}><input ref={input} hidden type="file" accept=".xlsx,.csv" multiple onChange={e=>addFiles(e.target.files)}/><Upload/>{files.length?<><b>{files.length} file dipilih</b><span>{files.map(f=>f.name).join(', ').slice(0,90)}</span></>:<><b>Tarik file ke sini</b><span>atau klik untuk memilih XLSX / CSV (bisa lebih dari satu)</span></>}</button><div className="upload-note"><Check/>Sumber & periode terdeteksi otomatis. Untuk ekspor GSC berbentuk beberapa CSV, seret semua file sekaligus.</div><label style={{display:"flex",alignItems:"center",gap:8,fontSize:"0.9rem"}}><input type="checkbox" checked={isAiGen} onChange={e=>setIsAiGen(e.target.checked)}/> Khusus data AI Generative (SGE)</label>{error&&<p className="form-error">{error}</p>}<button className="button primary wide" disabled={loading||!files.length}>{loading?'Memvalidasi dan memproses…':`Proses ${files.length} report`}</button>{files.length>0&&<ul className="file-list" style={{ maxHeight: '35vh', overflowY: 'auto', marginTop: '16px' }}>{files.map((f,i)=><li key={`${f.name}-${i}`}><span className="file-name">{f.name}</span><span className="file-size">{(f.size/1024).toFixed(1)} KB</span><button type="button" className="file-remove" onClick={()=>setFiles(files.filter((_,j)=>j!==i))} aria-label={`Hapus ${f.name}`}><X size={14}/></button></li>)}</ul>}</form></Modal>;
 }
 

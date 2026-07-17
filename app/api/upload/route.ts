@@ -164,7 +164,8 @@ export async function POST(request: Request) {
     `).run(uploadId, websiteId, file.name, storedFilename, storagePath, extension.slice(1), checksum, new Date().toISOString());
     try {
       const report = await parseReport(buffer, extension);
-      const periodId = importReport(db, websiteId, uploadId, report);
+      const searchType = isAiGen ? "aigen" : "web";
+      const periodId = importReport(db, websiteId, uploadId, report, searchType);
       lastPeriodId = periodId;
       results.push({
         ok: true,

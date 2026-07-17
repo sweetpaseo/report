@@ -23,7 +23,7 @@ export type DailyGa = {
 };
 
 export type ParsedReport = {
-  source: "gsc" | "ga";
+  source: "gsc" | "ga" | "gsc-aigen";
   property?: string;
   periodStart: string;
   periodEnd: string;
