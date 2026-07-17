@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 import type { GscDimension, ParsedReport } from "./types";
-import { isoDate, numberValue } from "./utils";
+import { isoDate, MAX_PARSE_ROWS, numberValue } from "./utils";
 
 function rows(sheet?: ExcelJS.Worksheet) {
   if (!sheet) return [] as unknown[][];
@@ -12,7 +12,7 @@ function rows(sheet?: ExcelJS.Worksheet) {
 }
 
 function dimensions(sheet?: ExcelJS.Worksheet): GscDimension[] {
-  return rows(sheet).slice(1).map((row) => ({
+  return rows(sheet).slice(1, 1 + MAX_PARSE_ROWS).map((row) => ({
     name: String(row[0] ?? "").trim(),
     clicks: numberValue(row[1]),
     impressions: numberValue(row[2]),
@@ -24,7 +24,7 @@ function dimensions(sheet?: ExcelJS.Worksheet): GscDimension[] {
 export async function parseGsc(buffer: Buffer): Promise<ParsedReport> {
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(buffer as unknown as ExcelJS.Buffer);
-  const dailyRows = rows(workbook.getWorksheet("Bagan")).slice(1);
+  const dailyRows = rows(workbook.getWorksheet("Bagan")).slice(1, 1 + MAX_PARSE_ROWS);
   const daily = dailyRows.map((row) => ({
     date: isoDate(row[0]) || "",
     clicks: numberValue(row[1]),

@@ -11,6 +11,10 @@ import { parseGscBundle } from "@/lib/parsers/gsc-csv";
 
 export const runtime = "nodejs";
 
+// Aggregate limits to bound memory/disk abuse on shared hosting (B7).
+const MAX_FILES_PER_REQUEST = 20;
+const MAX_TOTAL_BYTES = Number(process.env.MAX_UPLOAD_MB || 20) * 1024 * 1024 * MAX_FILES_PER_REQUEST;
+
 function validateSignature(buffer: Buffer, extension: string) {
   if (extension === ".xlsx") return buffer.length >= 4 && buffer[0] === 0x50 && buffer[1] === 0x4b;
   if (extension === ".csv") return !buffer.subarray(0, 1024).includes(0);
@@ -40,6 +44,13 @@ export async function POST(request: Request) {
   const files = (form.getAll("file") as unknown[]).filter((item): item is File => item instanceof File);
   if (!websiteId) return NextResponse.json({ error: "Website wajib dipilih." }, { status: 400 });
   if (files.length === 0) return NextResponse.json({ error: "Pilih minimal satu file." }, { status: 400 });
+  if (files.length > MAX_FILES_PER_REQUEST) {
+    return NextResponse.json({ error: `Maksimal ${MAX_FILES_PER_REQUEST} file per unggahan.` }, { status: 400 });
+  }
+  const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
+  if (totalBytes > MAX_TOTAL_BYTES) {
+    return NextResponse.json({ error: "Total ukuran file melebihi batas." }, { status: 400 });
+  }
 
   const db = getDb();
   if (!db.prepare("SELECT id FROM websites WHERE id = ?").get(websiteId)) {

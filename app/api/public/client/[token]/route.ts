@@ -1,17 +1,13 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
+import { resolveClientToken } from "@/lib/public-tokens";
 
 export async function GET(request: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   if (!token) return NextResponse.json({ error: "Token klien diperlukan." }, { status: 400 });
 
-  const client = getDb().prepare(`
-    SELECT id, name
-    FROM clients
-    WHERE public_token = ?
-  `).get(token) as { id: string; name: string } | undefined;
-
-  if (!client) {
+  const client = resolveClientToken(token);
+  if (!client.valid || !client.id) {
     return NextResponse.json({ error: "Klien tidak ditemukan." }, { status: 404 });
   }
 
@@ -22,5 +18,5 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
     ORDER BY name ASC
   `).all(client.id);
 
-  return NextResponse.json({ client, websites });
+  return NextResponse.json({ client: { id: client.id, name: client.name }, websites });
 }

@@ -236,6 +236,28 @@ function initialize(db: DatabaseSync) {
   } catch (e) {
     // Ignore if column already exists
   }
+
+  // B5: public link expiry + revocation. New columns default to NULL (no expiry, not revoked).
+  try {
+    db.exec("ALTER TABLE websites ADD COLUMN public_token_expires_at TEXT;");
+  } catch (e) {
+    // Ignore if column already exists
+  }
+  try {
+    db.exec("ALTER TABLE websites ADD COLUMN public_token_revoked INTEGER NOT NULL DEFAULT 0;");
+  } catch (e) {
+    // Ignore if column already exists
+  }
+  try {
+    db.exec("ALTER TABLE clients ADD COLUMN public_token_expires_at TEXT;");
+  } catch (e) {
+    // Ignore if column already exists
+  }
+  try {
+    db.exec("ALTER TABLE clients ADD COLUMN public_token_revoked INTEGER NOT NULL DEFAULT 0;");
+  } catch (e) {
+    // Ignore if column already exists
+  }
 }
 
 export function getDb() {

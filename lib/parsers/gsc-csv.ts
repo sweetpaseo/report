@@ -1,6 +1,6 @@
 import { parse } from "csv-parse/sync";
 import type { DailyGsc, GscDimension } from "./types";
-import { isoDate, numberValue } from "./utils";
+import { isoDate, MAX_PARSE_ROWS, numberValue } from "./utils";
 
 export type GscBundle = {
   source: "gsc";
@@ -65,7 +65,7 @@ export function parseGscBundle(files: BundleFile[]): GscBundle {
     throw new Error("File Bagan (data harian) tidak ditemukan. Sertakan Bagan.csv dari ekspor Google Search Console.");
   }
 
-  const baganRows = parseRows(bagan).slice(1);
+  const baganRows = parseRows(bagan).slice(1, 1 + MAX_PARSE_ROWS);
   const daily = baganRows
     .map((row) => ({
       date: isoDate(row[0]) || "",
@@ -84,7 +84,7 @@ export function parseGscBundle(files: BundleFile[]): GscBundle {
       warnings.push(`File ${kind} tidak ditemukan dalam bundle.`);
       return [];
     }
-    return parseRows(file).slice(1).map(toDimension).filter((item) => item.name);
+    return parseRows(file).slice(1, 1 + MAX_PARSE_ROWS).map(toDimension).filter((item) => item.name);
   };
 
   const queries = collect("queries");

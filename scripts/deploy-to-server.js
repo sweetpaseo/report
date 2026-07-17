@@ -72,6 +72,7 @@ cp -a $DOM/nodejs/data $DOM/nodejs_new/data
 if [ -d $DOM/nodejs_old ]; then rm -rf $DOM/nodejs_old; fi
 mv $DOM/nodejs $DOM/nodejs_old
 mv $DOM/nodejs_new $DOM/nodejs
+chmod 600 $DOM/nodejs/.env
 mkdir -p $DOM/nodejs/tmp
 touch $DOM/nodejs/tmp/restart.txt
 echo SWAP_OK`;

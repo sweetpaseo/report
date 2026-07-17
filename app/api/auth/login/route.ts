@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { createSessionToken, SESSION_COOKIE, type SessionRole } from "@/lib/auth";
+import { checkRateLimit, resetRateLimit } from "@/lib/rate-limit";
 
 function safeEqual(left: string, right: string) {
   const a = Buffer.from(left);
@@ -9,6 +10,14 @@ function safeEqual(left: string, right: string) {
 }
 
 export async function POST(request: Request) {
+  const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const limit = checkRateLimit(`login:${clientIp}`);
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { error: "Terlalu banyak percobaan. Coba lagi nanti." },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+    );
+  }
   const { password } = await request.json().catch(() => ({ password: "" }));
   const adminExpected = process.env.ADMIN_PASSWORD;
   const clientExpected = process.env.CLIENT_PASSWORD;
@@ -22,6 +31,8 @@ export async function POST(request: Request) {
   if (adminExpected && adminExpected.length >= 10 && safeEqual(passwordStr, adminExpected)) role = "admin";
   if (!role && clientExpected && clientExpected.length >= 6 && safeEqual(passwordStr, clientExpected)) role = "client";
   if (!role) return NextResponse.json({ error: "Password salah." }, { status: 401 });
+
+  resetRateLimit(`login:${clientIp}`);
 
   const response = NextResponse.json({ ok: true, role });
   response.cookies.set(SESSION_COOKIE, await createSessionToken(role), {

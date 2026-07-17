@@ -1,3 +1,6 @@
+// Hard cap on parsed data rows per dimension/daily set to bound memory on shared hosting.
+export const MAX_PARSE_ROWS = 200_000;
+
 const MONTHS: Record<string, string> = {
   jan: "01", januari: "01", feb: "02", februari: "02", mar: "03", maret: "03",
   apr: "04", april: "04", mei: "05", may: "05", jun: "06", juni: "06",
