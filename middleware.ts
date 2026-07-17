@@ -57,7 +57,8 @@ export async function middleware(request: NextRequest) {
     );
   }
 
-  if (ADMIN_MUTATIONS.has(path) && failsCsrfCheck(request)) {
+  const isAdminMutation = ADMIN_MUTATIONS.has(path) || path.startsWith("/api/periods/");
+  if (isAdminMutation && failsCsrfCheck(request)) {
     return withSecurityHeaders(NextResponse.json({ error: "Permintaan ditolak (CSRF)." }, { status: 403 }));
   }
 

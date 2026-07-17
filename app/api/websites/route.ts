@@ -15,7 +15,7 @@ const schema = z.object({
 export async function GET(request: Request) {
   const sessionToken = (await cookies()).get(SESSION_COOKIE)?.value;
   const role = await verifySessionToken(sessionToken);
-  if (role !== "admin") {
+  if (!role) {
     return NextResponse.json({ error: "Akses ditolak" }, { status: 403 });
   }
   // public_token is a bearer secret for the public report routes; never expose it in the list.
