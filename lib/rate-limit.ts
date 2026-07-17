@@ -38,3 +38,22 @@ export function checkRateLimit(key: string, now: number = Date.now()): RateResul
 export function resetRateLimit(key: string) {
   store.delete(key);
 }
+
+// Per-token rate limit for public endpoints. Separate key space from IP-based
+// login limiter so a burst of report requests doesn't lock out the admin.
+const PUB_WINDOW_MS = 60 * 1000;
+const PUB_MAX = 60;
+
+export function checkPublicTokenRateLimit(token: string, now: number = Date.now()): RateResult {
+  const key = `pub:${token}`;
+  const entry = store.get(key);
+  if (!entry || now > entry.resetAt) {
+    store.set(key, { count: 1, resetAt: now + PUB_WINDOW_MS, lockedUntil: 0 });
+    return { allowed: true, retryAfterSeconds: 0 };
+  }
+  if (entry.count >= PUB_MAX) {
+    return { allowed: false, retryAfterSeconds: Math.ceil((entry.resetAt - now) / 1000) };
+  }
+  entry.count += 1;
+  return { allowed: true, retryAfterSeconds: 0 };
+}

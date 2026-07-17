@@ -11,9 +11,6 @@ const ADMIN_MUTATIONS = new Set([
   "/api/periods",
 ]);
 
-// Double-submit style CSRF: require a custom header on admin mutations. Browsers
-// cannot set arbitrary headers on cross-site requests without a preflight, which
-// our API does not allow, so this blocks cross-site forged mutations.
 function failsCsrfCheck(request: NextRequest): boolean {
   if (request.method === "GET" || request.method === "HEAD" || request.method === "OPTIONS") {
     return false;
@@ -24,9 +21,6 @@ function failsCsrfCheck(request: NextRequest): boolean {
   return !request.headers.get("x-requested-with");
 }
 
-// Next.js injects a default `Content-Security-Policy: upgrade-insecure-requests`
-// at the framework layer, which overrides config headers. Setting our CSP here
-// (after that default is attached) and deleting first guarantees it wins.
 const CSP = "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'";
 
 function withSecurityHeaders(response: NextResponse): NextResponse {
@@ -37,6 +31,11 @@ function withSecurityHeaders(response: NextResponse): NextResponse {
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
+
+  if (request.method === "OPTIONS" && path.startsWith("/api/")) {
+    return new NextResponse(null, { status: 204, headers: { Allow: "GET, HEAD, OPTIONS" } });
+  }
+
   if (PUBLIC_EXACT.has(path) || PUBLIC_PREFIXES.some((prefix) => path.startsWith(prefix))) {
     return withSecurityHeaders(NextResponse.next());
   }
@@ -58,9 +57,7 @@ export async function middleware(request: NextRequest) {
     );
   }
 
-  // Admin state-changing requests require a same-origin origin and the
-  // x-requested-with header to mitigate cross-site request forgery.
-  if (role === "admin" && ADMIN_MUTATIONS.has(path) && failsCsrfCheck(request)) {
+  if (ADMIN_MUTATIONS.has(path) && failsCsrfCheck(request)) {
     return withSecurityHeaders(NextResponse.json({ error: "Permintaan ditolak (CSRF)." }, { status: 403 }));
   }
 
