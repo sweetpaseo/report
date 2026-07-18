@@ -235,6 +235,16 @@ function initialize(db: DatabaseSync) {
       FOREIGN KEY(website_id) REFERENCES websites(id) ON DELETE CASCADE,
       FOREIGN KEY(report_period_id) REFERENCES report_periods(id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS system_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      level TEXT NOT NULL,
+      context TEXT NOT NULL,
+      message TEXT NOT NULL,
+      details TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_system_logs_created_at ON system_logs(created_at DESC);
   `);
 
   try {

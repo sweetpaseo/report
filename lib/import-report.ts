@@ -4,6 +4,7 @@ import type { DailyGsc, GscDimension } from "@/lib/parsers/types";
 import type { ParsedReport } from "@/lib/parsers/types";
 import type { GscBundle } from "@/lib/parsers/gsc-csv";
 import { periodLabel } from "@/lib/parsers/utils";
+import { logError } from "@/lib/logger";
 
 export function importReport(db: DatabaseSync, websiteId: string, uploadId: string, report: ParsedReport, searchType: "web" | "aigen" = "web") {
   const existing = db.prepare(`
@@ -115,6 +116,7 @@ export function importReport(db: DatabaseSync, websiteId: string, uploadId: stri
     `).run(periodId, report.source, report.warnings.length ? "COMPLETED_WITH_WARNINGS" : "COMPLETED", report.warnings.join("\n") || null, now, uploadId);
   } catch (error) {
     db.exec("ROLLBACK");
+    logError("import", "Gagal menyimpan report ke database", { websiteId, uploadId, error: error instanceof Error ? error.message : String(error) });
     throw error;
   }
   db.exec("COMMIT");
@@ -215,6 +217,7 @@ export function importGscBundle(db: DatabaseSync, websiteId: string, uploadId: s
     return { periodId: lastPeriodId, bundlePeriodId, warnings: bundle.warnings, source: searchType === "aigen" ? "gsc-aigen-csv-bundle" : "gsc-csv-bundle" };
   } catch (error) {
     db.exec("ROLLBACK");
+    logError("import", "Gagal menyimpan bundle GSC ke database", { websiteId, uploadId, error: error instanceof Error ? error.message : String(error) });
     throw error;
   }
 }

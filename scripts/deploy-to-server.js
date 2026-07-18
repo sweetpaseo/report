@@ -95,12 +95,12 @@ function httpsGet(pathname) {
       }
     );
     req.on('error', reject);
-    req.setTimeout(15000, () => req.destroy(new Error('timeout')));
+    req.setTimeout(30000, () => req.destroy(new Error('timeout')));
   });
 }
 
 (async () => {
-  await new Promise((r) => setTimeout(r, 15000));
+  await new Promise((r) => setTimeout(r, 30000));
   try {
     const login = await httpsGet('/login');
     const me = await httpsGet('/api/auth/me');

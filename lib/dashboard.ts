@@ -1,4 +1,5 @@
 import type { DatabaseSync } from "node:sqlite";
+import { logError } from "@/lib/logger";
 
 type MetricRow = { source_type: string; metric_key: string; metric_value: number | null };
 type PeriodRow = { id: string; period_start: string; period_end: string; period_label: string };
@@ -82,6 +83,15 @@ function resolvePeriodContext(db: DatabaseSync, websiteId: string, requestedPeri
 }
 
 export function getDashboard(db: DatabaseSync, websiteId: string, requestedPeriodId?: string, searchType: "web" | "aigen" = "web") {
+  try {
+    return _getDashboard(db, websiteId, requestedPeriodId, searchType);
+  } catch (error) {
+    logError("dashboard", "Gagal memuat data dashboard", { websiteId, requestedPeriodId, searchType, error: error instanceof Error ? error.message : String(error) });
+    throw error;
+  }
+}
+
+function _getDashboard(db: DatabaseSync, websiteId: string, requestedPeriodId?: string, searchType: "web" | "aigen" = "web") {
   const website = db.prepare("SELECT * FROM websites WHERE id = ?").get(websiteId) as Record<string, string> | undefined;
   if (!website) return null;
 

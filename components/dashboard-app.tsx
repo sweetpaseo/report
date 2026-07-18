@@ -10,6 +10,7 @@ import { Sparkline } from "./sparkline";
 import { MonthlyTrend } from "./monthly-trend";
 import { Modal } from "./modal";
 import { DataModal } from "./data-modal";
+import { LogModal } from "./log-modal";
 import type { Column } from "./data-table";
 
 type Website = { id: string; name: string; domain: string; public_token: string; period_count: number };
@@ -83,6 +84,7 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
   const isAdmin = role === "admin";
   const [clients, setClients] = useState<any[]>([]);
   const [clientModal, setClientModal] = useState(false);
+  const [logModal, setLogModal] = useState(false);
   const [fullModal, setFullModal] = useState<{ open: boolean; title: string; columns: Column<any>[]; rows: any[]; filename: string } | null>(null);
 
   async function loadWebsites() {
@@ -223,6 +225,7 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
             <label>Website<select value={websiteId} onChange={(e) => setWebsiteId(e.target.value)}><option value="">Pilih website</option>{websites.map((website: any) => <option key={website.id} value={website.id}>{website.name} — {website.domain}</option>)}</select></label>
             {!isClientMode && isAdmin && <button className="button subtle" onClick={() => setWebsiteModal(true)}><Plus /> Tambah website</button>}
             {!isClientMode && isAdmin && <button className="button subtle" onClick={() => setClientModal(true)}><Users /> Kelola Klien</button>}
+            {!isClientMode && isAdmin && <button className="button subtle" onClick={() => setLogModal(true)}><Activity /> Sistem Log</button>}
             {data?.periods?.length > 0 && <label className="period-control">Periode<select value={periodId} onChange={(e) => { setPeriodId(e.target.value); loadDashboard(websiteId, e.target.value, websites, searchType); }}>{data.periods.map((period: any) => <option key={period.id} value={period.id}>{period.period_label}</option>)}</select></label>}
             {hasAnyGsc && <label className="period-control">Search<select value={searchType} onChange={(e) => setSearchType(e.target.value as "web" | "aigen")}><option value="web">Web (Organik)</option><option value="aigen">AI Overviews (SGE)</option></select></label>}
           </section>}
@@ -344,6 +347,7 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
         {websiteModal && <WebsiteModal open={websiteModal} clients={clients} onClose={() => setWebsiteModal(false)} onCreated={() => { setWebsiteModal(false); loadWebsites(); }} />}
         {clientModal && <ClientModal open={clientModal} clients={clients} onClose={() => setClientModal(false)} onCreated={() => { fetch("/api/clients").then(r => r.ok ? r.json() : null).then(res => { if (res?.clients) setClients(res.clients); }).catch(() => {}); }} />}
         {uploadModal && <UploadModal open={uploadModal} websiteId={websiteId} onClose={() => setUploadModal(false)} onDone={async (result) => { setUploadModal(false); const totalWarnings=(result.results||[]).reduce((sum:number,r:any)=>sum+(r.warnings?.length||0),0); if(!result.periodId){setMessage(`${result.succeeded} berhasil, ${result.failed} gagal.`);return;} setPeriodId(result.periodId); await loadDashboard(websiteId, result.periodId); setMessage(totalWarnings?`${result.succeeded} report diproses dengan ${totalWarnings} catatan.`:`${result.succeeded} report berhasil diproses.`); }}/>}
+        <LogModal open={logModal} onClose={() => setLogModal(false)} />
       {fullModal?.open && <DataModal open={fullModal.open} title={fullModal.title} columns={fullModal.columns} rows={fullModal.rows} filename={fullModal.filename} onClose={() => setFullModal(null)} />}
     </div>
   );

@@ -8,6 +8,7 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 import { importReport, importGscBundle } from "@/lib/import-report";
 import { parseReport } from "@/lib/parsers";
 import { parseGscBundle } from "@/lib/parsers/gsc-csv";
+import { logWarn, logError } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -46,10 +47,12 @@ export async function POST(request: Request) {
   if (!websiteId) return NextResponse.json({ error: "Website wajib dipilih." }, { status: 400 });
   if (files.length === 0) return NextResponse.json({ error: "Pilih minimal satu file." }, { status: 400 });
   if (files.length > MAX_FILES_PER_REQUEST) {
+    logWarn("upload", "Upload melebihi batas jumlah file", { filesCount: files.length, websiteId });
     return NextResponse.json({ error: `Maksimal ${MAX_FILES_PER_REQUEST} file per unggahan.` }, { status: 400 });
   }
   const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
   if (totalBytes > MAX_TOTAL_BYTES) {
+    logWarn("upload", "Upload melebihi batas ukuran total", { totalBytes, websiteId });
     return NextResponse.json({ error: "Total ukuran file melebihi batas." }, { status: 400 });
   }
 
@@ -68,12 +71,14 @@ export async function POST(request: Request) {
     let invalid = false;
     for (const file of csvFiles) {
       if (file.size > maxBytes) {
+        logWarn("upload", "Ukuran file CSV bundle melebihi batas", { filename: file.name, size: file.size, websiteId });
         results.push({ ok: false, filename: file.name, error: "Ukuran file melebihi batas." });
         invalid = true;
         continue;
       }
       const buffer = Buffer.from(await file.arrayBuffer());
       if (!validateSignature(buffer, ".csv")) {
+        logWarn("upload", "Signature CSV tidak valid", { filename: file.name, websiteId });
         results.push({ ok: false, filename: file.name, error: "Isi file tidak sesuai dengan format CSV." });
         invalid = true;
         continue;
@@ -89,6 +94,7 @@ export async function POST(request: Request) {
     const combinedChecksum = crypto.createHash("sha256").update(Buffer.concat(buffers)).digest("hex");
     const duplicate = db.prepare(`SELECT id FROM report_uploads WHERE website_id = ? AND checksum = ? AND status IN ('COMPLETED','COMPLETED_WITH_WARNINGS')`).get(websiteId, combinedChecksum);
     if (duplicate) {
+      logWarn("upload", "Bundle GSC duplikat", { websiteId, combinedChecksum });
       return NextResponse.json({ ok: false, results: [{ ok: false, filename: "GSC bundle", error: "Bundle yang sama sudah pernah diunggah." }], succeeded: 0, failed: 1, periodId: "" });
     }
 
@@ -118,6 +124,7 @@ export async function POST(request: Request) {
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Bundle gagal diproses.";
+      logError("upload", "Gagal memproses GSC bundle", { websiteId, error: message, uploadId });
       db.prepare("UPDATE report_uploads SET status = 'FAILED', error_message = ?, processed_at = ? WHERE id = ?").run(message, new Date().toISOString(), uploadId);
       results.push({ ok: false, filename: "GSC bundle", error: message });
     }
@@ -134,15 +141,18 @@ export async function POST(request: Request) {
   for (const file of files) {
     const extension = path.extname(file.name).toLowerCase();
     if (![".xlsx", ".csv"].includes(extension)) {
+      logWarn("upload", "Format file tidak didukung", { filename: file.name, websiteId });
       results.push({ ok: false, filename: file.name, error: "Hanya file XLSX dan CSV yang didukung." });
       continue;
     }
     if (file.size > maxBytes) {
+      logWarn("upload", "Ukuran file melebihi batas", { filename: file.name, size: file.size, websiteId });
       results.push({ ok: false, filename: file.name, error: "Ukuran file melebihi batas." });
       continue;
     }
     const buffer = Buffer.from(await file.arrayBuffer());
     if (!validateSignature(buffer, extension)) {
+      logWarn("upload", "Signature file tidak valid", { filename: file.name, websiteId });
       results.push({ ok: false, filename: file.name, error: "Isi file tidak sesuai dengan ekstensi." });
       continue;
     }
@@ -151,6 +161,7 @@ export async function POST(request: Request) {
       SELECT id FROM report_uploads WHERE website_id = ? AND checksum = ? AND status IN ('COMPLETED','COMPLETED_WITH_WARNINGS')
     `).get(websiteId, checksum);
     if (duplicate) {
+      logWarn("upload", "File duplikat (sudah pernah diunggah)", { filename: file.name, websiteId, checksum });
       results.push({ ok: false, filename: file.name, error: "File yang sama sudah pernah diunggah." });
       continue;
     }
@@ -179,6 +190,7 @@ export async function POST(request: Request) {
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "File gagal diproses.";
+      logError("upload", "Gagal memproses file upload", { filename: file.name, websiteId, error: message, uploadId });
       db.prepare("UPDATE report_uploads SET status = 'FAILED', error_message = ?, processed_at = ? WHERE id = ?")
         .run(message, new Date().toISOString(), uploadId);
       results.push({ ok: false, filename: file.name, error: message });

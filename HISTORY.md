@@ -2,6 +2,11 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-07-18 — Menambahkan Sistem Logging WebApp
+- **Fitur Logging Latar Belakang**: Menambahkan tabel `system_logs` pada SQLite dan utilitas `logger.ts` untuk merekam proses *upload* data, pembacaan CSV/XLSX, interaksi *database*, hingga peringatan/error pemuatan *dashboard*.
+- **Admin UI (Log Viewer)**: Membuat *endpoint* API khusus admin (`/api/logs`) serta modal Log Viewer yang dapat diakses melalui tombol "Sistem Log" pada navigasi sidebar untuk membantu penelusuran jika terdapat kegagalan pada proses data secara terpusat tanpa perlu mengakses *database* manual.
+
+
 ## 2026-07-18 — Menambahkan label sumber data pada dashboard card
 - Menambahkan komponen `SourceBadge` di `components/dashboard-app.tsx` untuk menampilkan asal data (Google Search Console, Google Analytics, atau Google AI Generative) pada pojok kanan atas setiap kartu (card) di dashboard.
 
