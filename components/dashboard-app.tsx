@@ -202,6 +202,7 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
           <a href="#opportunities"><Gauge /> Peluang & Rekomendasi</a>
           {hasGsc && <a href="#geography"><Globe2 /> Geografi & Tampilan</a>}
           <a href="#quality"><Database /> Data Quality</a>
+          {!isClientMode && isAdmin && <a onClick={() => setLogModal(true)} style={{ cursor: "pointer" }}><Activity /> Sistem Log</a>}
         </nav>
         {!isPublic && <button className="sidebar-logout" onClick={logout}><LogOut /> Keluar</button>}
       </aside>
@@ -225,7 +226,6 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
             <label>Website<select value={websiteId} onChange={(e) => setWebsiteId(e.target.value)}><option value="">Pilih website</option>{websites.map((website: any) => <option key={website.id} value={website.id}>{website.name} — {website.domain}</option>)}</select></label>
             {!isClientMode && isAdmin && <button className="button subtle" onClick={() => setWebsiteModal(true)}><Plus /> Tambah website</button>}
             {!isClientMode && isAdmin && <button className="button subtle" onClick={() => setClientModal(true)}><Users /> Kelola Klien</button>}
-            {!isClientMode && isAdmin && <button className="button subtle" onClick={() => setLogModal(true)}><Activity /> Sistem Log</button>}
             {data?.periods?.length > 0 && <label className="period-control">Periode<select value={periodId} onChange={(e) => { setPeriodId(e.target.value); loadDashboard(websiteId, e.target.value, websites, searchType); }}>{data.periods.map((period: any) => <option key={period.id} value={period.id}>{period.period_label}</option>)}</select></label>}
             {hasAnyGsc && <label className="period-control">Search<select value={searchType} onChange={(e) => setSearchType(e.target.value as "web" | "aigen")}><option value="web">Web (Organik)</option><option value="aigen">AI Overviews (SGE)</option></select></label>}
           </section>}
