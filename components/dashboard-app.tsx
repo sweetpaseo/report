@@ -3,8 +3,8 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity, BarChart3, Check, ChevronDown, CircleAlert, Database, Download, ExternalLink,
-  FileSpreadsheet, Gauge, Globe2, Home, LogOut, Menu, MousePointerClick, Plus, Search,
-  Share2, Target, Trash2, TrendingDown, TrendingUp, Upload, Users, X,
+  FileSpreadsheet, FolderOpen, Gauge, Globe2, Home, LogOut, Menu, MousePointerClick, Plus, Search,
+  Share2, Sparkles, Target, Trash2, TrendingDown, TrendingUp, Upload, Users, X,
 } from "lucide-react";
 import { Sparkline } from "./sparkline";
 import { MonthlyTrend } from "./monthly-trend";
@@ -262,7 +262,14 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
             </div>
           </div>
 
-          <h2 className="group-heading">Google Search Console (Pencarian Organik)</h2>
+          <div className="quick-jump-menu desktop-only">
+            <a href="#section-web" className="jump-web"><Search size={16}/> Web (GSC)</a>
+            <a href="#section-ga" className="jump-ga"><Users size={16}/> Analytics (GA)</a>
+            <a href="#section-aigen" className="jump-aigen"><Sparkles size={16}/> AI Gen (SGE)</a>
+          </div>
+
+          <div id="section-web" className="theme-container theme-web">
+          <h2 className="group-heading"><Search /> Google Search Console (Pencarian Organik)</h2>
           {hasGscWeb ? (
             <>
               <section className="pillar-grid">
@@ -308,9 +315,11 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
                 </section>
               </div>
             </>
-          ) : <div className="no-data-block">Belum ada data Google Search Console (Pencarian Organik).</div>}
+          ) : <div className="no-data-block"><FolderOpen /> Belum ada data Google Search Console (Pencarian Organik).</div>}
+          </div>
 
-          <h2 className="group-heading">Google Analytics</h2>
+          <div id="section-ga" className="theme-container theme-ga">
+          <h2 className="group-heading"><Users /> Google Analytics</h2>
           {hasGa ? (
             <>
               <section className="pillar-grid">
@@ -362,9 +371,11 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
                 </section>
               </div>
             </>
-          ) : <div className="no-data-block">Belum ada data Google Analytics.</div>}
+          ) : <div className="no-data-block"><FolderOpen /> Belum ada data Google Analytics.</div>}
+          </div>
 
-          <h2 className="group-heading">Google AI Generative (SGE)</h2>
+          <div id="section-aigen" className="theme-container theme-aigen">
+          <h2 className="group-heading"><Sparkles /> Google AI Generative (SGE)</h2>
           {hasGscAigen ? (
             <>
               <section className="pillar-grid">
@@ -403,7 +414,8 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
                 </section>
               </div>
             </>
-          ) : <div className="no-data-block">Belum ada data Google AI Generative (SGE).</div>}
+          ) : <div className="no-data-block"><FolderOpen /> Belum ada data Google AI Generative (SGE).</div>}
+          </div>
           
         </>}
       </main>
