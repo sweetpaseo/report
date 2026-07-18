@@ -36,8 +36,6 @@ function Metric({ label, value, comparison, values, suffix, inverse }: { label: 
   return <div className="metric-block"><div><span>{label}</span><strong>{value}{suffix}</strong><ChangeBadge comparison={comparison} inverse={inverse} /></div><Sparkline values={values} /></div>;
 }
 
-
-
 const FULL_COLUMNS: Record<string, Column<any>[]> = {
   queries: [
     { key: "query", label: "Kata kunci", value: (r: any) => r.query },
@@ -73,7 +71,6 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
   const [websites, setWebsites] = useState<any[]>([]);
   const [websiteId, setWebsiteId] = useState("");
   const [periodId, setPeriodId] = useState("");
-  const [searchType, setSearchType] = useState<"web" | "aigen">("web");
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -98,18 +95,18 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
     if (!firstId) setLoading(false);
   }
 
-  async function loadDashboard(targetWebsite = websiteId, targetPeriod = periodId, currentWebsites = websites, targetSearchType = searchType) {
+  async function loadDashboard(targetWebsite = websiteId, targetPeriod = periodId, currentWebsites = websites) {
     if ((!isPublic || isClientMode) && !targetWebsite) { setLoading(false); setData(null); return; }
     setLoading(true);
     let endpoint = "";
     if (isClientMode) {
       const wToken = currentWebsites.find((w: any) => w.id === targetWebsite)?.public_token;
       if (!wToken) { setLoading(false); return; }
-      endpoint = `/api/public/report-data/${wToken}${targetPeriod ? `?periodId=${targetPeriod}&` : "?"}searchType=${targetSearchType}`;
+      endpoint = `/api/public/report/${wToken}${targetPeriod ? `?periodId=${targetPeriod}` : ""}`;
     } else if (isPublic) {
-      endpoint = `/api/public/report-data/${publicToken}${targetPeriod ? `?periodId=${targetPeriod}&` : "?"}searchType=${targetSearchType}`;
+      endpoint = `/api/public/report/${publicToken}${targetPeriod ? `?periodId=${targetPeriod}` : ""}`;
     } else {
-      endpoint = `/api/dashboard?websiteId=${targetWebsite}${targetPeriod ? `&periodId=${targetPeriod}` : ""}&searchType=${targetSearchType}`;
+      endpoint = `/api/dashboard?websiteId=${targetWebsite}${targetPeriod ? `&periodId=${targetPeriod}` : ""}`;
     }
     const response = await fetch(endpoint, { cache: "no-store" });
     const result = await response.json();
@@ -128,16 +125,20 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
       }
     }).catch(() => setRole("client"));
   }, []);
-  useEffect(() => { if ((!isPublic || isClientMode) && websiteId) { setPeriodId(""); loadDashboard(websiteId, "", websites, searchType); } }, [websiteId, websites]);
-  useEffect(() => { if (isPublic && !isClientMode && periodId) loadDashboard("", periodId, websites, searchType); }, [periodId]);
-  useEffect(() => { if (websiteId || (isPublic && !isClientMode)) loadDashboard(websiteId, periodId, websites, searchType); }, [searchType]);
+  useEffect(() => { if ((!isPublic || isClientMode) && websiteId) { setPeriodId(""); loadDashboard(websiteId, "", websites); } }, [websiteId, websites]);
+  useEffect(() => { if (isPublic && !isClientMode && periodId) loadDashboard("", periodId, websites); }, [periodId]);
 
-  const gscValues = useMemo(() => (data?.trends?.gsc || []).map((row: any) => Number(row.impressions || 0)), [data]);
-  const clickValues = useMemo(() => (data?.trends?.gsc || []).map((row: any) => Number(row.clicks || 0)), [data]);
+  const gscWebValues = useMemo(() => (data?.trends?.gscWeb || []).map((row: any) => Number(row.impressions || 0)), [data]);
+  const clickWebValues = useMemo(() => (data?.trends?.gscWeb || []).map((row: any) => Number(row.clicks || 0)), [data]);
+  
+  const gscAigenValues = useMemo(() => (data?.trends?.gscAigen || []).map((row: any) => Number(row.impressions || 0)), [data]);
+  const clickAigenValues = useMemo(() => (data?.trends?.gscAigen || []).map((row: any) => Number(row.clicks || 0)), [data]);
+  
   const gaValues = useMemo(() => (data?.trends?.ga || []).map((row: any) => Number(row.activeUsers || 0)), [data]);
   const engagementValues = useMemo(() => (data?.trends?.ga || []).map((row: any) => Number(row.engagementSeconds || 0)), [data]);
-  const hasGsc = searchType === "aigen" ? (data?.metrics?.["gsc-aigen.impressions"] || 0) > 0 : (data?.metrics?.["gsc.impressions"] || 0) > 0;
-  const hasAnyGsc = (data?.metrics?.["gsc.impressions"] || 0) > 0 || (data?.metrics?.["gsc-aigen.impressions"] || 0) > 0;
+  
+  const hasGscWeb = (data?.metrics?.["gsc.impressions"] || 0) > 0;
+  const hasGscAigen = (data?.metrics?.["gsc-aigen.impressions"] || 0) > 0;
   const hasGa = (data?.metrics?.["ga.sessions"] || 0) > 0;
 
   async function logout() { await fetch("/api/auth/logout", { method: "POST" }); location.href = "/login"; }
@@ -165,11 +166,11 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
     }
   }
 
-  async function openFull(kind: "queries" | "gscPages" | "pages" | "cities" | "deviceModels", title: string): Promise<void> {
+  async function openFull(kind: "queries" | "gscPages" | "pages" | "cities" | "deviceModels", title: string, targetSearchType: "web" | "aigen" = "web"): Promise<void> {
     if (!data?.website?.public_token) return;
     const endpoint = isPublic
-      ? `/api/public/report-data/${data.website.public_token}${periodId ? `?periodId=${periodId}&` : "?"}searchType=${searchType}`
-      : `/api/report-data?websiteId=${websiteId}${periodId ? `&periodId=${periodId}` : ""}&searchType=${searchType}`;
+      ? `/api/public/report-data/${data.website.public_token}${periodId ? `?periodId=${periodId}&` : "?"}searchType=${targetSearchType}`
+      : `/api/report-data?websiteId=${websiteId}${periodId ? `&periodId=${periodId}` : ""}&searchType=${targetSearchType}`;
     const response = await fetch(endpoint, { cache: "no-store" });
     if (!response.ok) return;
     const full = await response.json();
@@ -195,12 +196,12 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
         <nav onClick={() => setMobileMenu(false)}>
           <a className="active"><Home /> Ringkasan</a>
 
-          {hasGsc && <a href="#search"><Search /> Kinerja di Google</a>}
+          {hasGscWeb && <a href="#search-web"><Search /> Pencarian Organik</a>}
           {hasGa && <a href="#traffic"><Users /> Traffic & Pengunjung</a>}
           {hasGa && <a href="#engagement"><Activity /> Perilaku Pengunjung</a>}
-          {hasGa && <a href="#conversion"><Target /> Tindakan & Konversi</a>}
-          <a href="#opportunities"><Gauge /> Peluang & Rekomendasi</a>
-          {hasGsc && <a href="#geography"><Globe2 /> Geografi & Tampilan</a>}
+          {hasGa && <a href="#conversion"><Target /> Konversi</a>}
+          {hasGscAigen && <a href="#search-aigen"><Search /> Pencarian AI (SGE)</a>}
+          
           <a href="#quality"><Database /> Data Quality</a>
           {!isClientMode && isAdmin && <a onClick={() => setLogModal(true)} style={{ cursor: "pointer" }}><Activity /> Sistem Log</a>}
         </nav>
@@ -229,11 +230,10 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
             <label>Website<select value={websiteId} onChange={(e) => setWebsiteId(e.target.value)}><option value="">Pilih website</option>{websites.map((website: any) => <option key={website.id} value={website.id}>{website.name} — {website.domain}</option>)}</select></label>
             {!isClientMode && isAdmin && <button className="button subtle" onClick={() => setWebsiteModal(true)}><Plus /> Tambah website</button>}
             {!isClientMode && isAdmin && <button className="button subtle" onClick={() => setClientModal(true)}><Users /> Kelola Klien</button>}
-            {data?.periods?.length > 0 && <label className="period-control">Periode<select value={periodId} onChange={(e) => { setPeriodId(e.target.value); loadDashboard(websiteId, e.target.value, websites, searchType); }}>{data.periods.map((period: any) => <option key={period.id} value={period.id}>{period.period_label}</option>)}</select></label>}
-            {hasAnyGsc && <label className="period-control">Search<select value={searchType} onChange={(e) => setSearchType(e.target.value as "web" | "aigen")}><option value="web">Web (Organik)</option><option value="aigen">AI Overviews (SGE)</option></select></label>}
+            {data?.periods?.length > 0 && <label className="period-control">Periode<select value={periodId} onChange={(e) => { setPeriodId(e.target.value); loadDashboard(websiteId, e.target.value, websites); }}>{data.periods.map((period: any) => <option key={period.id} value={period.id}>{period.period_label}</option>)}</select></label>}
           </section>}
 
-          {(isPublic && !isClientMode) && data?.periods?.length > 0 && <section className="public-period"><span>{data.website.name} · {data.website.domain}</span><select value={periodId} onChange={(e) => setPeriodId(e.target.value)}>{data.periods.map((period: any) => <option key={period.id} value={period.id}>{period.period_label}</option>)}</select>{hasAnyGsc && <select value={searchType} onChange={(e) => setSearchType(e.target.value as "web" | "aigen")} style={{marginLeft: 12}}><option value="web">Web (Organik)</option><option value="aigen">AI Overviews</option></select>}</section>}
+          {(isPublic && !isClientMode) && data?.periods?.length > 0 && <section className="public-period"><span>{data.website.name} · {data.website.domain}</span><select value={periodId} onChange={(e) => setPeriodId(e.target.value)}>{data.periods.map((period: any) => <option key={period.id} value={period.id}>{period.period_label}</option>)}</select></section>}
         </div>
 
         {message && <div className="toast" onClick={() => setMessage("")}>{message}<X size={16}/></div>}
@@ -253,95 +253,158 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
 
           {data.monthlySeries?.length > 1 && <MonthlyTrend data={data} />}
 
-          <section className="pillar-grid">
-            {hasGsc ? (
-              <article className="pillar-card" id="search" style={{ position: 'relative' }}>
-                <SourceBadge source={searchType === "aigen" ? "Google AI Generative" : "Google Search Console"} />
-                <header><span className="pillar-number blue"><Search /></span><div><b>1. Ditemukan di Google {searchType === "aigen" ? "(AI Overviews)" : ""}</b><p>Visibilitas website di pencarian {searchType === "aigen" ? "AI Generative" : "Organik"}</p></div></header>
-                <Metric label="Impressions" value={fmt.format(data.metrics[searchType === "aigen" ? "gsc-aigen.impressions" : "gsc.impressions"] || 0)} comparison={data.comparisons[searchType === "aigen" ? "gsc-aigen.impressions" : "gsc.impressions"]} values={gscValues}/>
-                <Metric label="Clicks" value={fmt.format(data.metrics[searchType === "aigen" ? "gsc-aigen.clicks" : "gsc.clicks"] || 0)} comparison={data.comparisons[searchType === "aigen" ? "gsc-aigen.clicks" : "gsc.clicks"]} values={clickValues}/>
-                <div className="small-metrics"><div><span>CTR</span><b>{percent(data.metrics[searchType === "aigen" ? "gsc-aigen.ctr" : "gsc.ctr"], true)}</b></div><div><span>Posisi rata-rata</span><b>{dec.format(data.metrics[searchType === "aigen" ? "gsc-aigen.average_position" : "gsc.average_position"] || 0)}</b></div></div>
-              </article>
-            ) : (
-              <article className="pillar-card" id="search" style={{ justifyContent: "center", alignItems: "center", textAlign: "center", opacity: 0.7 }}>
-                <Search size={32} style={{ opacity: 0.2, marginBottom: 12 }} />
-                <div><b>Belum ada data {searchType === "aigen" ? "AI Overviews" : "Organik"}</b><p style={{ marginTop: 4 }}>Website belum memiliki tayangan penelusuran untuk kategori ini.</p></div>
-              </article>
-            )}
-
-            {hasGa && <article className="pillar-card" id="traffic" style={{ position: 'relative' }}>
-              <SourceBadge source="Google Analytics" />
-              <header><span className="pillar-number green"><Users /></span><div><b>2. Mendapatkan Pengunjung</b><p>Jumlah dan sumber traffic</p></div></header>
-              <Metric label="Sesi" value={fmt.format(data.metrics["ga.sessions"] || 0)} comparison={data.comparisons["ga.sessions"]} values={gaValues}/>
-              <Metric label="Pengguna aktif" value={fmt.format(data.metrics["ga.active_users"] || 0)} comparison={data.comparisons["ga.active_users"]} values={gaValues}/>
-              <ChannelList channels={data.channels || []} sessions={data.metrics["ga.sessions"] || 0}/>
-            </article>}
-
-            {hasGa && <article className="pillar-card" id="engagement" style={{ position: 'relative' }}>
-              <SourceBadge source="Google Analytics" />
-              <header><span className="pillar-number purple"><Activity /></span><div><b>3. Membuat Pengunjung Tertarik</b><p>Ketertarikan terhadap konten</p></div></header>
-              <Metric label="Page view" value={fmt.format(data.metrics["ga.page_views"] || 0)} comparison={data.comparisons["ga.page_views"]} values={engagementValues}/>
-              <Metric label="Page view / sesi" value={dec.format(data.metrics["ga.pages_per_session"] || 0)} comparison={data.comparisons["ga.pages_per_session"]} values={engagementValues}/>
-              <div className="small-metrics"><div><span>Engagement rata-rata</span><b>{formatDuration(data.metrics["ga.average_engagement_seconds"] || 0)}</b></div><div><span>Pengguna baru</span><b>{fmt.format(data.metrics["ga.new_users"] || 0)}</b></div></div>
-            </article>}
-
-            {hasGa && <article className="pillar-card" id="conversion" style={{ position: 'relative' }}>
-              <SourceBadge source="Google Analytics" />
-              <header><span className="pillar-number orange"><MousePointerClick /></span><div><b>4. Menghasilkan Tindakan Bisnis</b><p>Interaksi penting pengunjung</p></div></header>
-              <Metric label="Click-to-chat" value={fmt.format(data.metrics["ga.click_to_chat"] || 0)} comparison={data.comparisons["ga.click_to_chat"]} values={clickValues}/>
-              <Metric label="Conversion rate (chat)" value={percent(data.metrics["ga.chat_conversion_rate"], true)} comparison={data.comparisons["ga.chat_conversion_rate"]} values={clickValues}/>
-              <div className="small-metrics"><div><span>Revenue tercatat</span><b>{data.metrics["ga.revenue"] ? `Rp${fmt.format(data.metrics["ga.revenue"])}` : "Belum tersedia"}</b></div></div>
-            </article>}
-          </section>
-
           <div className="dash-grid">
-          <section className="section-card g-change"><div className="section-heading"><div><p className="eyebrow">PERUBAHAN UTAMA</p><h2>Apa yang berubah dibanding bulan lalu?</h2></div></div><div className="insight-grid" style={{ marginBottom: "24px" }}>{(data.insights || []).slice(0, 4).map((insight: string, i: number) => <article key={insight}><span className={i === 1 ? "insight-icon down" : "insight-icon"}>{i === 1 ? <TrendingDown/> : <TrendingUp/>}</span><p>{insight}</p></article>)}</div>{data.isPartialMonth && <p className="partial-note"><CircleAlert size={14} /> Periode ini belum berakhir (masih berjalan). Angka dibandingkan dengan bulan lalu mungkin belum mencerminkan kondisi akhir bulan.</p>}
-            <div className="quality-section-inner">
+            <section className="section-card g-change"><div className="section-heading"><div><p className="eyebrow">PERUBAHAN UTAMA</p><h2>Apa yang berubah dibanding bulan lalu?</h2></div></div><div className="insight-grid" style={{ marginBottom: "24px" }}>{(data.insights || []).slice(0, 4).map((insight: string, i: number) => <article key={insight}><span className={i === 1 ? "insight-icon down" : "insight-icon"}>{i === 1 ? <TrendingDown/> : <TrendingUp/>}</span><p>{insight}</p></article>)}</div>{data.isPartialMonth && <p className="partial-note"><CircleAlert size={14} /> Periode ini belum berakhir (masih berjalan). Angka dibandingkan dengan bulan lalu mungkin belum mencerminkan kondisi akhir bulan.</p>}</section>
+            
+            <div className="quality-section-inner" id="quality">
               <div className="section-heading"><div><p className="eyebrow">KUALITAS DATA</p><h2>Seberapa lengkap laporan ini?</h2></div></div>
               <div className="quality-grid">{data.dataQuality.map((item:any)=><article key={item.label}><span className={`quality-icon ${item.status}`}>{item.status === "ok" ? <Check/> : <CircleAlert/>}</span><div><b>{item.label}</b><p>{item.detail}</p></div></article>)}</div>
             </div>
-          </section>
-
-          <section className="section-card full opp" id="opportunities"><div className="section-heading"><div><p className="eyebrow">PRIORITAS BULAN DEPAN</p><h2>Peluang terbaik yang dapat dikerjakan</h2></div><button className="link-button" onClick={() => openFull("queries", "Semua Kata Kunci")}><ExternalLink size={14} /> Lihat semua</button></div><div className="opportunity-grid">
-            {hasGsc && <OpportunityCard number="1" title="Perbaiki CTR keyword potensial"><p>Keyword sudah berada dekat posisi teratas, tetapi belum menghasilkan klik maksimal.</p><div className="responsive-table"><table><thead><tr><th>Keyword</th><th>Posisi</th><th>CTR</th><th>Impr.</th></tr></thead><tbody>{(data.opportunities || []).slice(0,4).map((row:any)=><tr key={row.query}><td>{row.query}</td><td>{dec.format(row.averagePosition)}</td><td>{percent(row.ctr,true)}</td><td>{fmt.format(row.impressions)}</td></tr>)}</tbody></table></div></OpportunityCard>}
-            {hasGsc && <OpportunityCard number="2" title="Sebarkan traffic ke halaman lain"><p>Kurangi konsentrasi traffic organik pada satu halaman saja.</p>{(data.topGscPages || []).slice(0,4).map((row:any)=><div className="bar-row" key={row.page}><span>{shortPage(row.page)}</span><div><i style={{width:`${Math.min(100,(row.clicks/(data.metrics["gsc.clicks"]||1))*100)}%`}}/></div><b>{fmt.format(row.clicks)}</b></div>)}</OpportunityCard>}
-            {hasGa && <OpportunityCard number="3" title="Perkuat pengukuran konversi"><p>Pastikan tindakan bisnis penting ditandai sebagai key event di GA4.</p>{(data.events || []).slice(0,5).map((row:any)=><div className="event-row" key={row.name}><span>{row.name}</span><b>{fmt.format(row.count)}</b></div>)}</OpportunityCard>}
-          </div></section>
-
-          {hasGsc && <section className="section-card g-devices" id="devices" style={{ position: 'relative' }}>
-            <SourceBadge source={searchType === "aigen" ? "Google AI Generative" : "Google Search Console"} />
-            <div className="section-heading"><div><p className="eyebrow">PERANGKAT</p><h2>Dari mana traffic datang berdasarkan perangkat?</h2></div></div><DeviceList devices={data.devices || []} /></section>}
-
-          {hasGa && <section className="section-card g-pages" id="pages" style={{ position: 'relative' }}>
-            <SourceBadge source="Google Analytics" />
-            <div className="section-heading"><div><p className="eyebrow">HALAMAN TERPOPULER</p><h2>Halaman apa yang paling banyak dikunjungi?</h2></div><button className="link-button" onClick={() => openFull("pages", "Semua Halaman Terpopuler")}><ExternalLink size={14} /> Lihat semua</button></div><TopPagesList pages={data.topPages || []} /></section>}
-
-          {hasGa && <section className="section-card g-devices-visitor" id="devices-visitor" style={{ position: 'relative' }}>
-            <SourceBadge source="Google Analytics" />
-            <div className="section-heading"><div><p className="eyebrow">PERANGKAT PENGUNJUNG</p><h2>Model perangkat yang dipakai pengunjung</h2></div><button className="link-button" onClick={() => openFull("deviceModels", "Semua Model Perangkat")}><ExternalLink size={14} /> Lihat semua</button></div><DeviceModelList models={(data.deviceModels || []).slice(0, 7)} /><p className="device-foot">Data dari Google Analytics berdasarkan pengguna aktif.</p></section>}
-
-          {hasGsc && <section className="section-card g-geography" id="geography" style={{ position: 'relative' }}>
-            <SourceBadge source={searchType === "aigen" ? "Google AI Generative" : "Google Search Console"} />
-            <div className="section-heading"><div><p className="eyebrow">GEOGRAFI & TAMPILAN</p><h2>Dari wilayah mana audiens berasal & bagaimana website muncul di pencarian?</h2></div></div><div className="split-grid">
-            <div className="split-col"><h3 className="sub-head"><Globe2 size={16} /> Negara (Wilayah)</h3><CountryList countries={data.countries || []} /></div>
-            <div className="split-col"><h3 className="sub-head"><Search size={16} /> Tampilan di Pencarian</h3><AppearanceList appearances={data.appearances || []} /></div>
-          </div><p className="device-foot">Negara & tampilan penelusuran mencerminkan agregat 12 bulan dari ekspor Google Search Console.</p></section>}
-
-          {hasGa && <section className="section-card g-cities" id="cities" style={{ position: 'relative' }}>
-            <SourceBadge source="Google Analytics" />
-            <div className="section-heading"><div><p className="eyebrow">GEOGRAFI PENGUNJUNG</p><h2>Kota asal pengunjung website</h2></div><button className="link-button" onClick={() => openFull("cities", "Semua Kota")}><ExternalLink size={14} /> Lihat semua</button></div><CityList cities={data.topCities || []} /><p className="device-foot">Kota diurutkan dari jumlah pengguna aktif terbanyak, berdasarkan data Google Analytics.</p></section>}
-
-
-
-
-          {hasGsc && <section className="section-card g-topsearch" id="top-search" style={{ position: 'relative' }}>
-            <SourceBadge source={searchType === "aigen" ? "Google AI Generative" : "Google Search Console"} />
-            <div className="section-heading"><div><p className="eyebrow">HALAMAN PALING SERING DICARI</p><h2>Halaman apa yang paling banyak muncul di Google?</h2></div><button className="link-button" onClick={() => openFull("gscPages", "Semua Halaman Pencarian")}><ExternalLink size={14} /> Lihat semua</button></div><TopSearchPagesList pages={data.topGscPages || []} /></section>}
-
-          {hasGsc && <section className="section-card g-keywords" id="keywords" style={{ position: 'relative' }}>
-            <SourceBadge source={searchType === "aigen" ? "Google AI Generative" : "Google Search Console"} />
-            <div className="section-heading"><div><p className="eyebrow">KATA KUNCI</p><h2>Kata kunci apa yang paling banyak muncul di Google?</h2></div><button className="link-button" onClick={() => openFull("queries", "Semua Kata Kunci")}><ExternalLink size={14} /> Lihat semua</button></div>{(data.topQueries || []).length ? <TopQueryList queries={data.topQueries} /> : <p className="empty-note">Belum ada data kata kunci untuk periode ini.</p>}</section>}
           </div>
+
+          <h2 className="group-heading">Google Search Console (Pencarian Organik)</h2>
+          {hasGscWeb ? (
+            <>
+              <section className="pillar-grid">
+                <article className="pillar-card" id="search-web" style={{ position: 'relative' }}>
+                  <SourceBadge source="Google Search Console" />
+                  <header><span className="pillar-number blue"><Search /></span><div><b>Ditemukan di Google (Web)</b><p>Visibilitas website di pencarian Organik</p></div></header>
+                  <Metric label="Tayangan" value={fmt.format(data.metrics["gsc.impressions"] || 0)} comparison={data.comparisons["gsc.impressions"]} values={gscWebValues}/>
+                  <Metric label="Klik" value={fmt.format(data.metrics["gsc.clicks"] || 0)} comparison={data.comparisons["gsc.clicks"]} values={clickWebValues}/>
+                  <div className="small-metrics"><div><span>CTR</span><b>{percent(data.metrics["gsc.ctr"], true)}</b></div><div><span>Posisi rata-rata</span><b>{dec.format(data.metrics["gsc.average_position"] || 0)}</b></div></div>
+                </article>
+              </section>
+
+              <div className="dash-grid">
+                <section className="section-card full opp"><div className="section-heading"><div><p className="eyebrow">PRIORITAS ORGANIK</p><h2>Peluang terbaik yang dapat dikerjakan</h2></div></div>
+                  <div className="opportunity-grid">
+                    <OpportunityCard number="1" title="Perbaiki CTR keyword potensial"><p>Keyword sudah berada dekat posisi teratas, tetapi belum menghasilkan klik maksimal.</p><div className="responsive-table"><table><thead><tr><th>Keyword</th><th>Posisi</th><th>CTR</th><th>Impr.</th></tr></thead><tbody>{(data.opportunities?.web || []).slice(0,4).map((row:any)=><tr key={row.query}><td>{row.query}</td><td>{dec.format(row.averagePosition)}</td><td>{percent(row.ctr,true)}</td><td>{fmt.format(row.impressions)}</td></tr>)}</tbody></table></div></OpportunityCard>
+                    <OpportunityCard number="2" title="Sebarkan traffic ke halaman lain"><p>Kurangi konsentrasi traffic organik pada satu halaman saja.</p>{(data.topGscPages?.web || []).slice(0,4).map((row:any)=><div className="bar-row" key={row.page}><span>{shortPage(row.page)}</span><div><i style={{width:`${Math.min(100,(row.clicks/(data.metrics["gsc.clicks"]||1))*100)}%`}}/></div><b>{fmt.format(row.clicks)}</b></div>)}</OpportunityCard>
+                  </div>
+                </section>
+                
+                <section className="section-card g-devices" style={{ position: 'relative' }}>
+                  <SourceBadge source="Google Search Console" />
+                  <div className="section-heading"><div><p className="eyebrow">PERANGKAT (WEB)</p><h2>Traffic berdasarkan perangkat</h2></div></div><DeviceList devices={data.devices?.web || []} />
+                </section>
+                
+                <section className="section-card g-geography" style={{ position: 'relative' }}>
+                  <SourceBadge source="Google Search Console" />
+                  <div className="section-heading"><div><p className="eyebrow">GEOGRAFI & TAMPILAN</p><h2>Negara & tampilan di pencarian</h2></div></div>
+                  <div className="split-grid">
+                    <div className="split-col"><h3 className="sub-head"><Globe2 size={16} /> Negara (Wilayah)</h3><CountryList countries={data.countries?.web || []} /></div>
+                    <div className="split-col"><h3 className="sub-head"><Search size={16} /> Tampilan di Pencarian</h3><AppearanceList appearances={data.appearances?.web || []} /></div>
+                  </div><p className="device-foot">Agregat dari Google Search Console.</p>
+                </section>
+                
+                <section className="section-card g-topsearch" style={{ position: 'relative' }}>
+                  <SourceBadge source="Google Search Console" />
+                  <div className="section-heading"><div><p className="eyebrow">HALAMAN SERING DICARI</p><h2>Halaman paling sering muncul</h2></div><button className="link-button" onClick={() => openFull("gscPages", "Semua Halaman Pencarian (Web)", "web")}><ExternalLink size={14} /> Lihat semua</button></div><TopSearchPagesList pages={data.topGscPages?.web || []} />
+                </section>
+                
+                <section className="section-card g-keywords" style={{ position: 'relative' }}>
+                  <SourceBadge source="Google Search Console" />
+                  <div className="section-heading"><div><p className="eyebrow">KATA KUNCI</p><h2>Kata kunci teratas</h2></div><button className="link-button" onClick={() => openFull("queries", "Semua Kata Kunci (Web)", "web")}><ExternalLink size={14} /> Lihat semua</button></div>{(data.topQueries?.web || []).length ? <TopQueryList queries={data.topQueries.web} /> : <p className="empty-note">Belum ada data kata kunci.</p>}
+                </section>
+              </div>
+            </>
+          ) : <div className="no-data-block">Belum ada data Google Search Console (Pencarian Organik).</div>}
+
+          <h2 className="group-heading">Google Analytics</h2>
+          {hasGa ? (
+            <>
+              <section className="pillar-grid">
+                <article className="pillar-card" id="traffic" style={{ position: 'relative' }}>
+                  <SourceBadge source="Google Analytics" />
+                  <header><span className="pillar-number green"><Users /></span><div><b>Mendapatkan Pengunjung</b><p>Jumlah dan sumber traffic</p></div></header>
+                  <Metric label="Sesi" value={fmt.format(data.metrics["ga.sessions"] || 0)} comparison={data.comparisons["ga.sessions"]} values={gaValues}/>
+                  <Metric label="Pengguna aktif" value={fmt.format(data.metrics["ga.active_users"] || 0)} comparison={data.comparisons["ga.active_users"]} values={gaValues}/>
+                  <ChannelList channels={data.channels || []} sessions={data.metrics["ga.sessions"] || 0}/>
+                </article>
+
+                <article className="pillar-card" id="engagement" style={{ position: 'relative' }}>
+                  <SourceBadge source="Google Analytics" />
+                  <header><span className="pillar-number purple"><Activity /></span><div><b>Ketertarikan Konten</b><p>Kualitas sesi pengunjung</p></div></header>
+                  <Metric label="Page view" value={fmt.format(data.metrics["ga.page_views"] || 0)} comparison={data.comparisons["ga.page_views"]} values={engagementValues}/>
+                  <Metric label="Page view / sesi" value={dec.format(data.metrics["ga.pages_per_session"] || 0)} comparison={data.comparisons["ga.pages_per_session"]} values={engagementValues}/>
+                  <div className="small-metrics"><div><span>Engagement rata-rata</span><b>{formatDuration(data.metrics["ga.average_engagement_seconds"] || 0)}</b></div><div><span>Pengguna baru</span><b>{fmt.format(data.metrics["ga.new_users"] || 0)}</b></div></div>
+                </article>
+
+                <article className="pillar-card" id="conversion" style={{ position: 'relative' }}>
+                  <SourceBadge source="Google Analytics" />
+                  <header><span className="pillar-number orange"><MousePointerClick /></span><div><b>Tindakan Bisnis</b><p>Interaksi penting pengunjung</p></div></header>
+                  <Metric label="Click-to-chat" value={fmt.format(data.metrics["ga.click_to_chat"] || 0)} comparison={data.comparisons["ga.click_to_chat"]} values={clickWebValues}/>
+                  <Metric label="Conversion rate (chat)" value={percent(data.metrics["ga.chat_conversion_rate"], true)} comparison={data.comparisons["ga.chat_conversion_rate"]} values={clickWebValues}/>
+                  <div className="small-metrics"><div><span>Revenue tercatat</span><b>{data.metrics["ga.revenue"] ? `Rp${fmt.format(data.metrics["ga.revenue"])}` : "Belum tersedia"}</b></div></div>
+                </article>
+              </section>
+
+              <div className="dash-grid">
+                <section className="section-card full opp"><div className="section-heading"><div><p className="eyebrow">PRIORITAS ANALYTICS</p><h2>Perhatian utama</h2></div></div>
+                  <div className="opportunity-grid">
+                    <OpportunityCard number="1" title="Perkuat pengukuran konversi"><p>Pastikan tindakan bisnis penting ditandai sebagai key event di GA4.</p>{(data.events || []).slice(0,5).map((row:any)=><div className="event-row" key={row.name}><span>{row.name}</span><b>{fmt.format(row.count)}</b></div>)}</OpportunityCard>
+                  </div>
+                </section>
+                
+                <section className="section-card g-pages" style={{ position: 'relative' }}>
+                  <SourceBadge source="Google Analytics" />
+                  <div className="section-heading"><div><p className="eyebrow">HALAMAN TERPOPULER</p><h2>Paling banyak dikunjungi</h2></div><button className="link-button" onClick={() => openFull("pages", "Semua Halaman Terpopuler", "web")}><ExternalLink size={14} /> Lihat semua</button></div><TopPagesList pages={data.topPages || []} />
+                </section>
+                
+                <section className="section-card g-cities" style={{ position: 'relative' }}>
+                  <SourceBadge source="Google Analytics" />
+                  <div className="section-heading"><div><p className="eyebrow">GEOGRAFI PENGUNJUNG</p><h2>Kota asal pengunjung</h2></div><button className="link-button" onClick={() => openFull("cities", "Semua Kota", "web")}><ExternalLink size={14} /> Lihat semua</button></div><CityList cities={data.topCities || []} /><p className="device-foot">Berdasarkan data pengguna aktif.</p>
+                </section>
+                
+                <section className="section-card g-devices-visitor" style={{ position: 'relative' }}>
+                  <SourceBadge source="Google Analytics" />
+                  <div className="section-heading"><div><p className="eyebrow">PERANGKAT PENGUNJUNG</p><h2>Model perangkat pengunjung</h2></div><button className="link-button" onClick={() => openFull("deviceModels", "Semua Model Perangkat", "web")}><ExternalLink size={14} /> Lihat semua</button></div><DeviceModelList models={(data.deviceModels || []).slice(0, 7)} /><p className="device-foot">Data dari Google Analytics.</p>
+                </section>
+              </div>
+            </>
+          ) : <div className="no-data-block">Belum ada data Google Analytics.</div>}
+
+          <h2 className="group-heading">Google AI Generative (SGE)</h2>
+          {hasGscAigen ? (
+            <>
+              <section className="pillar-grid">
+                <article className="pillar-card" id="search-aigen" style={{ position: 'relative' }}>
+                  <SourceBadge source="Google AI Generative" />
+                  <header><span className="pillar-number blue"><Search /></span><div><b>Ditemukan di AI Overviews</b><p>Visibilitas website di pencarian AI</p></div></header>
+                  <Metric label="Tayangan" value={fmt.format(data.metrics["gsc-aigen.impressions"] || 0)} comparison={data.comparisons["gsc-aigen.impressions"]} values={gscAigenValues}/>
+                  <Metric label="Klik" value={fmt.format(data.metrics["gsc-aigen.clicks"] || 0)} comparison={data.comparisons["gsc-aigen.clicks"]} values={clickAigenValues}/>
+                  <div className="small-metrics"><div><span>CTR</span><b>{percent(data.metrics["gsc-aigen.ctr"], true)}</b></div><div><span>Posisi rata-rata</span><b>{dec.format(data.metrics["gsc-aigen.average_position"] || 0)}</b></div></div>
+                </article>
+              </section>
+
+              <div className="dash-grid">
+                <section className="section-card g-devices" style={{ position: 'relative' }}>
+                  <SourceBadge source="Google AI Generative" />
+                  <div className="section-heading"><div><p className="eyebrow">PERANGKAT (AI GEN)</p><h2>Traffic berdasarkan perangkat</h2></div></div><DeviceList devices={data.devices?.aigen || []} />
+                </section>
+                
+                <section className="section-card g-geography" style={{ position: 'relative' }}>
+                  <SourceBadge source="Google AI Generative" />
+                  <div className="section-heading"><div><p className="eyebrow">GEOGRAFI & TAMPILAN (AI GEN)</p><h2>Negara & tampilan di pencarian</h2></div></div>
+                  <div className="split-grid">
+                    <div className="split-col"><h3 className="sub-head"><Globe2 size={16} /> Negara (Wilayah)</h3><CountryList countries={data.countries?.aigen || []} /></div>
+                    <div className="split-col"><h3 className="sub-head"><Search size={16} /> Tampilan di Pencarian</h3><AppearanceList appearances={data.appearances?.aigen || []} /></div>
+                  </div><p className="device-foot">Agregat dari Google Search Console.</p>
+                </section>
+                
+                <section className="section-card g-topsearch" style={{ position: 'relative' }}>
+                  <SourceBadge source="Google AI Generative" />
+                  <div className="section-heading"><div><p className="eyebrow">HALAMAN SERING DICARI (AI GEN)</p><h2>Halaman paling sering muncul</h2></div><button className="link-button" onClick={() => openFull("gscPages", "Semua Halaman Pencarian (AI Gen)", "aigen")}><ExternalLink size={14} /> Lihat semua</button></div><TopSearchPagesList pages={data.topGscPages?.aigen || []} />
+                </section>
+                
+                <section className="section-card g-keywords" style={{ position: 'relative' }}>
+                  <SourceBadge source="Google AI Generative" />
+                  <div className="section-heading"><div><p className="eyebrow">KATA KUNCI (AI GEN)</p><h2>Kata kunci teratas</h2></div><button className="link-button" onClick={() => openFull("queries", "Semua Kata Kunci (AI Gen)", "aigen")}><ExternalLink size={14} /> Lihat semua</button></div>{(data.topQueries?.aigen || []).length ? <TopQueryList queries={data.topQueries.aigen} /> : <p className="empty-note">Belum ada data kata kunci.</p>}
+                </section>
+              </div>
+            </>
+          ) : <div className="no-data-block">Belum ada data Google AI Generative (SGE).</div>}
+          
         </>}
       </main>
 
@@ -392,7 +455,7 @@ function UploadModal({ open, websiteId, onClose, onDone }: { open:boolean; websi
     setError('');
     
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds timeout
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
     
     try{
       const form=new FormData();

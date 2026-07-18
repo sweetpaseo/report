@@ -18,6 +18,5 @@ export async function GET(request: Request, context: { params: Promise<{ token: 
   }
   const db = getDb();
   const periodId = new URL(request.url).searchParams.get("periodId") || undefined;
-  const searchType = (new URL(request.url).searchParams.get("searchType") === "aigen" ? "aigen" : "web") as "web" | "aigen";
-  return NextResponse.json(getDashboard(db, website.id, periodId, searchType));
+  return NextResponse.json(getDashboard(db, website.id, periodId));
 }

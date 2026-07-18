@@ -137,3 +137,9 @@ Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). For
   - Modal "Lihat semua" (sort/search/CSV) per kartu + halaman "Data lengkap" terpisah (publik, token-based).
   - Perbaikan: teks analis memenuhi lebar kartu; fix blank screen (rebuild `.next` bersih akibat HMR staleness).
 - File terlibat: seluruh source (`app/`, `components/`, `lib/`, `middleware.ts`, `package.json`, `tsconfig.json`, `next.config.ts`, `Dockerfile`, `docker-compose.yml`, `deploy/`, `scripts/`, `README.md`, `app/manifest.webmanifest`), plus setup awal `.gitignore`, `.env.example`, `CLAUDE.md`.
+
+ # #   2 0 2 6 - 0 7 - 1 8      R e f a c t o r   D a s h b o a r d   L a y o u t   ( c o m m i t   d e v ) 
+ -   M e n g u b a h   l a y o u t   d a s h b o a r d   a g a r   m e n a m p i l k a n   3   b a g i a n   l a p o r a n   s e c a r a   v e r t i k a l   ( G S C   W e b ,   G A ,   G S C   A I   G e n ) . 
+ -   M e n g h a p u s   d r o p d o w n   f i l t e r   S e a r c h   T y p e   d a r i   U I   u t a m a . 
+ -   F i l e   y a n g   d i u b a h :   c o m p o n e n t s / d a s h b o a r d - a p p . t s x ,   l i b / d a s h b o a r d . t s ,   a p p / a p i / d a s h b o a r d / r o u t e . t s ,   a p p / a p i / p u b l i c / r e p o r t / [ t o k e n ] / r o u t e . t s ,   a p p / d a s h b o a r d - t h e m e . c s s  
+ 
