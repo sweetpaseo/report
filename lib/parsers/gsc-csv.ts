@@ -26,9 +26,12 @@ function normName(value: string): string {
     .replace(/[^a-z0-9]/g, "");
 }
 
-function detectKind(name: string): "bagan" | "queries" | "pages" | "devices" | "countries" | "appearances" | "ignore" {
+type BundleKind = "bagan" | "queries" | "pages" | "devices" | "countries" | "appearances" | "filter" | "ignore";
+
+function detectKind(name: string): BundleKind {
   const n = normName(name);
   if (/bagan/.test(n)) return "bagan";
+  if (/filter/.test(n)) return "filter";
   if (/kueri|query/.test(n)) return "queries";
   if (/halaman|page|url/.test(n)) return "pages";
   if (/negara|countr/.test(n)) return "countries";
@@ -63,8 +66,28 @@ function parseRows(file: BundleFile): Record<string, string>[] {
   return parse(clean, { columns: true, relax_column_count: true, skip_empty_lines: true }) as Record<string, string>[];
 }
 
+function splitDateRange(value: string): [string, string] | null {
+  const parts = value.split(/\s*-\s*/);
+  if (parts.length !== 2) return null;
+  const start = isoDate(parts[0]);
+  const end = isoDate(parts[1]);
+  return start && end ? [start, end] : null;
+}
+
+function filterPeriod(file?: BundleFile): { start: string; end: string } | null {
+  if (!file) return null;
+  for (const row of parseRows(file)) {
+    const values = Object.values(row).map((value) => String(value ?? "").trim());
+    const label = values[0]?.toLowerCase() || "";
+    if (!/tanggal|date/.test(label)) continue;
+    const range = splitDateRange(values[1] || "");
+    if (range) return { start: range[0], end: range[1] };
+  }
+  return null;
+}
+
 export function parseGscBundle(files: BundleFile[]): GscBundle {
-  const byKind = (kind: ReturnType<typeof detectKind>) => files.find((file) => detectKind(file.name) === kind);
+  const byKind = (kind: BundleKind) => files.find((file) => detectKind(file.name) === kind);
 
   const bagan =
     byKind("bagan") ??
@@ -109,12 +132,13 @@ export function parseGscBundle(files: BundleFile[]): GscBundle {
   const appearances = collect("appearances");
   if (!countries.length) warnings.push("Negara tidak memiliki data.");
   if (!appearances.length) warnings.push("Tampilan penelusuran tidak memiliki data.");
+  const period = filterPeriod(byKind("filter"));
 
   return {
     source: "gsc",
     kind: "csv-bundle",
-    periodStart: daily[0].date,
-    periodEnd: daily[daily.length - 1].date,
+    periodStart: period?.start || daily[0].date,
+    periodEnd: period?.end || daily[daily.length - 1].date,
     warnings,
     daily,
     queries,
@@ -124,4 +148,3 @@ export function parseGscBundle(files: BundleFile[]): GscBundle {
     appearances,
   };
 }
-

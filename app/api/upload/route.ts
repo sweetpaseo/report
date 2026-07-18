@@ -34,6 +34,10 @@ type UploadResult = {
   error?: string;
 };
 
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export async function POST(request: Request) {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   const role = await verifySessionToken(token);
@@ -77,16 +81,21 @@ export async function POST(request: Request) {
         continue;
       }
       let arrayBuffer;
+      let timeoutId: NodeJS.Timeout | undefined;
       try {
         arrayBuffer = await Promise.race([
           file.arrayBuffer(),
-          new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Timeout saat membaca file")), 15000))
+          new Promise<never>((_, reject) => {
+            timeoutId = setTimeout(() => reject(new Error("Timeout saat membaca file")), 15000);
+          })
         ]);
-      } catch (e: any) {
-        logError("upload", "File gagal dibaca atau timeout", { filename: file.name, websiteId, error: e.message });
+      } catch (error) {
+        logError("upload", "File gagal dibaca atau timeout", { filename: file.name, websiteId, error: errorMessage(error) });
         results.push({ ok: false, filename: file.name, error: "Gagal membaca isi file (Timeout)." });
         invalid = true;
         continue;
+      } finally {
+        if (timeoutId) clearTimeout(timeoutId);
       }
       const buffer = Buffer.from(arrayBuffer);
       if (!validateSignature(buffer, ".csv")) {
@@ -162,7 +171,23 @@ export async function POST(request: Request) {
       results.push({ ok: false, filename: file.name, error: "Ukuran file melebihi batas." });
       continue;
     }
-    const buffer = Buffer.from(await file.arrayBuffer());
+    let arrayBuffer;
+    let timeoutId: NodeJS.Timeout | undefined;
+    try {
+      arrayBuffer = await Promise.race([
+        file.arrayBuffer(),
+        new Promise<never>((_, reject) => {
+          timeoutId = setTimeout(() => reject(new Error("Timeout saat membaca file")), 15000);
+        })
+      ]);
+    } catch (error) {
+      logError("upload", "File gagal dibaca atau timeout", { filename: file.name, websiteId, error: errorMessage(error) });
+      results.push({ ok: false, filename: file.name, error: "Gagal membaca isi file (Timeout)." });
+      continue;
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+    }
+    const buffer = Buffer.from(arrayBuffer);
     if (!validateSignature(buffer, extension)) {
       logWarn("upload", "Signature file tidak valid", { filename: file.name, websiteId });
       results.push({ ok: false, filename: file.name, error: "Isi file tidak sesuai dengan ekstensi." });

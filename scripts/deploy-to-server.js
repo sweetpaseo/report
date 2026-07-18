@@ -27,6 +27,7 @@ const DEPLOY_PORT = process.env.DEPLOY_PORT || '65002';
 const DEPLOY_USER = process.env.DEPLOY_USER;
 const DEPLOY_PASS = process.env.DEPLOY_PASS;
 const DEPLOY_DIR = process.env.DEPLOY_DIR;
+const DEPLOY_HOSTKEY = process.env.DEPLOY_HOSTKEY || 'SHA256:Iw5v86kJQoExwm2oT37MscOaRjtYPegxW3N1i2Wjt1M';
 
 function fail(message) {
   console.error('DEPLOY FAILED: ' + message);
@@ -43,7 +44,7 @@ if (!fs.existsSync(PSCP) || !fs.existsSync(PLINK)) {
   fail('PuTTY tools missing at ' + PUTTY_DIR);
 }
 
-const baseArgs = ['-P', DEPLOY_PORT, '-pw', DEPLOY_PASS];
+const baseArgs = ['-P', DEPLOY_PORT, '-pw', DEPLOY_PASS, '-hostkey', DEPLOY_HOSTKEY];
 const sshTarget = `${DEPLOY_USER}@${DEPLOY_HOST}`;
 
 function runPlink(script) {

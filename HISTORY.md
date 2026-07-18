@@ -2,6 +2,15 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-07-18 — Perbaiki upload bundle AI Generative GSC  (commit local)
+- Membersihkan timer pembacaan file upload agar request tidak tertahan setelah isi file selesai dibaca, terutama saat bundle CSV berisi beberapa file.
+- Memastikan `Filter.csv` dibaca sebagai metadata periode, bukan sebagai data kata kunci, sehingga periode bundle AI Generative mengikuti rentang tanggal ekspor GSC.
+- Memperbaiki assembler deploy agar dependency eksternal hashed dari output Next ikut masuk ke bundle produksi.
+- Mengunci root Turbopack ke folder project agar build standalone tidak menelusuri folder user Windows yang tidak boleh dibaca.
+- Membuat script deploy memakai host key PuTTY agar upload ke server bisa berjalan non-interaktif.
+- Menambahkan `AGENTS.md` agar instruksi kerja project tersedia langsung di root repo.
+- Affected files: `app/api/upload/route.ts`, `lib/parsers/gsc-csv.ts`, `scripts/assemble-deploy-bundle.js`, `scripts/deploy-to-server.js`, `next.config.ts`, `AGENTS.md`.
+
 ## 2026-07-18 — Menambahkan Sistem Logging WebApp
 - **Fitur Logging Latar Belakang**: Menambahkan tabel `system_logs` pada SQLite dan utilitas `logger.ts` untuk merekam proses *upload* data, pembacaan CSV/XLSX, interaksi *database*, hingga peringatan/error pemuatan *dashboard*.
 - **Admin UI (Log Viewer)**: Membuat *endpoint* API khusus admin (`/api/logs`) serta modal Log Viewer yang dapat diakses melalui tombol "Sistem Log" pada navigasi sidebar untuk membantu penelusuran jika terdapat kegagalan pada proses data secara terpusat tanpa perlu mengakses *database* manual.
