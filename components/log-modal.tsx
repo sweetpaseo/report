@@ -1,6 +1,20 @@
 import { useEffect, useState } from "react";
 import { Modal } from "./modal";
-import { Activity, AlertCircle, Info, AlertTriangle } from "lucide-react";
+import { Activity, AlertCircle, Info, AlertTriangle, Copy, Check } from "lucide-react";
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <button onClick={handleCopy} title="Copy to clipboard" style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--muted)", padding: "2px", display: "inline-flex", alignItems: "center" }}>
+      {copied ? <Check size={14} color="var(--green)" /> : <Copy size={14} />}
+    </button>
+  );
+}
 
 export function LogModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [logs, setLogs] = useState<any[]>([]);
@@ -54,10 +68,15 @@ export function LogModal({ open, onClose }: { open: boolean; onClose: () => void
                   <td>{log.message}</td>
                   <td>
                     <details>
-                      <summary style={{ cursor: "pointer", color: "var(--blue)" }}>Lihat Detail</summary>
-                      <pre style={{ background: "#f4f4f5", padding: "8px", borderRadius: "4px", marginTop: "4px", fontSize: "11px", overflowX: "auto" }}>
-                        {log.details ? JSON.stringify(JSON.parse(log.details), null, 2) : "-"}
-                      </pre>
+                      <summary style={{ cursor: "pointer", color: "var(--blue)", display: "flex", alignItems: "center", gap: "6px" }}>Lihat Detail</summary>
+                      <div style={{ position: "relative", marginTop: "4px" }}>
+                        <div style={{ position: "absolute", top: "6px", right: "6px" }}>
+                          <CopyButton text={log.details ? JSON.stringify(JSON.parse(log.details), null, 2) : "-"} />
+                        </div>
+                        <pre style={{ background: "#f4f4f5", padding: "8px", borderRadius: "4px", fontSize: "11px", overflowX: "auto" }}>
+                          {log.details ? JSON.stringify(JSON.parse(log.details), null, 2) : "-"}
+                        </pre>
+                      </div>
                     </details>
                   </td>
                 </tr>
