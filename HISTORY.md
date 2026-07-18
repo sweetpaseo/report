@@ -2,6 +2,9 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-07-18 — Menambahkan label sumber data pada dashboard card
+- Menambahkan komponen `SourceBadge` di `components/dashboard-app.tsx` untuk menampilkan asal data (Google Search Console, Google Analytics, atau Google AI Generative) pada pojok kanan atas setiap kartu (card) di dashboard.
+
 ## 2026-07-17 — Perbaikan Hak Akses Client & CSRF Bypass (commit abc5e99)
 - **Bug 1 (Client Dashboard Kosong)**: Patch keamanan sebelumnya (B1) secara tidak sengaja membuat `GET /api/websites` hanya bisa diakses oleh `admin`. Hal ini memutus akses *role* `client` untuk mengambil daftar *website* di *dashboard*, sehingga *dashboard* selalu tampil kosong.
   - *Perbaikan*: Melonggarkan cek *role* di `app/api/websites/route.ts` menjadi `if (!role)` sehingga baik `admin` maupun `client` bisa mengaksesnya. Rahasia `public_token` tetap aman karena disaring di tingkat *query* SQL (kecuali untuk admin).

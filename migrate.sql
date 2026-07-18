@@ -1,0 +1,6 @@
+ALTER TABLE gsc_daily_metrics ADD COLUMN search_type TEXT NOT NULL DEFAULT 'web';
+ALTER TABLE gsc_queries ADD COLUMN search_type TEXT NOT NULL DEFAULT 'web';
+ALTER TABLE gsc_pages ADD COLUMN search_type TEXT NOT NULL DEFAULT 'web';
+ALTER TABLE gsc_devices ADD COLUMN search_type TEXT NOT NULL DEFAULT 'web';
+ALTER TABLE gsc_countries ADD COLUMN search_type TEXT NOT NULL DEFAULT 'web';
+ALTER TABLE gsc_appearance ADD COLUMN search_type TEXT NOT NULL DEFAULT 'web';

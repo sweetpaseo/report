@@ -1,0 +1,3 @@
+sed -i 's|^SetEnv NODE_OPTIONS .*|SetEnv NODE_OPTIONS "--require /home/u544113687/domains/report.erihome.id/public_html/.builds/config/preload-timestamp.js --v8-pool-size=2"|g' /home/u544113687/domains/report.erihome.id/public_html/.htaccess
+echo 'SetEnv UV_THREADPOOL_SIZE 2' >> /home/u544113687/domains/report.erihome.id/public_html/.htaccess
+touch /home/u544113687/domains/report.erihome.id/nodejs/tmp/restart.txt
