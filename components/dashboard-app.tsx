@@ -205,6 +205,9 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
           {!isClientMode && isAdmin && <a onClick={() => setLogModal(true)} style={{ cursor: "pointer" }}><Activity /> Sistem Log</a>}
         </nav>
         {!isPublic && <button className="sidebar-logout" onClick={logout}><LogOut /> Keluar</button>}
+        <div className="sidebar-footer" style={{ padding: "16px 24px", fontSize: "0.75rem", color: "var(--text-light)", opacity: 0.6, marginTop: "auto" }}>
+          Versi: {process.env.NEXT_PUBLIC_APP_VERSION || "0.1.0"} ({process.env.NEXT_PUBLIC_COMMIT_HASH || "dev"})
+        </div>
       </aside>
       {mobileMenu && <div className="sidebar-backdrop" onClick={() => setMobileMenu(false)} aria-hidden="true" />}
 

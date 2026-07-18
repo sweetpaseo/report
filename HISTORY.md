@@ -2,6 +2,11 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-07-18 — Menambahkan indikator versi pada webapp (commit local)
+- Menambahkan indikator versi aplikasi di pojok kiri bawah sidebar untuk mempermudah pengecekan kesamaan rilis antara lokal, GitHub, dan server.
+- Versi aplikasi disuntik menggunakan `NEXT_PUBLIC_APP_VERSION` (dibaca dari `package.json`) dan `NEXT_PUBLIC_COMMIT_HASH` (dibaca dari Git rev-parse) pada saat *build* lokal melalui `next.config.ts`.
+- File terdampak: `package.json`, `next.config.ts`, `components/dashboard-app.tsx`.
+
 ## 2026-07-18 — Perbaiki upload bundle AI Generative GSC  (commit local)
 - Membersihkan timer pembacaan file upload agar request tidak tertahan setelah isi file selesai dibaca, terutama saat bundle CSV berisi beberapa file.
 - Memastikan `Filter.csv` dibaca sebagai metadata periode, bukan sebagai data kata kunci, sehingga periode bundle AI Generative mengikuti rentang tanggal ekspor GSC.
