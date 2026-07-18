@@ -382,11 +382,54 @@ function ClientModal({ open, onClose, onCreated, clients }: { open:boolean; onCl
 function UploadModal({ open, websiteId, onClose, onDone }: { open:boolean; websiteId:string; onClose:()=>void; onDone:(r:any)=>void }) {
   const [files,setFiles]=useState<File[]>([]); const [error,setError]=useState(""); const [loading,setLoading]=useState(false); const [isAiGen,setIsAiGen]=useState(false); const input=useRef<HTMLInputElement>(null);
   function addFiles(list:FileList|null){if(list&&list.length)setFiles((prev)=>[...prev,...Array.from(list)]);}
-  async function submit(e:FormEvent){e.preventDefault();if(!files.length||!websiteId)return setError('Pilih website dan minimal satu file terlebih dahulu.');setLoading(true);setError('');const form=new FormData();form.set('websiteId',websiteId);form.set('isAiGen',String(isAiGen));for(const f of files)form.append('file',f);const response=await fetch('/api/upload',{method:'POST',headers:{'x-requested-with': 'XMLHttpRequest'},body:form});const result=await response.json();setLoading(false);if(!response.ok)return setError(result.error||'Upload gagal.');setFiles([]);setIsAiGen(false);onDone(result);}
+  async function submit(e:FormEvent){
+    e.preventDefault();
+    if(!files.length||!websiteId)return setError('Pilih website dan minimal satu file terlebih dahulu.');
+    setLoading(true);
+    setError('');
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds timeout
+    
+    try{
+      const form=new FormData();
+      form.set('websiteId',websiteId);
+      form.set('isAiGen',String(isAiGen));
+      for(const f of files)form.append('file',f);
+      
+      const response=await fetch('/api/upload',{
+        method:'POST',
+        headers:{'x-requested-with': 'XMLHttpRequest'},
+        body:form,
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
+      let result;
+      try{
+        result=await response.json();
+      }catch(err){
+        throw new Error('Server mengembalikan respons yang tidak valid (bukan JSON).');
+      }
+      setLoading(false);
+      if(!response.ok)return setError(result.error||'Upload gagal.');
+      setFiles([]);
+      setIsAiGen(false);
+      onDone(result);
+    }catch(err:any){
+      clearTimeout(timeoutId);
+      setLoading(false);
+      if (err.name === 'AbortError') {
+        setError('Koneksi terputus atau server tidak merespons (Timeout).');
+      } else {
+        setError(err.message||'Terjadi kesalahan saat mengunggah.');
+      }
+    }
+  }
   return <Modal open={open} title="Upload report mentah" onClose={onClose}><form className="form-stack" onSubmit={submit}><button type="button" className={`dropzone ${files.length?'selected':''}`} onClick={()=>input.current?.click()} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();addFiles(e.dataTransfer.files);}}><input ref={input} hidden type="file" accept=".xlsx,.csv" multiple onChange={e=>addFiles(e.target.files)}/><Upload/>{files.length?<><b>{files.length} file dipilih</b><span>{files.map(f=>f.name).join(', ').slice(0,90)}</span></>:<><b>Tarik file ke sini</b><span>atau klik untuk memilih XLSX / CSV (bisa lebih dari satu)</span></>}</button><div className="upload-note"><Check/>Sumber & periode terdeteksi otomatis. Untuk ekspor GSC berbentuk beberapa CSV, seret semua file sekaligus.</div><label style={{display:"flex",alignItems:"center",gap:8,fontSize:"0.9rem"}}><input type="checkbox" checked={isAiGen} onChange={e=>setIsAiGen(e.target.checked)}/> Khusus data AI Generative (SGE)</label>{error&&<p className="form-error">{error}</p>}<button className="button primary wide" disabled={loading||!files.length}>{loading?'Memvalidasi dan memproses…':`Proses ${files.length} report`}</button>{files.length>0&&<ul className="file-list" style={{ maxHeight: '35vh', overflowY: 'auto', marginTop: '16px' }}>{files.map((f,i)=><li key={`${f.name}-${i}`}><span className="file-name">{f.name}</span><span className="file-size">{(f.size/1024).toFixed(1)} KB</span><button type="button" className="file-remove" onClick={()=>setFiles(files.filter((_,j)=>j!==i))} aria-label={`Hapus ${f.name}`}><X size={14}/></button></li>)}</ul>}</form></Modal>;
 }
 
-function OpportunityCard({number,title,children}:{number:string;title:string;children:React.ReactNode}){return <article className="opportunity-card"><header><span>{number}</span><b>{title}</b></header>{children}</article>}
+function OpportunityCard({number,title,source,children}:{number:string;title:string;source?:string;children:React.ReactNode}){return <article className="opportunity-card" style={{position:'relative'}}>{source && <SourceBadge source={source} />}<header><span>{number}</span><b>{title}</b></header>{children}</article>}
 function ChannelList({channels,sessions}:{channels:any[];sessions:number}){return <div className="channel-list">{channels.slice(0,4).map((row,i)=><div key={row.channel}><span><i className={`dot d${i}`}/>{row.channel}</span><b>{fmt.format(row.sessions)} <small>({percent(sessions?row.sessions/sessions:0,true)})</small></b></div>)}</div>}
 function shortPage(value:string){try{const p=new URL(value).pathname;return p==='/'?'Homepage':p.replace(/^\//,'');}catch{return value;}}
 function formatDuration(seconds:number){const total=Math.round(seconds);const m=Math.floor(total/60);const s=total%60;return m?`${m}m ${s}d`:`${s} detik`}
@@ -456,24 +499,25 @@ function DeviceModelList({ models }:{ models:Array<{ model:string; activeUsers:n
   ))}</div>;
 }
 
-function AppearanceList({ appearances }:{ appearances:Array<{ name:string; clicks:number; impressions:number; ctr:number; averagePosition:number }> }){
+function AppearanceList({ appearances }:{ appearances:Array<{ appearance:string; clicks:number; impressions:number; ctr:number; averagePosition:number }> }){
   if(!appearances.length) return <p className="empty-note">Belum ada data tampilan penelusuran.</p>;
+  const total=appearances.reduce((sum,a)=>sum+(a.impressions||0),0)||1;
   const max=Math.max(...appearances.map((a)=>a.impressions||0),1);
   return <div className="device-list">{appearances.map((a)=>(
-    <div className="device-row" key={a.name}>
-      <div className="device-head"><b>{a.name}</b><span>{fmt.format(a.impressions)} tayangan</span></div>
+    <div className="device-row" key={a.appearance}>
+      <div className="device-head"><b>{a.appearance}</b><span>{fmt.format(a.impressions)} tayangan</span></div>
       <div className="bar"><i style={{width:`${Math.min(100,(a.impressions/max)*100)}%`}}/></div>
       <div className="device-meta"><span>Klik {fmt.format(a.clicks)}</span><span>CTR {percent(a.ctr,true)}</span><span>Posisi {dec.format(a.averagePosition)}</span></div>
     </div>
-  ))}</div>;
+  ))}<p className="device-foot">Total tayangan khusus: {fmt.format(total)}</p></div>;
 }
 
-function AnalystNotes({ notes }:{ notes:string[] }){
-  if(!notes.length) return null;
-  return <section className="section-card analyst-card"><div className="section-heading"><div><p className="eyebrow">CATATAN ANALIS</p><h2>Interpretasi profesional</h2></div></div><ul className="analyst-list">{notes.map((note,i)=><li key={i}><span className="analyst-badge">{i+1}</span><p>{note}</p></li>)}</ul></section>;
+function AnalystNotes({ notes }: { notes: Array<{ content: string; author: string; created_at: string }> }) {
+  if (!notes || !notes.length) return null;
+  return <section className="section-card analyst-notes"><div className="section-heading"><div><p className="eyebrow">CATATAN ANALIS</p><h2>Insight Manual & Temuan Kunci</h2></div></div><div className="notes-list">{notes.map((n, i) => <article key={i}><div className="note-meta"><b>{n.author || "Analis"}</b><span>{new Date(n.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</span></div><div className="note-content" dangerouslySetInnerHTML={{ __html: n.content }} /></article>)}</div></section>;
 }
 
-function AnomalyList({ anomalies, partial }:{ anomalies:Array<{ severity:string; text:string }>; partial?:boolean }){
+function AnomalyList({ anomalies, partial }: { anomalies: Array<{ severity: "critical" | "warning" | "positive"; text: string }>; partial: boolean }) {
   if(!anomalies.length) return null;
   return <section className="section-card anomaly-card" id="anomalies"><div className="section-heading"><div><p className="eyebrow">PERINGATAN & ANOMALI</p><h2>Apa yang perlu diperhatikan segera?</h2></div></div>{partial && <p className="partial-note light"><CircleAlert size={14} /> Bulan ini masih berjalan, sehingga anomali penurunan bisa berubah saat data akhir bulan masuk.</p>}<ul className="anomaly-list">{anomalies.map((a,i)=><li key={i} className={`anomaly-item ${a.severity}`}><span className="anomaly-icon">{a.severity==="critical"?<CircleAlert/>:a.severity==="warning"?<TrendingDown/>:<TrendingUp/>}</span><p>{a.text}</p></li>)}</ul></section>;
 }
@@ -495,8 +539,9 @@ function SourceBadge({ source }: { source: string }) {
         borderRadius: "6px",
         backgroundColor: "#f4f7fb",
         color: "#667085",
-        border: "1px solid #e5eaf2",
+        border: "1px solid #eaecf0",
         zIndex: 2,
+        boxShadow: "0 1px 2px rgba(16,24,40,0.05)"
       }}
     >
       {source}

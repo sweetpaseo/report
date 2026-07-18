@@ -76,7 +76,19 @@ export async function POST(request: Request) {
         invalid = true;
         continue;
       }
-      const buffer = Buffer.from(await file.arrayBuffer());
+      let arrayBuffer;
+      try {
+        arrayBuffer = await Promise.race([
+          file.arrayBuffer(),
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Timeout saat membaca file")), 15000))
+        ]);
+      } catch (e: any) {
+        logError("upload", "File gagal dibaca atau timeout", { filename: file.name, websiteId, error: e.message });
+        results.push({ ok: false, filename: file.name, error: "Gagal membaca isi file (Timeout)." });
+        invalid = true;
+        continue;
+      }
+      const buffer = Buffer.from(arrayBuffer);
       if (!validateSignature(buffer, ".csv")) {
         logWarn("upload", "Signature CSV tidak valid", { filename: file.name, websiteId });
         results.push({ ok: false, filename: file.name, error: "Isi file tidak sesuai dengan format CSV." });
