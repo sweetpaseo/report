@@ -243,6 +243,9 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
             <h2>{data.website.name}</h2>
             <p>{data.website.domain}{data.periods?.find((p:any)=>p.id===periodId)?.period_label ? ` · ${data.periods.find((p:any)=>p.id===periodId)?.period_label}` : ""}</p>
           </div>
+
+          {data.monthlySeries?.length > 1 && <MonthlyTrend data={data} />}
+
           <section className="health-summary">
             <div className={`health-icon ${data.status === "BERTUMBUH" ? "good" : data.status === "PERLU PERHATIAN" ? "bad" : "steady"}`}><TrendingUp /></div>
             <div className="health-title"><span className={`status-pill ${data.status === "BERTUMBUH" ? "success" : "warning"}`}>{data.status}</span><strong>{data.status === "BERTUMBUH" ? "Website berada dalam kondisi positif." : "Website membutuhkan evaluasi terarah."}</strong></div>
@@ -250,8 +253,6 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
           </section>
 
           <div className="analyst-wrap"><AnalystNotes notes={data.analystNotes || []} /></div>
-
-          {data.monthlySeries?.length > 1 && <MonthlyTrend data={data} />}
 
           <div className="dash-grid">
             <section className="section-card g-change"><div className="section-heading"><div><p className="eyebrow">PERUBAHAN UTAMA</p><h2>Apa yang berubah dibanding bulan lalu?</h2></div></div><div className="insight-grid" style={{ marginBottom: "24px" }}>{(data.insights || []).slice(0, 4).map((insight: string, i: number) => <article key={insight}><span className={i === 1 ? "insight-icon down" : "insight-icon"}>{i === 1 ? <TrendingDown/> : <TrendingUp/>}</span><p>{insight}</p></article>)}</div>{data.isPartialMonth && <p className="partial-note"><CircleAlert size={14} /> Periode ini belum berakhir (masih berjalan). Angka dibandingkan dengan bulan lalu mungkin belum mencerminkan kondisi akhir bulan.</p>}</section>

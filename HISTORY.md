@@ -2,6 +2,10 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-07-19 — Pindah grafik tren bulanan ke paling atas (commit 56b2815)
+- Memindahkan posisi komponen `<MonthlyTrend>` agar dirender tepat di bawah judul/periode _dashboard_, mendahului bagian _health-summary_ (penilaian sistem AI).
+- File terdampak: `components/dashboard-app.tsx`.
+
 ## 2026-07-19 — Styling UI untuk AnalystNotes (commit 2b61d15)
 - Menambahkan class CSS (`.notes-list`, `.note-meta`, `.note-content`) di `app/dashboard-theme.css` yang sebelumnya terlewat, sehingga tampilan kartu "Catatan Analis" kembali rapi dengan border, margin, dan tipografi yang benar.
 - File terdampak: `app/dashboard-theme.css`.
