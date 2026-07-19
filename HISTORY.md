@@ -1,13 +1,19 @@
-﻿# History Log â€” website-health-report
+# History Log — website-health-report
 
-Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD â€” <judul singkat>  (commit <hash>)`.
+Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
-## 2026-07-18 â€” Menambahkan indikator versi pada webapp (commit local)
+## 2026-07-19 — Perbaikan error render AnalystNotes (commit a422ff6)
+- Memperbaiki bug pada komponen `AnalystNotes` yang merender teks "AnalisInvalid Date" (seperti di screenshot).
+- Mengubah tipe props `notes` di `components/dashboard-app.tsx` agar mendukung array of strings (berasal dari insight generator `lib/dashboard.ts`) selain object.
+- Jika array berisi string, komponen sekarang otomatis mengisi author dengan "Sistem AI" dan date dengan "Insight Otomatis", lalu merender konten string dengan benar.
+- File terdampak: `components/dashboard-app.tsx`.
+
+## 2026-07-18 — Menambahkan indikator versi pada webapp (commit local)
 - Menambahkan indikator versi aplikasi di pojok kiri bawah sidebar untuk mempermudah pengecekan kesamaan rilis antara lokal, GitHub, dan server.
 - Versi aplikasi disuntik menggunakan `NEXT_PUBLIC_APP_VERSION` (dibaca dari `package.json`) dan `NEXT_PUBLIC_COMMIT_HASH` (dibaca dari Git rev-parse) pada saat *build* lokal melalui `next.config.ts`.
 - File terdampak: `package.json`, `next.config.ts`, `components/dashboard-app.tsx`.
 
-## 2026-07-18 â€” Perbaiki upload bundle AI Generative GSC  (commit local)
+## 2026-07-18 — Perbaiki upload bundle AI Generative GSC  (commit local)
 - Membersihkan timer pembacaan file upload agar request tidak tertahan setelah isi file selesai dibaca, terutama saat bundle CSV berisi beberapa file.
 - Memastikan `Filter.csv` dibaca sebagai metadata periode, bukan sebagai data kata kunci, sehingga periode bundle AI Generative mengikuti rentang tanggal ekspor GSC.
 - Memperbaiki assembler deploy agar dependency eksternal hashed dari output Next ikut masuk ke bundle produksi.

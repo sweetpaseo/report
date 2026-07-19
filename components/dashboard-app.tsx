@@ -590,9 +590,15 @@ function AppearanceList({ appearances }:{ appearances:Array<{ appearance:string;
   ))}<p className="device-foot">Total tayangan khusus: {fmt.format(total)}</p></div>;
 }
 
-function AnalystNotes({ notes }: { notes: Array<{ content: string; author: string; created_at: string }> }) {
+function AnalystNotes({ notes }: { notes: Array<any> }) {
   if (!notes || !notes.length) return null;
-  return <section className="section-card analyst-notes"><div className="section-heading"><div><p className="eyebrow">CATATAN ANALIS</p><h2>Insight Manual & Temuan Kunci</h2></div></div><div className="notes-list">{notes.map((n, i) => <article key={i}><div className="note-meta"><b>{n.author || "Analis"}</b><span>{new Date(n.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</span></div><div className="note-content" dangerouslySetInnerHTML={{ __html: n.content }} /></article>)}</div></section>;
+  return <section className="section-card analyst-notes"><div className="section-heading"><div><p className="eyebrow">CATATAN ANALIS</p><h2>Insight Manual & Temuan Kunci</h2></div></div><div className="notes-list">{notes.map((n, i) => {
+    const isObj = typeof n === "object" && n !== null;
+    const author = isObj ? (n.author || "Analis") : "Sistem AI";
+    const dateStr = isObj && n.created_at ? new Date(n.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "Insight Otomatis";
+    const content = isObj ? n.content : n;
+    return <article key={i}><div className="note-meta"><b>{author}</b><span>{dateStr}</span></div><div className="note-content" dangerouslySetInnerHTML={{ __html: content }} /></article>;
+  })}</div></section>;
 }
 
 function AnomalyList({ anomalies, partial }: { anomalies: Array<{ severity: "critical" | "warning" | "positive"; text: string }>; partial: boolean }) {
