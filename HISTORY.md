@@ -2,6 +2,10 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-07-19 — Styling UI untuk AnalystNotes (commit 2b61d15)
+- Menambahkan class CSS (`.notes-list`, `.note-meta`, `.note-content`) di `app/dashboard-theme.css` yang sebelumnya terlewat, sehingga tampilan kartu "Catatan Analis" kembali rapi dengan border, margin, dan tipografi yang benar.
+- File terdampak: `app/dashboard-theme.css`.
+
 ## 2026-07-19 — Perbaikan error render AnalystNotes (commit a422ff6)
 - Memperbaiki bug pada komponen `AnalystNotes` yang merender teks "AnalisInvalid Date" (seperti di screenshot).
 - Mengubah tipe props `notes` di `components/dashboard-app.tsx` agar mendukung array of strings (berasal dari insight generator `lib/dashboard.ts`) selain object.

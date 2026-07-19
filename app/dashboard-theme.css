@@ -377,3 +377,49 @@
 .quick-jump-menu a.jump-web:hover { background: #eff6ff; color: #1d4ed8; }
 .quick-jump-menu a.jump-ga:hover { background: #fff7ed; color: #c2410c; }
 .quick-jump-menu a.jump-aigen:hover { background: #fdf4ff; color: #a21caf; }
+
+/* --- Analyst Notes --- */
+.analyst-notes .notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.notes-list article {
+  background: #f8fafc;
+  border-left: 4px solid var(--blue);
+  padding: 18px 20px;
+  border-radius: 0 12px 12px 0;
+  border-top: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.note-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.note-meta b {
+  color: #0f172a;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.note-meta span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  background: #e2e8f0;
+  padding: 2px 8px;
+  border-radius: 99px;
+}
+
+.note-content {
+  color: #334155;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
