@@ -2,6 +2,12 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-08-07 — Redesign Apple Tech & High-Tech Agency Aesthetic (Tasteskill)
+- Merombak total antarmuka webapp (`components/dashboard-app.tsx`, `components/full-data-view.tsx`, `app/dashboard-theme.css`, `components/modal.tsx`) dengan tema **Apple Tech / High-Tech Agency**.
+- Menggunakan skema warna *OLED Midnight Black* (`#07080d`), *radial mesh gradients* berpendar, navigasi melayang (*Floating Glass Pill Header*), dan kartu data berarsitektur *Doppelrand* (Double-Bezel hardware feel).
+- Menyempurnakan tipografi *tabular numbers*, modal dialog *macOS Frosted Glass*, serta lencana *neon glow badges* untuk asal sumber data.
+- File terdampak: `app/dashboard-theme.css`, `components/dashboard-app.tsx`, `components/full-data-view.tsx`, `components/modal.tsx`, `HISTORY.md`.
+
 ## 2026-08-07 — Redesign UI & UX Dashboard Utama (Tasteskill & Penarikan Lengkap Data Google)
 - Merombak antarmuka Dashboard Utama (`components/dashboard-app.tsx`) dengan prinsip anti-slop / tasteskill untuk keterpahaman instan.
 - Menambahkan kartu visualisasi terstruktur untuk **Demografi Daerah / Provinsi (`regions`)**, **Kombinasi Sumber & Medium (`sourceMedium`)**, **Sistem Operasi (`operatingSystems`)**, **Peramban (`browsers`)**, dan **Negara GA4 (`gaCountries`)**.

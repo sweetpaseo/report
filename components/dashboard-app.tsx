@@ -717,6 +717,21 @@ function AnomalyList({ anomalies, partial }: { anomalies: Array<{ severity: "cri
 
 function SourceBadge({ source }: { source: string }) {
   if (!source) return null;
+  const isGsc = source.includes("Search Console");
+  const isGa = source.includes("Analytics");
+
+  const badgeBg = isGsc
+    ? "rgba(59, 130, 246, 0.15)"
+    : isGa
+    ? "rgba(16, 185, 129, 0.15)"
+    : "rgba(139, 92, 246, 0.15)";
+  const badgeColor = isGsc ? "#60a5fa" : isGa ? "#34d399" : "#c084fc";
+  const badgeBorder = isGsc
+    ? "rgba(59, 130, 246, 0.3)"
+    : isGa
+    ? "rgba(16, 185, 129, 0.3)"
+    : "rgba(139, 92, 246, 0.3)";
+
   return (
     <span
       className="source-badge"
@@ -727,14 +742,15 @@ function SourceBadge({ source }: { source: string }) {
         fontSize: "10px",
         fontWeight: 700,
         textTransform: "uppercase",
-        letterSpacing: "0.05em",
-        padding: "4px 8px",
-        borderRadius: "6px",
-        backgroundColor: "#f4f7fb",
-        color: "#667085",
-        border: "1px solid #eaecf0",
+        letterSpacing: "0.08em",
+        padding: "4px 10px",
+        borderRadius: "9999px",
+        backgroundColor: badgeBg,
+        color: badgeColor,
+        border: `1px solid ${badgeBorder}`,
         zIndex: 2,
-        boxShadow: "0 1px 2px rgba(16,24,40,0.05)"
+        boxShadow: `0 0 12px ${badgeBg}`,
+        backdropFilter: "blur(8px)",
       }}
     >
       {source}
