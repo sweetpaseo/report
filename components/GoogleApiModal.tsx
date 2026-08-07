@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Copy, Check, RefreshCw, Key, Globe, Layers, AlertCircle, ExternalLink, X } from "lucide-react";
+import { Modal } from "./modal";
 
 interface Website {
   id: string;
@@ -22,7 +23,7 @@ interface GoogleApiModalProps {
 }
 
 export function GoogleApiModal({ website, isOpen, onClose, onSuccess }: GoogleApiModalProps) {
-  const [activeTab, setActiveTab] = useState<"website" | "service-account">("website");
+  const [activeTab, setActiveTab] = useState<"service-account" | "website">("service-account");
   const [gscSiteUrl, setGscSiteUrl] = useState(website.gsc_site_url || `sc-domain:${website.domain}`);
   const [gaPropertyId, setGaPropertyId] = useState(website.ga_property_id || "");
   const [savingWebsite, setSavingWebsite] = useState(false);
@@ -77,7 +78,7 @@ export function GoogleApiModal({ website, isOpen, onClose, onSuccess }: GoogleAp
     try {
       const res = await fetch(`/api/websites/${website.id}/google-config`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-requested-with": "XMLHttpRequest" },
         body: JSON.stringify({
           gsc_site_url: gscSiteUrl.trim(),
           ga_property_id: gaPropertyId.trim(),
@@ -85,7 +86,7 @@ export function GoogleApiModal({ website, isOpen, onClose, onSuccess }: GoogleAp
       });
       const data = await res.json();
       if (res.ok) {
-        setSyncMessage({ type: "success", text: "Konfigurasi Google API website berhasil disimpan!" });
+        setSyncMessage({ type: "success", text: "Konfigurasi ID Google API berhasil disimpan!" });
         onSuccess();
       } else {
         setSyncMessage({ type: "error", text: data.error || "Gagal menyimpan konfigurasi" });
@@ -105,7 +106,7 @@ export function GoogleApiModal({ website, isOpen, onClose, onSuccess }: GoogleAp
     try {
       const res = await fetch("/api/settings/google-service-account", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-requested-with": "XMLHttpRequest" },
         body: JSON.stringify({ json_string: saJsonInput.trim() }),
       });
       const data = await res.json();
@@ -130,12 +131,12 @@ export function GoogleApiModal({ website, isOpen, onClose, onSuccess }: GoogleAp
     try {
       const res = await fetch(`/api/websites/${website.id}/sync`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-requested-with": "XMLHttpRequest" },
         body: JSON.stringify({ startDate, endDate }),
       });
       const data = await res.json();
       if (res.ok) {
-        setSyncMessage({ type: "success", text: data.message || "Berhasil melakukan sinkronisasi data Google API!" });
+        setSyncMessage({ type: "success", text: data.message || "Berhasil menarik data dari Google API!" });
         onSuccess();
       } else {
         setSyncMessage({ type: "error", text: data.error || "Gagal menarik data dari Google API" });
@@ -156,261 +157,171 @@ export function GoogleApiModal({ website, isOpen, onClose, onSuccess }: GoogleAp
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-2xl max-w-2xl w-full text-slate-100 overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/50">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
-              <Globe className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-lg">Integrasi Google API ({website.name})</h3>
-              <p className="text-xs text-slate-400">Google Search Console & Google Analytics 4 Realtime Sync</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+    <Modal open={isOpen} title={`Google API Sync (${website.name})`} onClose={onClose}>
+      <div style={{ display: "flex", gap: "8px", marginBottom: "16px", borderBottom: "1px solid var(--line)", paddingBottom: "10px" }}>
+        <button
+          type="button"
+          className={`button ${activeTab === "service-account" ? "primary" : "secondary"}`}
+          onClick={() => setActiveTab("service-account")}
+          style={{ fontSize: "12px", padding: "8px 12px" }}
+        >
+          <Key size={14} /> 1. Service Account Key {saConfigured && "✓"}
+        </button>
+        <button
+          type="button"
+          className={`button ${activeTab === "website" ? "primary" : "secondary"}`}
+          onClick={() => setActiveTab("website")}
+          style={{ fontSize: "12px", padding: "8px 12px" }}
+        >
+          <Globe size={14} /> 2. Setting ID & Sync Data
+        </button>
+      </div>
 
-        {/* Tab Navigation */}
-        <div className="flex border-b border-slate-800 bg-slate-950/30 px-6">
-          <button
-            onClick={() => setActiveTab("website")}
-            className={`py-3 px-4 text-sm font-medium border-b-2 transition flex items-center gap-2 ${
-              activeTab === "website"
-                ? "border-emerald-500 text-emerald-400 bg-emerald-500/5"
-                : "border-transparent text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            <Layers className="w-4 h-4" />
-            Konfigurasi Website & Sync
-          </button>
-          <button
-            onClick={() => setActiveTab("service-account")}
-            className={`py-3 px-4 text-sm font-medium border-b-2 transition flex items-center gap-2 ${
-              activeTab === "service-account"
-                ? "border-emerald-500 text-emerald-400 bg-emerald-500/5"
-                : "border-transparent text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            <Key className="w-4 h-4" />
-            Service Account Key {saConfigured && <span className="w-2 h-2 rounded-full bg-emerald-400"></span>}
-          </button>
-        </div>
-
-        <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
-          {activeTab === "website" ? (
-            <>
-              {/* Service Account Status Banner */}
-              {!saConfigured ? (
-                <div className="p-4 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-300 text-sm flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-semibold">Service Account Belum Dikonfigurasi!</span>
-                    <p className="text-xs text-amber-200/80 mt-1">
-                      Buka tab <button onClick={() => setActiveTab("service-account")} className="underline font-semibold">Service Account Key</button> untuk memasukkan file JSON dari Google Cloud Console agar API dapat diakses.
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="p-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 text-xs text-emerald-300 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-400" />
-                    <span>Service Account Terhubung: <strong>{saEmail}</strong></span>
-                  </div>
-                  <button
-                    onClick={() => copyToClipboard(saEmail)}
-                    className="flex items-center gap-1 text-emerald-400 hover:underline bg-emerald-500/10 px-2 py-1 rounded"
-                  >
-                    {copiedEmail ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                    {copiedEmail ? "Tersalin" : "Salin Email"}
-                  </button>
-                </div>
-              )}
-
-              {/* Form Website Config */}
-              <form onSubmit={handleSaveWebsiteConfig} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-                    Google Search Console Site URL / Property
-                  </label>
-                  <input
-                    type="text"
-                    value={gscSiteUrl}
-                    onChange={(e) => setGscSiteUrl(e.target.value)}
-                    placeholder="sc-domain:example.com atau https://example.com/"
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500 font-mono"
-                  />
-                  <p className="text-xs text-slate-400 mt-1">
-                    Format: <code>sc-domain:domain.com</code> (Domain Property) atau <code>https://domain.com/</code> (URL Prefix).
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-                    Google Analytics 4 (GA4) Property ID
-                  </label>
-                  <input
-                    type="text"
-                    value={gaPropertyId}
-                    onChange={(e) => setGaPropertyId(e.target.value)}
-                    placeholder="Contoh: 123456789 (Hanya angka)"
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500 font-mono"
-                  />
-                  <p className="text-xs text-slate-400 mt-1">
-                    Dapatkan di GA4 Admin &gt; Property Settings &gt; Property ID.
-                  </p>
-                </div>
-
-                <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={savingWebsite}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
-                  >
-                    {savingWebsite ? "Menyimpan..." : "Simpan Konfigurasi ID"}
-                  </button>
-                </div>
-              </form>
-
-              <hr className="border-slate-800" />
-
-              {/* Direct Sync Action */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-semibold text-slate-200">Tarik Data Realtime (Sync API)</h4>
-                    <p className="text-xs text-slate-400">Pilih rentang tanggal untuk menarik data terbaru dari GSC & GA4</p>
-                  </div>
-                  {website.last_api_sync_at && (
-                    <span className="text-xs text-slate-400">
-                      Sync Terakhir: {new Date(website.last_api_sync_at).toLocaleString("id-ID")}
-                    </span>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs text-slate-400 mb-1">Tanggal Mulai</label>
-                    <input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-slate-400 mb-1">Tanggal Akhir</label>
-                    <input
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
-                    />
-                  </div>
-                </div>
-
-                {syncMessage && (
-                  <div
-                    className={`p-3 rounded-lg text-xs ${
-                      syncMessage.type === "success"
-                        ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-300"
-                        : "bg-rose-500/10 border border-rose-500/30 text-rose-300"
-                    }`}
-                  >
-                    {syncMessage.text}
-                  </div>
-                )}
-
-                <button
-                  type="button"
-                  onClick={handleTriggerSync}
-                  disabled={syncing || !saConfigured || (!gscSiteUrl && !gaPropertyId)}
-                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm rounded-lg flex items-center justify-center gap-2 transition disabled:opacity-50"
-                >
-                  <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
-                  {syncing ? "Sedang Menarik Data dari Google API..." : "Tarik Data Sekarang"}
-                </button>
+      {activeTab === "service-account" ? (
+        <div className="form-stack">
+          {saConfigured ? (
+            <div style={{ background: "#e8f8ef", border: "1px solid #1f9d5a", padding: "12px", borderRadius: "10px", fontSize: "12px" }}>
+              <div style={{ fontWeight: "700", color: "#148448", marginBottom: "4px" }}>
+                ✓ Service Account Aktif:
               </div>
-            </>
+              <div style={{ fontFamily: "monospace", wordBreak: "break-all", background: "#fff", padding: "6px 8px", borderRadius: "6px", border: "1px solid #d7deea", marginBottom: "8px" }}>
+                {saEmail}
+              </div>
+              <button
+                type="button"
+                className="button subtle"
+                onClick={() => copyToClipboard(saEmail)}
+                style={{ fontSize: "11px", padding: "4px 8px" }}
+              >
+                {copiedEmail ? <Check size={12} /> : <Copy size={12} />}
+                {copiedEmail ? "Tersalin!" : "Salin Email Ini"}
+              </button>
+              <p style={{ margin: "8px 0 0", color: "#344054", fontSize: "11px" }}>
+                Tambahkan email di atas sebagai <strong>Viewer / Resticted User</strong> pada Google Search Console & GA4 Property Anda.
+              </p>
+            </div>
           ) : (
-            /* Service Account Key Tab */
-            <div className="space-y-5">
-              <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 text-xs text-slate-300 space-y-2">
-                <h4 className="font-semibold text-slate-100 text-sm flex items-center gap-2">
-                  <Key className="w-4 h-4 text-emerald-400" />
-                  Cara Menghubungkan Google Service Account
-                </h4>
-                <ol className="list-decimal list-inside space-y-1 text-slate-300">
-                  <li>Buka <a href="https://console.cloud.google.com/" target="_blank" rel="noreferrer" className="text-emerald-400 underline inline-flex items-center gap-0.5">Google Cloud Console <ExternalLink className="w-3 h-3" /></a> dan buat project baru.</li>
-                  <li>Aktifkan <strong>Google Search Console API</strong> dan <strong>Google Analytics Data API</strong>.</li>
-                  <li>Buat <strong>Service Account</strong>, buat kunci berformat <strong>JSON Key</strong>, lalu unduh filenya.</li>
-                  <li>Buka isi file JSON tersebut, salin seluruh teksnya, dan tempel pada kolom di bawah ini.</li>
-                  <li>Tambahkan email Service Account tersebut sebagai <strong>Viewer / Resticted User</strong> di Google Search Console dan Google Analytics Property Anda.</li>
-                </ol>
-              </div>
-
-              {saConfigured && (
-                <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-xs text-emerald-300 flex items-center justify-between">
-                  <div>
-                    <strong>Status: Service Account Aktif</strong>
-                    <p className="text-slate-400 mt-0.5">{saEmail}</p>
-                  </div>
-                  <button
-                    onClick={() => copyToClipboard(saEmail)}
-                    className="px-2 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 rounded flex items-center gap-1"
-                  >
-                    {copiedEmail ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                    {copiedEmail ? "Tersalin" : "Salin Email"}
-                  </button>
-                </div>
-              )}
-
-              <form onSubmit={handleSaveSaJson} className="space-y-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-                    Paste Isi File JSON Service Account
-                  </label>
-                  <textarea
-                    rows={6}
-                    value={saJsonInput}
-                    onChange={(e) => setSaJsonInput(e.target.value)}
-                    placeholder='{"type": "service_account", "project_id": "...", "private_key": "...", "client_email": "..."}'
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs text-slate-100 focus:outline-none focus:border-emerald-500 font-mono"
-                  ></textarea>
-                </div>
-
-                {saMessage && (
-                  <div
-                    className={`p-3 rounded-lg text-xs ${
-                      saMessage.type === "success"
-                        ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-300"
-                        : "bg-rose-500/10 border border-rose-500/30 text-rose-300"
-                    }`}
-                  >
-                    {saMessage.text}
-                  </div>
-                )}
-
-                <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={savingSa || !saJsonInput.trim()}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
-                  >
-                    {savingSa ? "Menyimpan JSON..." : "Simpan Kredensial JSON"}
-                  </button>
-                </div>
-              </form>
+            <div style={{ background: "#fff5dc", border: "1px solid #a66b00", padding: "12px", borderRadius: "10px", fontSize: "12px", color: "#7a4f00" }}>
+              <strong>Perhatian: Service Account Belum Disimpan!</strong>
+              <p style={{ margin: "4px 0 0", fontSize: "11px" }}>
+                Tempel (paste) isi file JSON Service Account dari Google Cloud Console di bawah ini.
+              </p>
             </div>
           )}
+
+          <form onSubmit={handleSaveSaJson} className="form-stack">
+            <label>
+              Isi File JSON Service Account
+              <textarea
+                rows={5}
+                value={saJsonInput}
+                onChange={(e) => setSaJsonInput(e.target.value)}
+                placeholder='{"type": "service_account", "project_id": "...", "private_key": "...", "client_email": "..."}'
+                style={{
+                  fontFamily: "monospace",
+                  fontSize: "11px",
+                  border: "1px solid #d7deea",
+                  borderRadius: "10px",
+                  padding: "10px",
+                  width: "100%",
+                  outline: "none",
+                }}
+              />
+            </label>
+
+            {saMessage && (
+              <p className={saMessage.type === "success" ? "upload-note" : "form-error"}>
+                {saMessage.text}
+              </p>
+            )}
+
+            <button type="submit" className="button primary wide" disabled={savingSa || !saJsonInput.trim()}>
+              {savingSa ? "Menyimpan JSON..." : "Simpan Service Account Key"}
+            </button>
+          </form>
         </div>
-      </div>
-    </div>
+      ) : (
+        <div className="form-stack">
+          {!saConfigured && (
+            <p className="form-error">
+              Service Account belum dikonfigurasi. Harap isi tab &quot;1. Service Account Key&quot; terlebih dahulu.
+            </p>
+          )}
+
+          <form onSubmit={handleSaveWebsiteConfig} className="form-stack">
+            <label>
+              Search Console Site URL / Domain Property
+              <input
+                type="text"
+                value={gscSiteUrl}
+                onChange={(e) => setGscSiteUrl(e.target.value)}
+                placeholder="sc-domain:erihome.id atau https://erihome.id/"
+              />
+              <span style={{ fontSize: "11px", color: "var(--muted)", fontWeight: "normal" }}>
+                Gunakan <code>sc-domain:domain.com</code> untuk Domain Property, atau <code>https://domain.com/</code> untuk URL Prefix.
+              </span>
+            </label>
+
+            <label>
+              Google Analytics 4 (GA4) Property ID
+              <input
+                type="text"
+                value={gaPropertyId}
+                onChange={(e) => setGaPropertyId(e.target.value)}
+                placeholder="Contoh: 123456789 (Hanya angka)"
+              />
+              <span style={{ fontSize: "11px", color: "var(--muted)", fontWeight: "normal" }}>
+                ID Properti GA4 dari Admin GA4 &gt; Property Settings.
+              </span>
+            </label>
+
+            <button type="submit" className="button secondary wide" disabled={savingWebsite}>
+              {savingWebsite ? "Menyimpan..." : "Simpan ID Properti"}
+            </button>
+          </form>
+
+          <hr style={{ border: 0, borderTop: "1px solid var(--line)", margin: "8px 0" }} />
+
+          <div className="form-stack">
+            <h3 className="sub-head" style={{ margin: 0 }}>Tarik Data Realtime (Sync API)</h3>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+              <label>
+                Tanggal Mulai
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
+              </label>
+              <label>
+                Tanggal Akhir
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                />
+              </label>
+            </div>
+
+            {syncMessage && (
+              <p className={syncMessage.type === "success" ? "upload-note" : "form-error"}>
+                {syncMessage.text}
+              </p>
+            )}
+
+            <button
+              type="button"
+              className="button primary wide"
+              onClick={handleTriggerSync}
+              disabled={syncing || !saConfigured || (!gscSiteUrl && !gaPropertyId)}
+            >
+              <RefreshCw size={16} className={syncing ? "animate-spin" : ""} />
+              {syncing ? "Sedang Menarik Data dari Google..." : "Tarik Data Sekarang"}
+            </button>
+          </div>
+        </div>
+      )}
+    </Modal>
   );
 }

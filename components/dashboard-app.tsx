@@ -222,6 +222,7 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
             <div className="top-actions">
               <button className="button secondary desktop-only" onClick={() => window.print()}><Download /> Export PDF</button>
               {!isPublic && isAdmin && periodId && <button className="button secondary desktop-only" style={{color: "var(--red)"}} onClick={deletePeriod}><Trash2 /> Hapus</button>}
+              {!isPublic && isAdmin && <button className="button primary desktop-only" onClick={() => setGoogleApiModal(true)}><RefreshCw /> Google API Sync</button>}
               {!isPublic && isAdmin && <button className="button secondary desktop-only" onClick={() => setUploadModal(true)}><Upload /> Upload report</button>}
               {!isPublic && isAdmin && <button className="button secondary desktop-only" onClick={shareReport}><Share2 /> Bagikan</button>}
               {!isPublic && isAdmin && data?.website?.public_token && <a className="button secondary desktop-only" href={`/report-data/${data.website.public_token}${periodId ? `?periodId=${periodId}` : ""}`}><Database /> Data lengkap</a>}
