@@ -102,6 +102,8 @@ export async function syncGoogleDataForWebsite({
         const devicesRes = await fetchGscData(accessToken, website.gsc_site_url, startDate, endDate, ["device"]);
         // Countries
         const countriesRes = await fetchGscData(accessToken, website.gsc_site_url, startDate, endDate, ["country"]);
+        // Search Appearance
+        const appearancesRes = await fetchGscData(accessToken, website.gsc_site_url, startDate, endDate, ["searchAppearance"]);
 
         let totalClicks = 0;
         let totalImpressions = 0;
@@ -143,6 +145,7 @@ export async function syncGoogleDataForWebsite({
         db.prepare("DELETE FROM gsc_pages WHERE website_id = ? AND report_period_id = ? AND search_type = 'web'").run(websiteId, periodId);
         db.prepare("DELETE FROM gsc_devices WHERE website_id = ? AND report_period_id = ? AND search_type = 'web'").run(websiteId, periodId);
         db.prepare("DELETE FROM gsc_countries WHERE website_id = ? AND report_period_id = ? AND search_type = 'web'").run(websiteId, periodId);
+        db.prepare("DELETE FROM gsc_appearance WHERE website_id = ? AND report_period_id = ? AND search_type = 'web'").run(websiteId, periodId);
 
         // Insert summary metrics
         const metricStmt = db.prepare(`
@@ -199,6 +202,15 @@ export async function syncGoogleDataForWebsite({
           countryStmt.run(websiteId, periodId, r.keys[0] || "", r.clicks || 0, r.impressions || 0, r.ctr || 0, Math.round((r.position || 0) * 100) / 100);
         });
 
+        // Insert search appearance
+        const appearanceStmt = db.prepare(`
+          INSERT INTO gsc_appearance(website_id, report_period_id, search_type, appearance, clicks, impressions, ctr, average_position)
+          VALUES (?, ?, 'web', ?, ?, ?, ?, ?)
+        `);
+        (appearancesRes.rows || []).slice(0, 100).forEach((r) => {
+          appearanceStmt.run(websiteId, periodId, r.keys[0] || "", r.clicks || 0, r.impressions || 0, r.ctr || 0, Math.round((r.position || 0) * 100) / 100);
+        });
+
         db.exec("COMMIT");
         gscSynced = true;
       } catch (err: any) {
@@ -225,17 +237,35 @@ export async function syncGoogleDataForWebsite({
           "newUsers",
         ]);
 
+        // GA4 Source / Medium (sessionSourceMedium: sessions, activeUsers)
+        const sourceMediumGa = await fetchGa4Data(accessToken, website.ga_property_id, startDate, endDate, ["sessionSourceMedium"], [
+          "sessions",
+          "activeUsers",
+        ]);
+
         // GA4 Top Pages (pageTitle: screenPageViews)
         const pageGa = await fetchGa4Data(accessToken, website.ga_property_id, startDate, endDate, ["pageTitle"], ["screenPageViews"]);
 
         // GA4 Events (eventName: eventCount, keyEvents)
         const eventGa = await fetchGa4Data(accessToken, website.ga_property_id, startDate, endDate, ["eventName"], ["eventCount", "keyEvents"]);
 
+        // GA4 Regions (region: activeUsers)
+        const regionGa = await fetchGa4Data(accessToken, website.ga_property_id, startDate, endDate, ["region"], ["activeUsers"]);
+
         // GA4 Cities (city: activeUsers)
         const cityGa = await fetchGa4Data(accessToken, website.ga_property_id, startDate, endDate, ["city"], ["activeUsers"]);
 
+        // GA4 Countries (country: activeUsers)
+        const countryGa = await fetchGa4Data(accessToken, website.ga_property_id, startDate, endDate, ["country"], ["activeUsers"]);
+
         // GA4 Devices (mobileDeviceModel: activeUsers)
         const deviceGa = await fetchGa4Data(accessToken, website.ga_property_id, startDate, endDate, ["mobileDeviceModel"], ["activeUsers"]);
+
+        // GA4 Operating Systems (operatingSystem: activeUsers)
+        const osGa = await fetchGa4Data(accessToken, website.ga_property_id, startDate, endDate, ["operatingSystem"], ["activeUsers"]);
+
+        // GA4 Browsers (browser: activeUsers)
+        const browserGa = await fetchGa4Data(accessToken, website.ga_property_id, startDate, endDate, ["browser"], ["activeUsers"]);
 
         let totalActiveUsers = 0;
         let totalNewUsers = 0;
@@ -244,7 +274,6 @@ export async function syncGoogleDataForWebsite({
 
         const dailyRows = (dailyGa.rows || []).map((r) => {
           const dateStr = r.dimensionValues[0]?.value || "";
-          // Format GA4 date 'YYYYMMDD' to 'YYYY-MM-DD' if needed
           const formattedDate = dateStr.length === 8 ? `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}` : dateStr;
           const activeUsers = parseFloat(r.metricValues[0]?.value || "0");
           const newUsers = parseFloat(r.metricValues[1]?.value || "0");
@@ -271,10 +300,15 @@ export async function syncGoogleDataForWebsite({
         // Clean old GA data for this period
         db.prepare("DELETE FROM ga_daily_metrics WHERE website_id = ? AND report_period_id = ?").run(websiteId, periodId);
         db.prepare("DELETE FROM ga_channels WHERE website_id = ? AND report_period_id = ?").run(websiteId, periodId);
+        db.prepare("DELETE FROM ga_source_medium WHERE website_id = ? AND report_period_id = ?").run(websiteId, periodId);
         db.prepare("DELETE FROM ga_pages WHERE website_id = ? AND report_period_id = ?").run(websiteId, periodId);
         db.prepare("DELETE FROM ga_events WHERE website_id = ? AND report_period_id = ?").run(websiteId, periodId);
+        db.prepare("DELETE FROM ga_regions WHERE website_id = ? AND report_period_id = ?").run(websiteId, periodId);
         db.prepare("DELETE FROM ga_cities WHERE website_id = ? AND report_period_id = ?").run(websiteId, periodId);
+        db.prepare("DELETE FROM ga_countries WHERE website_id = ? AND report_period_id = ?").run(websiteId, periodId);
         db.prepare("DELETE FROM ga_device_models WHERE website_id = ? AND report_period_id = ?").run(websiteId, periodId);
+        db.prepare("DELETE FROM ga_operating_systems WHERE website_id = ? AND report_period_id = ?").run(websiteId, periodId);
+        db.prepare("DELETE FROM ga_browsers WHERE website_id = ? AND report_period_id = ?").run(websiteId, periodId);
 
         // Calculate GA totals for summary metrics
         const totalSessions = (channelGa.rows || []).reduce((sum, r) => sum + parseFloat(r.metricValues[0]?.value || "0"), 0);
@@ -314,6 +348,15 @@ export async function syncGoogleDataForWebsite({
           channelStmt.run(websiteId, periodId, r.dimensionValues[0]?.value || "Unassigned", parseFloat(r.metricValues[0]?.value || "0"), parseFloat(r.metricValues[1]?.value || "0"));
         });
 
+        // Insert source / medium
+        const smStmt = db.prepare(`
+          INSERT INTO ga_source_medium(website_id, report_period_id, source_medium, sessions, active_users)
+          VALUES (?, ?, ?, ?, ?)
+        `);
+        (sourceMediumGa.rows || []).slice(0, 200).forEach((r) => {
+          smStmt.run(websiteId, periodId, r.dimensionValues[0]?.value || "(not set)", parseFloat(r.metricValues[0]?.value || "0"), parseFloat(r.metricValues[1]?.value || "0"));
+        });
+
         // Insert pages
         const pageStmt = db.prepare(`
           INSERT INTO ga_pages(website_id, report_period_id, page_title, views)
@@ -332,6 +375,15 @@ export async function syncGoogleDataForWebsite({
           eventStmt.run(websiteId, periodId, r.dimensionValues[0]?.value || "(not set)", parseFloat(r.metricValues[0]?.value || "0"), parseFloat(r.metricValues[1]?.value || "0"));
         });
 
+        // Insert regions (Daerah / Provinsi)
+        const regionStmt = db.prepare(`
+          INSERT INTO ga_regions(website_id, report_period_id, region, active_users)
+          VALUES (?, ?, ?, ?)
+        `);
+        (regionGa.rows || []).slice(0, 100).forEach((r) => {
+          regionStmt.run(websiteId, periodId, r.dimensionValues[0]?.value || "(not set)", parseFloat(r.metricValues[0]?.value || "0"));
+        });
+
         // Insert cities
         const cityStmt = db.prepare(`
           INSERT INTO ga_cities(website_id, report_period_id, city, active_users)
@@ -341,6 +393,15 @@ export async function syncGoogleDataForWebsite({
           cityStmt.run(websiteId, periodId, r.dimensionValues[0]?.value || "(not set)", parseFloat(r.metricValues[0]?.value || "0"));
         });
 
+        // Insert countries (GA4)
+        const countryGaStmt = db.prepare(`
+          INSERT INTO ga_countries(website_id, report_period_id, country, active_users)
+          VALUES (?, ?, ?, ?)
+        `);
+        (countryGa.rows || []).slice(0, 100).forEach((r) => {
+          countryGaStmt.run(websiteId, periodId, r.dimensionValues[0]?.value || "(not set)", parseFloat(r.metricValues[0]?.value || "0"));
+        });
+
         // Insert device models
         const devStmt = db.prepare(`
           INSERT INTO ga_device_models(website_id, report_period_id, model, active_users)
@@ -348,6 +409,24 @@ export async function syncGoogleDataForWebsite({
         `);
         (deviceGa.rows || []).slice(0, 100).forEach((r) => {
           devStmt.run(websiteId, periodId, r.dimensionValues[0]?.value || "(not set)", parseFloat(r.metricValues[0]?.value || "0"));
+        });
+
+        // Insert operating systems
+        const osStmt = db.prepare(`
+          INSERT INTO ga_operating_systems(website_id, report_period_id, os, active_users)
+          VALUES (?, ?, ?, ?)
+        `);
+        (osGa.rows || []).slice(0, 50).forEach((r) => {
+          osStmt.run(websiteId, periodId, r.dimensionValues[0]?.value || "(not set)", parseFloat(r.metricValues[0]?.value || "0"));
+        });
+
+        // Insert browsers
+        const browserStmt = db.prepare(`
+          INSERT INTO ga_browsers(website_id, report_period_id, browser, active_users)
+          VALUES (?, ?, ?, ?)
+        `);
+        (browserGa.rows || []).slice(0, 50).forEach((r) => {
+          browserStmt.run(websiteId, periodId, r.dimensionValues[0]?.value || "(not set)", parseFloat(r.metricValues[0]?.value || "0"));
         });
 
         db.exec("COMMIT");
@@ -360,6 +439,7 @@ export async function syncGoogleDataForWebsite({
     }
 
     if (!gscSynced && !gaSynced) {
+
       db.prepare(
         "UPDATE websites SET api_sync_status = 'error', api_sync_error = 'Failed to fetch both GSC and GA4 data' WHERE id = ?"
       ).run(websiteId);

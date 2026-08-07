@@ -96,15 +96,28 @@ function httpsGet(pathname) {
       }
     );
     req.on('error', reject);
-    req.setTimeout(30000, () => req.destroy(new Error('timeout')));
+    req.setTimeout(45000, () => req.destroy(new Error('timeout')));
   });
 }
 
+async function httpsGetWithRetry(pathname, maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await httpsGet(pathname);
+    } catch (err) {
+      if (attempt === maxRetries) throw err;
+      console.log(`Verification attempt ${attempt} failed (${err.message}), retrying in 5s...`);
+      await new Promise((r) => setTimeout(r, 5000));
+    }
+  }
+  throw new Error('All retries failed');
+}
+
 (async () => {
-  await new Promise((r) => setTimeout(r, 30000));
+  await new Promise((r) => setTimeout(r, 20000));
   try {
-    const login = await httpsGet('/login');
-    const me = await httpsGet('/api/auth/me');
+    const login = await httpsGetWithRetry('/login');
+    const me = await httpsGetWithRetry('/api/auth/me');
     if (login.status !== 200) fail(`/login returned HTTP ${login.status}`);
     if (!me.body.includes('Unauthorized')) fail(`/api/auth/me unexpected: ${me.body}`);
     console.log('VERIFIED: app live (login 200, auth/me Unauthorized as expected).');
@@ -122,3 +135,4 @@ echo ROLLBACK_OK`);
     fail('rolled back due to verification failure');
   }
 })();
+

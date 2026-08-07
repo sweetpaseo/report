@@ -2,6 +2,13 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-08-07 — Redesign UI & UX Dashboard Utama (Tasteskill & Penarikan Lengkap Data Google)
+- Merombak antarmuka Dashboard Utama (`components/dashboard-app.tsx`) dengan prinsip anti-slop / tasteskill untuk keterpahaman instan.
+- Menambahkan kartu visualisasi terstruktur untuk **Demografi Daerah / Provinsi (`regions`)**, **Kombinasi Sumber & Medium (`sourceMedium`)**, **Sistem Operasi (`operatingSystems`)**, **Peramban (`browsers`)**, dan **Negara GA4 (`gaCountries`)**.
+- Menyajikan penjelas bahasa manusia, lencana persentase, dan perbaikan kontras tipografi (`tabular-nums`).
+- Menulis skrip automasi sinkronisasi data bulanan (`scripts/sync-all-websites.ts`).
+- File terdampak: `lib/db.ts`, `lib/sync-google-data.ts`, `lib/dashboard.ts`, `components/dashboard-app.tsx`, `components/full-data-view.tsx`, `scripts/sync-all-websites.ts`, `app/dashboard-theme.css`.
+
 ## 2026-08-07 — Pembaruan UI & Data Halaman "Data Lengkap" (commit local)
 - Merombak halaman `Data Lengkap` (`/report-data/[token]`) dengan navigasi Tab terpisah: Google Search Console (SEO Organik) vs Google Analytics 4 (Trafik & Perilaku).
 - Menambahkan fitur *Live Search* (pencarian teks cepat), pengubah batas baris data (*Row Limit* Top 100/300/1000), serta tabel rincian tren harian (*Daily Metrics*) GSC & GA4.

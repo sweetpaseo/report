@@ -190,6 +190,27 @@ function _getDashboard(db: DatabaseSync, websiteId: string, requestedPeriodId?: 
     WHERE website_id = ? AND report_period_id = ? ORDER BY active_users DESC LIMIT 12
   `).all(websiteId, selected.id) as DeviceModelRow[];
 
+  const regions = db.prepare(`
+    SELECT region, active_users AS activeUsers FROM ga_regions
+    WHERE website_id = ? AND report_period_id = ? ORDER BY active_users DESC LIMIT 10
+  `).all(websiteId, selected.id) as Array<{ region: string; activeUsers: number }>;
+  const sourceMedium = db.prepare(`
+    SELECT source_medium AS sourceMedium, sessions, active_users AS activeUsers FROM ga_source_medium
+    WHERE website_id = ? AND report_period_id = ? ORDER BY sessions DESC LIMIT 10
+  `).all(websiteId, selected.id) as Array<{ sourceMedium: string; sessions: number; activeUsers: number }>;
+  const operatingSystems = db.prepare(`
+    SELECT os, active_users AS activeUsers FROM ga_operating_systems
+    WHERE website_id = ? AND report_period_id = ? ORDER BY active_users DESC LIMIT 8
+  `).all(websiteId, selected.id) as Array<{ os: string; activeUsers: number }>;
+  const browsers = db.prepare(`
+    SELECT browser, active_users AS activeUsers FROM ga_browsers
+    WHERE website_id = ? AND report_period_id = ? ORDER BY active_users DESC LIMIT 8
+  `).all(websiteId, selected.id) as Array<{ browser: string; activeUsers: number }>;
+  const gaCountries = db.prepare(`
+    SELECT country, active_users AS activeUsers FROM ga_countries
+    WHERE website_id = ? AND report_period_id = ? ORDER BY active_users DESC LIMIT 8
+  `).all(websiteId, selected.id) as Array<{ country: string; activeUsers: number }>;
+
   const impressionsChange = comparisons[`gsc.impressions`].percent;
   const sessionsChange = comparisons["ga.sessions"].percent;
   const chatChange = comparisons["ga.click_to_chat"].percent;
@@ -322,6 +343,11 @@ function _getDashboard(db: DatabaseSync, websiteId: string, requestedPeriodId?: 
     events,
     topCities,
     deviceModels,
+    regions,
+    sourceMedium,
+    operatingSystems,
+    browsers,
+    gaCountries,
     analystNotes,
     status,
     anomalies,
@@ -338,6 +364,11 @@ type FullEventRow = { name: string; count: number; keyCount: number };
 type FullChannelRow = { channel: string; sessions: number; newUsers: number };
 type FullGscDailyRow = { date: string; clicks: number; impressions: number; ctr: number; averagePosition: number };
 type FullGaDailyRow = { date: string; activeUsers: number; newUsers: number; engagementSeconds: number; revenue: number };
+type FullRegionRow = { region: string; activeUsers: number };
+type FullSourceMediumRow = { sourceMedium: string; sessions: number; activeUsers: number };
+type FullOsRow = { os: string; activeUsers: number };
+type FullBrowserRow = { browser: string; activeUsers: number };
+type FullGaCountryRow = { country: string; activeUsers: number };
 
 const DEFAULT_FULL_DATA_LIMIT = 300;
 
@@ -358,6 +389,11 @@ export type FullReportData = {
   channels?: FullChannelRow[];
   cities?: CityRow[];
   deviceModels?: DeviceModelRow[];
+  regions?: FullRegionRow[];
+  sourceMedium?: FullSourceMediumRow[];
+  operatingSystems?: FullOsRow[];
+  browsers?: FullBrowserRow[];
+  gaCountries?: FullGaCountryRow[];
   gscDaily?: FullGscDailyRow[];
   gaDaily?: FullGaDailyRow[];
   empty?: boolean;
@@ -417,6 +453,31 @@ export function getFullReportData(
     WHERE website_id = ? AND report_period_id = ? ORDER BY active_users DESC LIMIT ?
   `).all(websiteId, selected.id, rowLimit) as DeviceModelRow[];
 
+  const regions = db.prepare(`
+    SELECT region, active_users AS activeUsers FROM ga_regions
+    WHERE website_id = ? AND report_period_id = ? ORDER BY active_users DESC LIMIT ?
+  `).all(websiteId, selected.id, rowLimit) as FullRegionRow[];
+
+  const sourceMedium = db.prepare(`
+    SELECT source_medium AS sourceMedium, sessions, active_users AS activeUsers FROM ga_source_medium
+    WHERE website_id = ? AND report_period_id = ? ORDER BY sessions DESC LIMIT ?
+  `).all(websiteId, selected.id, rowLimit) as FullSourceMediumRow[];
+
+  const operatingSystems = db.prepare(`
+    SELECT os, active_users AS activeUsers FROM ga_operating_systems
+    WHERE website_id = ? AND report_period_id = ? ORDER BY active_users DESC LIMIT ?
+  `).all(websiteId, selected.id, rowLimit) as FullOsRow[];
+
+  const browsers = db.prepare(`
+    SELECT browser, active_users AS activeUsers FROM ga_browsers
+    WHERE website_id = ? AND report_period_id = ? ORDER BY active_users DESC LIMIT ?
+  `).all(websiteId, selected.id, rowLimit) as FullBrowserRow[];
+
+  const gaCountries = db.prepare(`
+    SELECT country, active_users AS activeUsers FROM ga_countries
+    WHERE website_id = ? AND report_period_id = ? ORDER BY active_users DESC LIMIT ?
+  `).all(websiteId, selected.id, rowLimit) as FullGaCountryRow[];
+
   const gscDailyPeriodId = getGscPeriod(db, websiteId, selected.id, "gsc_daily_metrics");
   const gscDaily = db.prepare(`
     SELECT metric_date AS date, clicks, impressions, ctr, average_position AS averagePosition
@@ -445,9 +506,15 @@ export function getFullReportData(
     channels,
     cities,
     deviceModels,
+    regions,
+    sourceMedium,
+    operatingSystems,
+    browsers,
+    gaCountries,
     gscDaily,
     gaDaily,
     empty: false,
   };
 }
+
 

@@ -13,6 +13,10 @@ import {
   Globe,
   Smartphone,
   Sparkles,
+  MapPin,
+  Share2,
+  Monitor,
+  Compass,
 } from "lucide-react";
 
 type QueryRow = { query: string; clicks: number; impressions: number; ctr: number; averagePosition: number };
@@ -23,6 +27,11 @@ type EventRow = { name: string; count: number; keyCount: number };
 type ChannelRow = { channel: string; sessions: number; newUsers: number };
 type CityRow = { city: string; activeUsers: number };
 type DeviceModelRow = { model: string; activeUsers: number };
+type RegionRow = { region: string; activeUsers: number };
+type SourceMediumRow = { sourceMedium: string; sessions: number; activeUsers: number };
+type OsRow = { os: string; activeUsers: number };
+type BrowserRow = { browser: string; activeUsers: number };
+type GaCountryRow = { country: string; activeUsers: number };
 type GscDailyRow = { date: string; clicks: number; impressions: number; ctr: number; averagePosition: number };
 type GaDailyRow = { date: string; activeUsers: number; newUsers: number; engagementSeconds: number; revenue: number };
 
@@ -42,6 +51,11 @@ type FullData = {
   channels?: ChannelRow[];
   cities?: CityRow[];
   deviceModels?: DeviceModelRow[];
+  regions?: RegionRow[];
+  sourceMedium?: SourceMediumRow[];
+  operatingSystems?: OsRow[];
+  browsers?: BrowserRow[];
+  gaCountries?: GaCountryRow[];
   gscDaily?: GscDailyRow[];
   gaDaily?: GaDailyRow[];
 };
@@ -175,6 +189,12 @@ export function FullDataView({ token }: { token: string }) {
       { key: "newUsers", label: "Pengunjung Baru", value: (r: ChannelRow) => r.newUsers.toLocaleString(), align: "right" as const },
     ] as Column<ChannelRow>[],
 
+    sourceMedium: [
+      { key: "sm", label: "Sumber / Medium (Source / Medium)", value: (r: SourceMediumRow) => r.sourceMedium },
+      { key: "sessions", label: "Sesi", value: (r: SourceMediumRow) => r.sessions.toLocaleString(), align: "right" as const },
+      { key: "users", label: "Pengguna Aktif", value: (r: SourceMediumRow) => r.activeUsers.toLocaleString(), align: "right" as const },
+    ] as Column<SourceMediumRow>[],
+
     pages: [
       { key: "title", label: "Judul / Path Halaman", value: (r: PageRow) => r.title },
       { key: "views", label: "Tayangan Halaman (Views)", value: (r: PageRow) => r.views.toLocaleString(), align: "right" as const },
@@ -186,15 +206,35 @@ export function FullDataView({ token }: { token: string }) {
       { key: "key", label: "Key Event (Konversi)", value: (r: EventRow) => r.keyCount.toLocaleString(), align: "right" as const },
     ] as Column<EventRow>[],
 
+    regions: [
+      { key: "region", label: "Daerah / Provinsi", value: (r: RegionRow) => r.region },
+      { key: "users", label: "Pengguna Aktif", value: (r: RegionRow) => r.activeUsers.toLocaleString(), align: "right" as const },
+    ] as Column<RegionRow>[],
+
     cities: [
       { key: "city", label: "Kota Pengunjung", value: (r: CityRow) => r.city },
       { key: "users", label: "Pengguna Aktif", value: (r: CityRow) => r.activeUsers.toLocaleString(), align: "right" as const },
     ] as Column<CityRow>[],
 
+    gaCountries: [
+      { key: "country", label: "Negara Pengunjung (GA4)", value: (r: GaCountryRow) => r.country },
+      { key: "users", label: "Pengguna Aktif", value: (r: GaCountryRow) => r.activeUsers.toLocaleString(), align: "right" as const },
+    ] as Column<GaCountryRow>[],
+
     deviceModels: [
       { key: "model", label: "Model Perangkat Gawai", value: (r: DeviceModelRow) => r.model },
       { key: "users", label: "Pengguna Aktif", value: (r: DeviceModelRow) => r.activeUsers.toLocaleString(), align: "right" as const },
     ] as Column<DeviceModelRow>[],
+
+    operatingSystems: [
+      { key: "os", label: "Sistem Operasi (OS)", value: (r: OsRow) => r.os },
+      { key: "users", label: "Pengguna Aktif", value: (r: OsRow) => r.activeUsers.toLocaleString(), align: "right" as const },
+    ] as Column<OsRow>[],
+
+    browsers: [
+      { key: "browser", label: "Peramban (Browser)", value: (r: BrowserRow) => r.browser },
+      { key: "users", label: "Pengguna Aktif", value: (r: BrowserRow) => r.activeUsers.toLocaleString(), align: "right" as const },
+    ] as Column<BrowserRow>[],
   };
 
   const domain = data.website?.domain ?? "laporan";
@@ -209,10 +249,15 @@ export function FullDataView({ token }: { token: string }) {
   const filteredGscDaily = filterRows(data.gscDaily, ["date"]);
 
   const filteredChannels = filterRows(data.channels, ["channel"]);
+  const filteredSourceMedium = filterRows(data.sourceMedium, ["sourceMedium"]);
   const filteredGaPages = filterRows(data.pages, ["title"]);
   const filteredEvents = filterRows(data.events, ["name"]);
+  const filteredRegions = filterRows(data.regions, ["region"]);
   const filteredCities = filterRows(data.cities, ["city"]);
+  const filteredGaCountries = filterRows(data.gaCountries, ["country"]);
   const filteredDeviceModels = filterRows(data.deviceModels, ["model"]);
+  const filteredOS = filterRows(data.operatingSystems, ["os"]);
+  const filteredBrowsers = filterRows(data.browsers, ["browser"]);
   const filteredGaDaily = filterRows(data.gaDaily, ["date"]);
 
   return (
@@ -295,7 +340,7 @@ export function FullDataView({ token }: { token: string }) {
             <Search size={14} className="search-icon" />
             <input
               type="text"
-              placeholder="Cari kata kunci, halaman, event, kota..."
+              placeholder="Cari kata kunci, halaman, provinsi, kota, event..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -334,7 +379,7 @@ export function FullDataView({ token }: { token: string }) {
           <BarChart3 size={18} />
           <span>Google Analytics 4 (Trafik & Perilaku)</span>
           <span className="tab-badge">
-            {(data.channels?.length || 0) + (data.pages?.length || 0)} data
+            {(data.channels?.length || 0) + (data.pages?.length || 0) + (data.regions?.length || 0)} data
           </span>
         </button>
       </div>
@@ -421,7 +466,7 @@ export function FullDataView({ token }: { token: string }) {
           <section className="full-data-section">
             <div className="section-head">
               <h2>
-                <Sparkles size={18} /> Tampilan Penelusuran (Search Appearance)
+                <Sparkles size={18} /> Tampilan Penelusuran (Search Appearance / Rich Results)
               </h2>
             </div>
             <DataTable
@@ -448,21 +493,35 @@ export function FullDataView({ token }: { token: string }) {
             />
           </section>
 
-          <section className="full-data-section">
-            <div className="section-head">
-              <h2>
-                <BarChart3 size={18} /> Saluran Sumber Trafik (Channel Groups)
-              </h2>
-              <span className="section-meta">
-                {filteredChannels.length} saluran terdeteksi
-              </span>
-            </div>
-            <DataTable
-              columns={COLS.channels}
-              rows={filteredChannels}
-              filename={`${filenameBase}-channel.csv`}
-            />
-          </section>
+          <div className="grid-2-col">
+            <section className="full-data-section">
+              <div className="section-head">
+                <h2>
+                  <BarChart3 size={18} /> Saluran Sumber Trafik (Channel Groups)
+                </h2>
+                <span className="section-meta">{filteredChannels.length} saluran</span>
+              </div>
+              <DataTable
+                columns={COLS.channels}
+                rows={filteredChannels}
+                filename={`${filenameBase}-channel.csv`}
+              />
+            </section>
+
+            <section className="full-data-section">
+              <div className="section-head">
+                <h2>
+                  <Share2 size={18} /> Detail Sumber / Medium (Source / Medium)
+                </h2>
+                <span className="section-meta">{filteredSourceMedium.length} kombinasi</span>
+              </div>
+              <DataTable
+                columns={COLS.sourceMedium}
+                rows={filteredSourceMedium}
+                filename={`${filenameBase}-source-medium.csv`}
+              />
+            </section>
+          </div>
 
           <section className="full-data-section">
             <div className="section-head">
@@ -496,11 +555,26 @@ export function FullDataView({ token }: { token: string }) {
             />
           </section>
 
+          {/* Demographics Grid (Regions, Cities, Countries) */}
           <div className="grid-2-col">
             <section className="full-data-section">
               <div className="section-head">
                 <h2>
-                  <Globe size={18} /> Demografi Kota Pengunjung
+                  <MapPin size={18} /> Daerah / Provinsi Pengunjung (Regions)
+                </h2>
+                <span className="section-meta">{filteredRegions.length} provinsi/daerah</span>
+              </div>
+              <DataTable
+                columns={COLS.regions}
+                rows={filteredRegions}
+                filename={`${filenameBase}-provinsi-daerah.csv`}
+              />
+            </section>
+
+            <section className="full-data-section">
+              <div className="section-head">
+                <h2>
+                  <MapPin size={18} /> Kota Pengunjung (Cities)
                 </h2>
                 <span className="section-meta">{filteredCities.length} kota</span>
               </div>
@@ -510,11 +584,28 @@ export function FullDataView({ token }: { token: string }) {
                 filename={`${filenameBase}-kota.csv`}
               />
             </section>
+          </div>
 
+          <section className="full-data-section">
+            <div className="section-head">
+              <h2>
+                <Globe size={18} /> Negara Pengunjung (GA4 Countries)
+              </h2>
+              <span className="section-meta">{filteredGaCountries.length} negara</span>
+            </div>
+            <DataTable
+              columns={COLS.gaCountries}
+              rows={filteredGaCountries}
+              filename={`${filenameBase}-ga-negara.csv`}
+            />
+          </section>
+
+          {/* Tech Grid (Device Models, Operating Systems, Browsers) */}
+          <div className="grid-2-col">
             <section className="full-data-section">
               <div className="section-head">
                 <h2>
-                  <Smartphone size={18} /> Model Perangkat Pengunjung
+                  <Smartphone size={18} /> Model Perangkat Gawai
                 </h2>
                 <span className="section-meta">{filteredDeviceModels.length} model</span>
               </div>
@@ -524,7 +615,35 @@ export function FullDataView({ token }: { token: string }) {
                 filename={`${filenameBase}-model-perangkat.csv`}
               />
             </section>
+
+            <section className="full-data-section">
+              <div className="section-head">
+                <h2>
+                  <Monitor size={18} /> Sistem Operasi (Operating System)
+                </h2>
+                <span className="section-meta">{filteredOS.length} OS</span>
+              </div>
+              <DataTable
+                columns={COLS.operatingSystems}
+                rows={filteredOS}
+                filename={`${filenameBase}-sistem-operasi.csv`}
+              />
+            </section>
           </div>
+
+          <section className="full-data-section">
+            <div className="section-head">
+              <h2>
+                <Compass size={18} /> Peramban / Browser Pengunjung
+              </h2>
+              <span className="section-meta">{filteredBrowsers.length} browser</span>
+            </div>
+            <DataTable
+              columns={COLS.browsers}
+              rows={filteredBrowsers}
+              filename={`${filenameBase}-browser.csv`}
+            />
+          </section>
         </div>
       )}
     </div>

@@ -236,6 +236,57 @@ function initialize(db: DatabaseSync) {
       FOREIGN KEY(report_period_id) REFERENCES report_periods(id) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS ga_regions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      website_id TEXT NOT NULL,
+      report_period_id TEXT NOT NULL,
+      region TEXT NOT NULL,
+      active_users REAL NOT NULL DEFAULT 0,
+      FOREIGN KEY(website_id) REFERENCES websites(id) ON DELETE CASCADE,
+      FOREIGN KEY(report_period_id) REFERENCES report_periods(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS ga_source_medium (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      website_id TEXT NOT NULL,
+      report_period_id TEXT NOT NULL,
+      source_medium TEXT NOT NULL,
+      sessions REAL NOT NULL DEFAULT 0,
+      active_users REAL NOT NULL DEFAULT 0,
+      FOREIGN KEY(website_id) REFERENCES websites(id) ON DELETE CASCADE,
+      FOREIGN KEY(report_period_id) REFERENCES report_periods(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS ga_operating_systems (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      website_id TEXT NOT NULL,
+      report_period_id TEXT NOT NULL,
+      os TEXT NOT NULL,
+      active_users REAL NOT NULL DEFAULT 0,
+      FOREIGN KEY(website_id) REFERENCES websites(id) ON DELETE CASCADE,
+      FOREIGN KEY(report_period_id) REFERENCES report_periods(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS ga_browsers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      website_id TEXT NOT NULL,
+      report_period_id TEXT NOT NULL,
+      browser TEXT NOT NULL,
+      active_users REAL NOT NULL DEFAULT 0,
+      FOREIGN KEY(website_id) REFERENCES websites(id) ON DELETE CASCADE,
+      FOREIGN KEY(report_period_id) REFERENCES report_periods(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS ga_countries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      website_id TEXT NOT NULL,
+      report_period_id TEXT NOT NULL,
+      country TEXT NOT NULL,
+      active_users REAL NOT NULL DEFAULT 0,
+      FOREIGN KEY(website_id) REFERENCES websites(id) ON DELETE CASCADE,
+      FOREIGN KEY(report_period_id) REFERENCES report_periods(id) ON DELETE CASCADE
+    );
+
     CREATE TABLE IF NOT EXISTS system_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       level TEXT NOT NULL,
@@ -246,6 +297,7 @@ function initialize(db: DatabaseSync) {
     );
     CREATE INDEX IF NOT EXISTS idx_system_logs_created_at ON system_logs(created_at DESC);
   `);
+
 
   try {
     db.exec("ALTER TABLE websites ADD COLUMN client_id TEXT REFERENCES clients(id) ON DELETE SET NULL;");

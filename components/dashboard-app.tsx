@@ -2,8 +2,8 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Activity, BarChart3, Check, ChevronDown, CircleAlert, Database, Download, ExternalLink,
-  FileSpreadsheet, FolderOpen, Gauge, Globe2, Home, LogOut, Menu, MousePointerClick, Plus, RefreshCw, Search,
+  Activity, BarChart3, Check, ChevronDown, CircleAlert, Compass, Database, Download, ExternalLink,
+  FileSpreadsheet, FolderOpen, Gauge, Globe2, Home, LogOut, MapPin, Menu, Monitor, MousePointerClick, Plus, RefreshCw, Search,
   Share2, Sparkles, Target, Trash2, TrendingDown, TrendingUp, Upload, Users, X,
 } from "lucide-react";
 import { Sparkline } from "./sparkline";
@@ -354,25 +354,54 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
               </section>
 
               <div className="dash-grid">
-                <section className="section-card full opp"><div className="section-heading"><div><p className="eyebrow">PRIORITAS ANALYTICS</p><h2>Perhatian utama</h2></div></div>
+                <section className="section-card full opp"><div className="section-heading"><div><p className="eyebrow">PRIORITAS ANALYTICS</p><h2>Perhatian utama & Interaksi Kunci</h2></div></div>
                   <div className="opportunity-grid">
                     <OpportunityCard number="1" title="Perkuat pengukuran konversi"><p>Pastikan tindakan bisnis penting ditandai sebagai key event di GA4.</p>{(data.events || []).slice(0,5).map((row:any)=><div className="event-row" key={row.name}><span>{row.name}</span><b>{fmt.format(row.count)}</b></div>)}</OpportunityCard>
                   </div>
                 </section>
                 
-                <section className="section-card g-pages" style={{ position: 'relative' }}>
+                <section className="section-card g-sourcemedium" style={{ position: 'relative' }}>
                   <SourceBadge source="Google Analytics" />
-                  <div className="section-heading"><div><p className="eyebrow">HALAMAN TERPOPULER</p><h2>Paling banyak dikunjungi</h2></div><button className="link-button" onClick={() => openFull("pages", "Semua Halaman Terpopuler", "web")}><ExternalLink size={14} /> Lihat semua</button></div><TopPagesList pages={data.topPages || []} />
+                  <div className="section-heading"><div><p className="eyebrow">SUMBER & MEDIUM TRAFIK</p><h2>Detail Asal Kanal Pengunjung</h2></div></div>
+                  <SourceMediumList sourceMedium={data.sourceMedium || []} />
+                  <p className="device-foot">Kombinasi sumber & medium dari Google Analytics 4.</p>
                 </section>
-                
+
+                <section className="section-card g-regions" style={{ position: 'relative' }}>
+                  <SourceBadge source="Google Analytics" />
+                  <div className="section-heading"><div><p className="eyebrow">DEMOGRAFI PROVINSI / DAERAH</p><h2>Sebaran Pengunjung Berdasarkan Provinsi</h2></div></div>
+                  <RegionList regions={data.regions || []} />
+                  <p className="device-foot">Berdasarkan data pengguna aktif per provinsi.</p>
+                </section>
+
                 <section className="section-card g-cities" style={{ position: 'relative' }}>
                   <SourceBadge source="Google Analytics" />
-                  <div className="section-heading"><div><p className="eyebrow">GEOGRAFI PENGUNJUNG</p><h2>Kota asal pengunjung</h2></div><button className="link-button" onClick={() => openFull("cities", "Semua Kota", "web")}><ExternalLink size={14} /> Lihat semua</button></div><CityList cities={data.topCities || []} /><p className="device-foot">Berdasarkan data pengguna aktif.</p>
+                  <div className="section-heading"><div><p className="eyebrow">GEOGRAFI KOTA</p><h2>Kota Asal Pengunjung</h2></div><button className="link-button" onClick={() => openFull("cities", "Semua Kota", "web")}><ExternalLink size={14} /> Lihat semua</button></div>
+                  <CityList cities={data.topCities || []} />
+                  <p className="device-foot">Berdasarkan data pengguna aktif per kota.</p>
                 </section>
                 
+                <section className="section-card g-techstack" style={{ position: 'relative' }}>
+                  <SourceBadge source="Google Analytics" />
+                  <div className="section-heading"><div><p className="eyebrow">TEKNOLOGI PENGUNJUNG</p><h2>Sistem Operasi & Browser</h2></div></div>
+                  <div className="split-grid">
+                    <div className="split-col"><h3 className="sub-head"><Monitor size={16} /> Sistem Operasi (OS)</h3><OperatingSystemList osList={data.operatingSystems || []} /></div>
+                    <div className="split-col"><h3 className="sub-head"><Compass size={16} /> Peramban (Browser)</h3><BrowserList browsers={data.browsers || []} /></div>
+                  </div>
+                  <p className="device-foot">Distribusi OS dan peramban yang digunakan pengunjung.</p>
+                </section>
+
                 <section className="section-card g-devices-visitor" style={{ position: 'relative' }}>
                   <SourceBadge source="Google Analytics" />
-                  <div className="section-heading"><div><p className="eyebrow">PERANGKAT PENGUNJUNG</p><h2>Model perangkat pengunjung</h2></div><button className="link-button" onClick={() => openFull("deviceModels", "Semua Model Perangkat", "web")}><ExternalLink size={14} /> Lihat semua</button></div><DeviceModelList models={(data.deviceModels || []).slice(0, 7)} /><p className="device-foot">Data dari Google Analytics.</p>
+                  <div className="section-heading"><div><p className="eyebrow">PERANGKAT GAWAI</p><h2>Model Perangkat Pengunjung</h2></div><button className="link-button" onClick={() => openFull("deviceModels", "Semua Model Perangkat", "web")}><ExternalLink size={14} /> Lihat semua</button></div>
+                  <DeviceModelList models={(data.deviceModels || []).slice(0, 7)} />
+                  <p className="device-foot">Data dari Google Analytics.</p>
+                </section>
+
+                <section className="section-card g-pages" style={{ position: 'relative' }}>
+                  <SourceBadge source="Google Analytics" />
+                  <div className="section-heading"><div><p className="eyebrow">HALAMAN TERPOPULER</p><h2>Paling Banyak Dikunjungi</h2></div><button className="link-button" onClick={() => openFull("pages", "Semua Halaman Terpopuler", "web")}><ExternalLink size={14} /> Lihat semua</button></div>
+                  <TopPagesList pages={data.topPages || []} />
                 </section>
               </div>
             </>
@@ -591,6 +620,70 @@ function DeviceModelList({ models }:{ models:Array<{ model:string; activeUsers:n
   return <div className="bar-list">{models.map((m)=>(
     <div className="bar-row" key={m.model}><span>{m.model}</span><div><i style={{width:`${Math.min(100,(m.activeUsers/max)*100)}%`}}/></div><b>{fmt.format(m.activeUsers)}</b></div>
   ))}</div>;
+}
+
+function RegionList({ regions }: { regions: Array<{ region: string; activeUsers: number }> }) {
+  if (!regions || !regions.length) return <p className="empty-note">Belum ada data daerah/provinsi untuk periode ini.</p>;
+  const max = Math.max(...regions.map((r) => r.activeUsers || 0), 1);
+  return (
+    <div className="bar-list">
+      {regions.slice(0, 8).map((r) => (
+        <div className="bar-row" key={r.region}>
+          <span title={r.region}>{r.region}</span>
+          <div><i style={{ width: `${Math.min(100, (r.activeUsers / max) * 100)}%` }} /></div>
+          <b>{fmt.format(r.activeUsers)}</b>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SourceMediumList({ sourceMedium }: { sourceMedium: Array<{ sourceMedium: string; sessions: number; activeUsers: number }> }) {
+  if (!sourceMedium || !sourceMedium.length) return <p className="empty-note">Belum ada data sumber / medium untuk periode ini.</p>;
+  const max = Math.max(...sourceMedium.map((sm) => sm.sessions || 0), 1);
+  return (
+    <div className="bar-list">
+      {sourceMedium.slice(0, 8).map((sm) => (
+        <div className="bar-row" key={sm.sourceMedium}>
+          <span title={sm.sourceMedium}>{sm.sourceMedium}</span>
+          <div><i style={{ width: `${Math.min(100, (sm.sessions / max) * 100)}%` }} /></div>
+          <b>{fmt.format(sm.sessions)} <small style={{ fontWeight: 400, opacity: 0.7 }}>sesi</small></b>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function OperatingSystemList({ osList }: { osList: Array<{ os: string; activeUsers: number }> }) {
+  if (!osList || !osList.length) return <p className="empty-note">Belum ada data sistem operasi untuk periode ini.</p>;
+  const max = Math.max(...osList.map((o) => o.activeUsers || 0), 1);
+  return (
+    <div className="bar-list">
+      {osList.slice(0, 6).map((o) => (
+        <div className="bar-row" key={o.os}>
+          <span title={o.os}>{o.os}</span>
+          <div><i style={{ width: `${Math.min(100, (o.activeUsers / max) * 100)}%` }} /></div>
+          <b>{fmt.format(o.activeUsers)}</b>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function BrowserList({ browsers }: { browsers: Array<{ browser: string; activeUsers: number }> }) {
+  if (!browsers || !browsers.length) return <p className="empty-note">Belum ada data peramban/browser untuk periode ini.</p>;
+  const max = Math.max(...browsers.map((b) => b.activeUsers || 0), 1);
+  return (
+    <div className="bar-list">
+      {browsers.slice(0, 6).map((b) => (
+        <div className="bar-row" key={b.browser}>
+          <span title={b.browser}>{b.browser}</span>
+          <div><i style={{ width: `${Math.min(100, (b.activeUsers / max) * 100)}%` }} /></div>
+          <b>{fmt.format(b.activeUsers)}</b>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function AppearanceList({ appearances }:{ appearances:Array<{ appearance:string; clicks:number; impressions:number; ctr:number; averagePosition:number }> }){
