@@ -17,7 +17,11 @@ export async function GET(request: Request, context: { params: Promise<{ token: 
     return NextResponse.json({ error: "Laporan tidak ditemukan." }, { status: 404 });
   }
   const db = getDb();
-  const periodId = new URL(request.url).searchParams.get("periodId") || undefined;
-  const searchType = (new URL(request.url).searchParams.get("searchType") === "aigen" ? "aigen" : "web") as "web" | "aigen";
-  return NextResponse.json(getFullReportData(db, website.id, periodId, searchType));
+  const searchParams = new URL(request.url).searchParams;
+  const periodId = searchParams.get("periodId") || undefined;
+  const searchType = (searchParams.get("searchType") === "aigen" ? "aigen" : "web") as "web" | "aigen";
+  const limitParam = searchParams.get("limit");
+  const limit = limitParam ? parseInt(limitParam, 10) : undefined;
+  return NextResponse.json(getFullReportData(db, website.id, periodId, searchType, limit));
 }
+

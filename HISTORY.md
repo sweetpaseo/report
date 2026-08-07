@@ -2,7 +2,13 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-08-07 — Pembaruan UI & Data Halaman "Data Lengkap" (commit local)
+- Merombak halaman `Data Lengkap` (`/report-data/[token]`) dengan navigasi Tab terpisah: Google Search Console (SEO Organik) vs Google Analytics 4 (Trafik & Perilaku).
+- Menambahkan fitur *Live Search* (pencarian teks cepat), pengubah batas baris data (*Row Limit* Top 100/300/1000), serta tabel rincian tren harian (*Daily Metrics*) GSC & GA4.
+- File terdampak: `lib/dashboard.ts`, `app/api/public/report-data/[token]/route.ts`, `app/api/report-data/route.ts`, `components/full-data-view.tsx`, `app/dashboard-theme.css`.
+
 ## 2026-07-19 — Pindah grafik tren bulanan ke paling atas (commit 56b2815)
+
 - Memindahkan posisi komponen `<MonthlyTrend>` agar dirender tepat di bawah judul/periode _dashboard_, mendahului bagian _health-summary_ (penilaian sistem AI).
 - File terdampak: `components/dashboard-app.tsx`.
 

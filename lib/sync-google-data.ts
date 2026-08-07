@@ -149,10 +149,12 @@ export async function syncGoogleDataForWebsite({
           INSERT OR REPLACE INTO monthly_metrics(website_id, report_period_id, source_type, metric_key, metric_value)
           VALUES (?, ?, 'gsc', ?, ?)
         `);
-        metricStmt.run(websiteId, periodId, "total_clicks", totalClicks);
-        metricStmt.run(websiteId, periodId, "total_impressions", totalImpressions);
-        metricStmt.run(websiteId, periodId, "average_ctr", avgCtr);
+        metricStmt.run(websiteId, periodId, "clicks", totalClicks);
+        metricStmt.run(websiteId, periodId, "impressions", totalImpressions);
+        metricStmt.run(websiteId, periodId, "ctr", avgCtr);
         metricStmt.run(websiteId, periodId, "average_position", avgPos);
+        metricStmt.run(websiteId, periodId, "query_count", (queriesRes.rows || []).length);
+        metricStmt.run(websiteId, periodId, "page_count", (pagesRes.rows || []).length);
 
         // Insert daily
         const dailyStmt = db.prepare(`
@@ -274,6 +276,13 @@ export async function syncGoogleDataForWebsite({
         db.prepare("DELETE FROM ga_cities WHERE website_id = ? AND report_period_id = ?").run(websiteId, periodId);
         db.prepare("DELETE FROM ga_device_models WHERE website_id = ? AND report_period_id = ?").run(websiteId, periodId);
 
+        // Calculate GA totals for summary metrics
+        const totalSessions = (channelGa.rows || []).reduce((sum, r) => sum + parseFloat(r.metricValues[0]?.value || "0"), 0);
+        const totalPageViews = (pageGa.rows || []).reduce((sum, r) => sum + parseFloat(r.metricValues[0]?.value || "0"), 0);
+        const chatEvents = (eventGa.rows || [])
+          .filter((r) => /chat|whatsapp|wa_click|click_to_chat/i.test(r.dimensionValues[0]?.value || ""))
+          .reduce((sum, r) => sum + parseFloat(r.metricValues[0]?.value || "0"), 0);
+
         // Insert summary metrics
         const metricStmt = db.prepare(`
           INSERT OR REPLACE INTO monthly_metrics(website_id, report_period_id, source_type, metric_key, metric_value)
@@ -281,8 +290,13 @@ export async function syncGoogleDataForWebsite({
         `);
         metricStmt.run(websiteId, periodId, "active_users", totalActiveUsers);
         metricStmt.run(websiteId, periodId, "new_users", totalNewUsers);
-        metricStmt.run(websiteId, periodId, "engagement_seconds", totalEngagementSec);
+        metricStmt.run(websiteId, periodId, "sessions", totalSessions);
+        metricStmt.run(websiteId, periodId, "page_views", totalPageViews);
+        metricStmt.run(websiteId, periodId, "pages_per_session", totalSessions ? totalPageViews / totalSessions : 0);
+        metricStmt.run(websiteId, periodId, "average_engagement_seconds", totalActiveUsers ? totalEngagementSec / totalActiveUsers : 0);
         metricStmt.run(websiteId, periodId, "revenue", totalRevenue);
+        metricStmt.run(websiteId, periodId, "click_to_chat", chatEvents);
+        metricStmt.run(websiteId, periodId, "chat_conversion_rate", totalSessions ? chatEvents / totalSessions : 0);
 
         // Insert daily
         const dailyStmt = db.prepare(`

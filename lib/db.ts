@@ -299,6 +299,10 @@ function initialize(db: DatabaseSync) {
       value TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
+
+    UPDATE monthly_metrics SET metric_key = 'impressions' WHERE metric_key = 'total_impressions';
+    UPDATE monthly_metrics SET metric_key = 'clicks' WHERE metric_key = 'total_clicks';
+    UPDATE monthly_metrics SET metric_key = 'ctr' WHERE metric_key = 'average_ctr';
   `);
 
   // search_type for GSC tables (migration for existing DBs, ignoring errors)
