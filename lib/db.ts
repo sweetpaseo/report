@@ -275,6 +275,32 @@ function initialize(db: DatabaseSync) {
     // Ignore if column already exists
   }
   
+  // Google API Integration columns for websites
+  try {
+    db.exec("ALTER TABLE websites ADD COLUMN gsc_site_url TEXT;");
+  } catch (e) {}
+  try {
+    db.exec("ALTER TABLE websites ADD COLUMN ga_property_id TEXT;");
+  } catch (e) {}
+  try {
+    db.exec("ALTER TABLE websites ADD COLUMN last_api_sync_at TEXT;");
+  } catch (e) {}
+  try {
+    db.exec("ALTER TABLE websites ADD COLUMN api_sync_status TEXT DEFAULT 'idle';");
+  } catch (e) {}
+  try {
+    db.exec("ALTER TABLE websites ADD COLUMN api_sync_error TEXT;");
+  } catch (e) {}
+
+  // Global settings table (e.g. Service Account credentials, default sync settings)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS system_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+  `);
+
   // search_type for GSC tables (migration for existing DBs, ignoring errors)
   const gscTables = ["gsc_queries", "gsc_pages", "gsc_devices", "gsc_countries", "gsc_appearance"];
   for (const table of gscTables) {
@@ -282,9 +308,6 @@ function initialize(db: DatabaseSync) {
       db.exec(`ALTER TABLE ${table} ADD COLUMN search_type TEXT NOT NULL DEFAULT 'web';`);
     } catch (e) {}
   }
-  // Note: gsc_daily_metrics search_type migration requires recreating the table.
-  // We assume the admin runs the migration script (scratch/migrate-db.js) manually for existing DBs,
-  // since changing a primary key via code on-the-fly in SQLite is risky without proper transaction handling.
 }
 
 export function getDb() {

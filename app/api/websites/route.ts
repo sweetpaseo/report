@@ -10,6 +10,8 @@ const schema = z.object({
   domain: z.string().trim().min(3).max(200),
   timezone: z.string().trim().default("Asia/Jakarta"),
   client_id: z.string().optional(),
+  gsc_site_url: z.string().optional(),
+  ga_property_id: z.string().optional(),
 });
 
 export async function GET(request: Request) {
@@ -21,6 +23,7 @@ export async function GET(request: Request) {
   // public_token is a bearer secret for the public report routes; never expose it in the list.
   const websites = getDb().prepare(`
     SELECT w.id, w.name, w.domain, w.timezone, w.client_id, w.created_at,
+      w.gsc_site_url, w.ga_property_id, w.last_api_sync_at, w.api_sync_status, w.api_sync_error,
       (SELECT COUNT(*) FROM report_periods rp WHERE rp.website_id = w.id) AS period_count
     FROM websites w ORDER BY w.name ASC
   `).all();
@@ -39,8 +42,18 @@ export async function POST(request: Request) {
   const token = crypto.randomBytes(24).toString("base64url");
   let domain = parsed.data.domain.replace(/^https?:\/\//i, "").replace(/\/$/, "");
   getDb().prepare(`
-    INSERT INTO websites(id, name, domain, timezone, public_token, created_at, client_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(id, parsed.data.name, domain, parsed.data.timezone, token, new Date().toISOString(), parsed.data.client_id || null);
+    INSERT INTO websites(id, name, domain, timezone, public_token, created_at, client_id, gsc_site_url, ga_property_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    id,
+    parsed.data.name,
+    domain,
+    parsed.data.timezone,
+    token,
+    new Date().toISOString(),
+    parsed.data.client_id || null,
+    parsed.data.gsc_site_url || null,
+    parsed.data.ga_property_id || null
+  );
   return NextResponse.json({ id, publicToken: token }, { status: 201 });
 }
