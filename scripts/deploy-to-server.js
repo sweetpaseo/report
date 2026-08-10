@@ -68,15 +68,15 @@ rm -rf $DOM/nodejs_new
 mkdir -p $DOM/nodejs_new
 cd $DOM/nodejs_new
 unzip -oq /home/${DEPLOY_USER}/deploy_bundle.zip
-cp -a $DOM/nodejs/.env $DOM/nodejs_new/.env
-cp -a $DOM/nodejs/data $DOM/nodejs_new/data
+if [ -f $DOM/nodejs/.env ]; then cp -a $DOM/nodejs/.env $DOM/nodejs_new/.env; fi
+if [ -d $DOM/nodejs/data ]; then cp -a $DOM/nodejs/data $DOM/nodejs_new/data; fi
 if [ ! -d $DOM/nodejs_new/node_modules ] && [ -d $DOM/nodejs/node_modules ]; then
   cp -a $DOM/nodejs/node_modules $DOM/nodejs_new/node_modules
 fi
 if [ -d $DOM/nodejs_old ]; then rm -rf $DOM/nodejs_old; fi
-mv $DOM/nodejs $DOM/nodejs_old
+if [ -d $DOM/nodejs ]; then mv $DOM/nodejs $DOM/nodejs_old; fi
 mv $DOM/nodejs_new $DOM/nodejs
-chmod 600 $DOM/nodejs/.env
+if [ -f $DOM/nodejs/.env ]; then chmod 600 $DOM/nodejs/.env; fi
 mkdir -p $DOM/nodejs/tmp
 touch $DOM/nodejs/tmp/restart.txt
 echo SWAP_OK`;
