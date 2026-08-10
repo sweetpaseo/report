@@ -375,3 +375,13 @@ export function getDb() {
   globalDb.__whrDb = db;
   return db;
 }
+
+export function checkpointDb() {
+  try {
+    const db = getDb();
+    db.exec("PRAGMA wal_checkpoint(TRUNCATE);");
+  } catch (e) {
+    console.error("Failed to checkpoint SQLite WAL:", e);
+  }
+}
+

@@ -14,3 +14,7 @@ deploy.zip
 project_source.zip
 deploy_bundle.zip
 deploy_bundle/
+current_report_ht
+deploy_bundle.zip.b64
+deployed_htaccess
+remote_htaccess

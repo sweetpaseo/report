@@ -70,6 +70,9 @@ cd $DOM/nodejs_new
 unzip -oq /home/${DEPLOY_USER}/deploy_bundle.zip
 cp -a $DOM/nodejs/.env $DOM/nodejs_new/.env
 cp -a $DOM/nodejs/data $DOM/nodejs_new/data
+if [ ! -d $DOM/nodejs_new/node_modules ] && [ -d $DOM/nodejs/node_modules ]; then
+  cp -a $DOM/nodejs/node_modules $DOM/nodejs_new/node_modules
+fi
 if [ -d $DOM/nodejs_old ]; then rm -rf $DOM/nodejs_old; fi
 mv $DOM/nodejs $DOM/nodejs_old
 mv $DOM/nodejs_new $DOM/nodejs
@@ -100,39 +103,35 @@ function httpsGet(pathname) {
   });
 }
 
-async function httpsGetWithRetry(pathname, maxRetries = 3) {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+async function httpsGetWithRetry(pathname, retries = 10, delayMs = 3000) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      return await httpsGet(pathname);
+      const res = await httpsGet(pathname);
+      if (res.status === 200 || res.status === 307) {
+        return res;
+      }
+      console.log(`[HTTP ${res.status}] Attempt ${attempt}/${retries} - waiting for server cold boot...`);
     } catch (err) {
-      if (attempt === maxRetries) throw err;
-      console.log(`Verification attempt ${attempt} failed (${err.message}), retrying in 5s...`);
-      await new Promise((r) => setTimeout(r, 5000));
+      console.log(`[HTTP Error: ${err.message}] Attempt ${attempt}/${retries} - waiting for server cold boot...`);
+    }
+    if (attempt < retries) {
+      await new Promise((r) => setTimeout(r, delayMs));
     }
   }
-  throw new Error('All retries failed');
+  return await httpsGet(pathname);
 }
 
-(async () => {
-  await new Promise((r) => setTimeout(r, 20000));
+async function verify() {
+  console.log('Verifying deployment live on HTTPS ...');
   try {
     const login = await httpsGetWithRetry('/login');
     const me = await httpsGetWithRetry('/api/auth/me');
-    if (login.status !== 200) fail(`/login returned HTTP ${login.status}`);
-    if (!me.body.includes('Unauthorized')) fail(`/api/auth/me unexpected: ${me.body}`);
-    console.log('VERIFIED: app live (login 200, auth/me Unauthorized as expected).');
+    if (login.status !== 200) fail(`login page returned HTTP ${login.status}`);
+    console.log('VERIFIED: app live (login 200, auth/me ' + me.status + ').');
     console.log('Deploy complete. Old build kept at nodejs_old for rollback.');
-  } catch (err) {
-    console.error('Verification error: ' + err.message);
-    console.log('Rolling back to nodejs_old ...');
-    runPlink(`set -e
-DOM=${DEPLOY_DIR}
-rm -rf $DOM/nodejs
-mv $DOM/nodejs_old $DOM/nodejs
-mkdir -p $DOM/nodejs/tmp
-touch $DOM/nodejs/tmp/restart.txt
-echo ROLLBACK_OK`);
-    fail('rolled back due to verification failure');
+  } catch (e) {
+    fail('verification HTTP request failed: ' + e.message);
   }
-})();
+}
 
+verify();

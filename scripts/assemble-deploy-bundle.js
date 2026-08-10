@@ -14,13 +14,39 @@ const out = path.join(root, 'deploy_bundle');
 if (fs.existsSync(out)) fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
 
-const copyEntries = ['server.js', 'package.json', 'node_modules', '.next'];
+const copyEntries = ['server.js', 'package.json', '.next'];
 for (const entry of copyEntries) {
   const src = path.join(payload, entry);
   if (!fs.existsSync(src)) {
     throw new Error(`Expected payload entry missing: ${src}`);
   }
   fs.cpSync(src, path.join(out, entry), { recursive: true });
+}
+
+// Ensure .next/standalone/server.js exists for Hostinger Next.js Preset
+const standaloneDir = path.join(out, '.next', 'standalone');
+if (!fs.existsSync(standaloneDir)) fs.mkdirSync(standaloneDir, { recursive: true });
+fs.cpSync(path.join(out, 'server.js'), path.join(standaloneDir, 'server.js'));
+fs.cpSync(path.join(out, 'package.json'), path.join(standaloneDir, 'package.json'));
+
+// Hostinger cPanel compatibility: Override package.json scripts & engines so hPanel "NPM Build" button exits clean 0
+const pkgPath = path.join(out, 'package.json');
+if (fs.existsSync(pkgPath)) {
+  const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+  pkg.scripts = pkg.scripts || {};
+  pkg.scripts.build = "echo 'Standalone bundle pre-built'";
+  pkg.scripts.start = "node server.js";
+  pkg.engines = pkg.engines || {};
+  pkg.engines.node = ">=18.0.0";
+  fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2), 'utf8');
+}
+
+// Prepend threadpool limit & memory flags to prevent CloudLinux LVE uv_thread_create crash
+const serverJsPath = path.join(out, 'server.js');
+let serverJsContent = fs.readFileSync(serverJsPath, 'utf8');
+if (!serverJsContent.includes('UV_THREADPOOL_SIZE')) {
+  serverJsContent = "process.env.UV_THREADPOOL_SIZE = '1';\nprocess.env.NODE_OPTIONS = '--max-old-space-size=512';\n" + serverJsContent;
+  fs.writeFileSync(serverJsPath, serverJsContent, 'utf8');
 }
 
 function findHashedExternals(dir) {
@@ -60,24 +86,28 @@ if (fs.existsSync(staticDir)) {
   fs.cpSync(staticDir, path.join(out, '.next', 'static'), { recursive: true });
 }
 
-console.log('Bundle assembled at', out);
-function dirSize(dir) {
-  let sum = 0;
-  for (const f of fs.readdirSync(dir, { withFileTypes: true })) {
-    const p = path.join(dir, f.name);
-    if (f.isDirectory()) sum += dirSize(p);
-    else sum += fs.statSync(p).size;
-  }
-  return sum;
-}
-console.log('Bundle size (MB):', (dirSize(out) / 1048576).toFixed(1));
-
+console.log('Assembling deploy_bundle.zip...');
 const zipPath = path.join(root, 'deploy_bundle.zip');
-const output = fs.createWriteStream(zipPath);
-const archive = archiver('zip', { zlib: { level: 9 } });
-archive.pipe(output);
-archive.directory(out, false);
-archive.finalize();
-output.on('close', () => {
-  console.log('Zip ready:', zipPath, '(', (archive.pointer() / 1048576).toFixed(1), 'MB )');
+
+function createZip() {
+  return new Promise((resolve, reject) => {
+    const output = fs.createWriteStream(zipPath);
+    const archive = archiver('zip', { zlib: { level: 9 } });
+
+    output.on('close', () => {
+      console.log(`Assembled bundle zip successfully: ${(archive.pointer() / 1024 / 1024).toFixed(2)} MB`);
+      resolve();
+    });
+
+    archive.on('error', (err) => reject(err));
+
+    archive.pipe(output);
+    archive.directory(out, false);
+    archive.finalize();
+  });
+}
+
+createZip().catch((err) => {
+  console.error('ZIP creation failed:', err);
+  process.exit(1);
 });

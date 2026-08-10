@@ -12,6 +12,7 @@ import { Modal } from "./modal";
 import { DataModal } from "./data-modal";
 import { LogModal } from "./log-modal";
 import { GoogleApiModal } from "./GoogleApiModal";
+import { BackupModal } from "./BackupModal";
 import type { Column } from "./data-table";
 
 type Website = { id: string; name: string; domain: string; public_token: string; period_count: number };
@@ -84,6 +85,7 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
   const [clientModal, setClientModal] = useState(false);
   const [logModal, setLogModal] = useState(false);
   const [googleApiModal, setGoogleApiModal] = useState(false);
+  const [backupModal, setBackupModal] = useState(false);
   const [fullModal, setFullModal] = useState<{ open: boolean; title: string; columns: Column<any>[]; rows: any[]; filename: string } | null>(null);
 
   async function loadWebsites() {
@@ -205,6 +207,7 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
           {hasGscAigen && <a href="#search-aigen"><Search /> Pencarian AI (SGE)</a>}
           
           <a href="#quality"><Database /> Data Quality</a>
+          {!isClientMode && isAdmin && <a onClick={() => setBackupModal(true)} style={{ cursor: "pointer" }}><Database /> Backup System Data</a>}
           {!isClientMode && isAdmin && <a onClick={() => setLogModal(true)} style={{ cursor: "pointer" }}><Activity /> Sistem Log</a>}
         </nav>
         {!isPublic && <button className="sidebar-logout" onClick={logout}><LogOut /> Keluar</button>}
@@ -233,6 +236,7 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
             <label>Website<select value={websiteId} onChange={(e) => setWebsiteId(e.target.value)}><option value="">Pilih website</option>{websites.map((website: any) => <option key={website.id} value={website.id}>{website.name} — {website.domain}</option>)}</select></label>
             {!isClientMode && isAdmin && <button className="button subtle" onClick={() => setWebsiteModal(true)}><Plus /> Tambah website</button>}
             {!isClientMode && isAdmin && <button className="button subtle" onClick={() => setClientModal(true)}><Users /> Kelola Klien</button>}
+            {!isClientMode && isAdmin && <button className="button subtle" onClick={() => setBackupModal(true)}><Database size={16} /> Backup Data</button>}
             {!isClientMode && isAdmin && websiteId && <button className="button subtle" onClick={() => setGoogleApiModal(true)}><RefreshCw size={16} /> Google API (Realtime Sync)</button>}
             {data?.periods?.length > 0 && <label className="period-control">Periode<select value={periodId} onChange={(e) => { setPeriodId(e.target.value); loadDashboard(websiteId, e.target.value, websites); }}>{data.periods.map((period: any) => <option key={period.id} value={period.id}>{period.period_label}</option>)}</select></label>}
           </section>}
@@ -460,6 +464,14 @@ export function DashboardApp({ publicToken, clientToken }: { publicToken?: strin
         {clientModal && <ClientModal open={clientModal} clients={clients} onClose={() => setClientModal(false)} onCreated={() => { fetch("/api/clients").then(r => r.ok ? r.json() : null).then(res => { if (res?.clients) setClients(res.clients); }).catch(() => {}); }} />}
         {uploadModal && <UploadModal open={uploadModal} websiteId={websiteId} onClose={() => setUploadModal(false)} onDone={async (result) => { setUploadModal(false); const totalWarnings=(result.results||[]).reduce((sum:number,r:any)=>sum+(r.warnings?.length||0),0); if(!result.periodId){setMessage(`${result.succeeded} berhasil, ${result.failed} gagal.`);return;} setPeriodId(result.periodId); await loadDashboard(websiteId, result.periodId); setMessage(totalWarnings?`${result.succeeded} report diproses dengan ${totalWarnings} catatan.`:`${result.succeeded} report berhasil diproses.`); }}/>}
         <LogModal open={logModal} onClose={() => setLogModal(false)} />
+        <BackupModal
+          isOpen={backupModal}
+          onClose={() => setBackupModal(false)}
+          onSuccess={() => {
+            loadWebsites();
+            if (websiteId) loadDashboard(websiteId, periodId, websites);
+          }}
+        />
         {googleApiModal && websiteId && (
           <GoogleApiModal
             website={websites.find((w: any) => w.id === websiteId) || { id: websiteId, name: data?.website?.name || "", domain: data?.website?.domain || "" }}
@@ -721,16 +733,16 @@ function SourceBadge({ source }: { source: string }) {
   const isGa = source.includes("Analytics");
 
   const badgeBg = isGsc
-    ? "rgba(59, 130, 246, 0.15)"
+    ? "#eff6ff"
     : isGa
-    ? "rgba(16, 185, 129, 0.15)"
-    : "rgba(139, 92, 246, 0.15)";
-  const badgeColor = isGsc ? "#60a5fa" : isGa ? "#34d399" : "#c084fc";
+    ? "#ecfdf5"
+    : "#f5f3ff";
+  const badgeColor = isGsc ? "#1d4ed8" : isGa ? "#047857" : "#6d28d9";
   const badgeBorder = isGsc
-    ? "rgba(59, 130, 246, 0.3)"
+    ? "#bfdbfe"
     : isGa
-    ? "rgba(16, 185, 129, 0.3)"
-    : "rgba(139, 92, 246, 0.3)";
+    ? "#a7f3d0"
+    : "#ddd6fe";
 
   return (
     <span
@@ -749,8 +761,7 @@ function SourceBadge({ source }: { source: string }) {
         color: badgeColor,
         border: `1px solid ${badgeBorder}`,
         zIndex: 2,
-        boxShadow: `0 0 12px ${badgeBg}`,
-        backdropFilter: "blur(8px)",
+        boxShadow: "0 1px 3px rgba(15, 23, 42, 0.05)",
       }}
     >
       {source}

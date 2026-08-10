@@ -2,6 +2,20 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-08-10 — Fitur Auto WAL Checkpoint, 1-Click Backup/Restore & Redesain Layout Data Lengkap
+- **Fitur Auto WAL Checkpoint & 1-Click Backup System Data**:
+  - Menambahkan fungsi `checkpointDb()` pada `lib/db.ts` (`PRAGMA wal_checkpoint(TRUNCATE);`) untuk memastikan log perubahan SQLite (termasuk simpanan credential Google API) selalu terkonsolidasi sempurna ke file utama `website-health.db`.
+  - Menambahkan API endpoint `/api/settings/backup` (`GET` untuk mengekspor credential & setting ke file JSON, dan `POST` untuk merestore backup secara 1-click).
+  - Menambahkan komponen modal `components/BackupModal.tsx` serta tombol "Backup Data" pada bar navigasi admin & sidebar.
+- **Penyimpanan Credential Google Service Account**:
+  - Menginjeksi dan menyimpan credential Google Service Account (`report-bot@report-504809.iam.gserviceaccount.com`) ke database `system_settings` lokal.
+- **Redesain & Perbaikan Layout Halaman "Data Lengkap" (`/report-data/[token]`)**:
+  - Memperbaiki bug layout menyempit (*squished column*) pada `components/full-data-view.tsx` dengan menambahkan kontainer responsif `max-width: 1440px` dan styling CSS Apple Tech di `app/dashboard-theme.css`.
+  - Menata toolbar filter, *segmented tab control* GSC vs GA4, dan tabel rincian data 2 kolom.
+- **Verifikasi Build**:
+  - Menjalankan `npm run build` dan memverifikasi kompilasi Next.js 16.2.10 (Turbopack) 100% sukses tanpa error.
+- File terdampak: `lib/db.ts`, `app/api/settings/backup/route.ts`, `components/BackupModal.tsx`, `components/dashboard-app.tsx`, `components/full-data-view.tsx`, `app/dashboard-theme.css`, `HISTORY.md`.
+
 ## 2026-08-07 — Redesign Apple Tech & High-Tech Agency Aesthetic (Tasteskill)
 - Merombak total antarmuka webapp (`components/dashboard-app.tsx`, `components/full-data-view.tsx`, `app/dashboard-theme.css`, `components/modal.tsx`) dengan tema **Apple Tech / High-Tech Agency**.
 - Menggunakan skema warna *OLED Midnight Black* (`#07080d`), *radial mesh gradients* berpendar, navigasi melayang (*Floating Glass Pill Header*), dan kartu data berarsitektur *Doppelrand* (Double-Bezel hardware feel).
