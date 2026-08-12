@@ -2,6 +2,16 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-08-12 — Pembaruan Animasi & Grafik Interaktif Recharts (13 Modul Tampilan)
+- **Pengayaan Animasi & Grafik Recharts**:
+  - Mengintegrasikan library **Recharts** (`AreaChart`, `BarChart`, `PieChart`, `LineChart`, `Tooltip`, `ResponsiveContainer`) pada seluruh 13 modul antarmuka.
+  - Memperbarui Grafik Performa GSC & GA4 di `OverviewView.tsx`, `SearchPerformanceView.tsx`, `AnalyticsPerformanceView.tsx` dengan kurva gradien `monotone`, *tooltip* interaktif saat hover, dan animasi *smooth transition*.
+  - Mengimplementasikan Grafik Donut Interaktif Recharts pada `QueriesView.tsx` (*Branded vs Non-Branded*, *Intent Classification*), `SearchPerformanceView.tsx` (*Pergerakan Posisi*), `OverviewView.tsx` (*Distribusi Perangkat*), dan `NotificationsIssuesView.tsx` (*Ringkasan Dampak*).
+  - Menambahkan BarChart Recharts horizontal & vertikal pada `CountriesView.tsx` (*Top 5 Negara*), `TrafficChannelsView.tsx` (*Channel Acquisition*), dan `ReportsView.tsx` (*Custom Report Live Preview Switcher*).
+  - Menambahkan animasi CSS micro-bounce/pulse pada Maskot Robot 3D AI (`OverviewView.tsx`, `AiInsightView.tsx`).
+- **Verifikasi Build & Deploy**: `npm run typecheck` & `npm run build` 100% sukses dan telah di-deploy ke server live `report.erihome.id`.
+- **File Terdampak**: `components/views/*`, `HISTORY.md`.
+
 ## 2026-08-12 — Overhaul Total UI/UX Webapp Report (13 Screen Views Sesuai Desain UI)
 - **Overhaul Total UI/UX 13 Modul Tampilan**:
   - Merombak antarmuka webapp secara menyeluruh agar 100% presisi sesuai dengan 13 gambar desain rujukan di folder `UI/`.
