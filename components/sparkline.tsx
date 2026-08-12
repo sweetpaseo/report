@@ -1,4 +1,4 @@
-export function Sparkline({ values }: { values: number[] }) {
+export function Sparkline({ values, strokeColor: overrideColor }: { values: number[]; strokeColor?: string }) {
   if (!values.length) return <div className="sparkline empty" />;
   const min = Math.min(...values);
   const max = Math.max(...values);
@@ -14,7 +14,7 @@ export function Sparkline({ values }: { values: number[] }) {
   const lastVal = values[values.length - 1];
   const firstVal = values[0];
   const isUp = lastVal >= firstVal;
-  const strokeColor = isUp ? "#34d399" : "#fb7185";
+  const strokeColor = overrideColor || (isUp ? "#34d399" : "#fb7185");
   const fillPoints = `${pad},${height} ${pointsString} ${width - pad},${height}`;
 
   return (
@@ -33,4 +33,5 @@ export function Sparkline({ values }: { values: number[] }) {
     </svg>
   );
 }
+
 

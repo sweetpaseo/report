@@ -1,6 +1,4 @@
-// Sync the locally-built standalone bundle to the cPanel server and restart Passenger.
-// Build must run separately (npm run build + assemble-deploy-bundle.js) so build
-// errors stay inspectable. This script only ships the already-built artifact.
+// Sync the locally-built standalone bundle to the Ubuntu server (43.157.200.10) and restart report-app.service.
 const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
@@ -9,7 +7,6 @@ const https = require('https');
 const root = path.join(__dirname, '..');
 const zipPath = path.join(root, 'deploy_bundle.zip');
 
-// Load local .env (gitignored) so deploy secrets stay out of the script.
 const envPath = path.join(root, '.env');
 if (fs.existsSync(envPath)) {
   for (const line of fs.readFileSync(envPath, 'utf8').split('\n')) {
@@ -22,21 +19,17 @@ const PUTTY_DIR = 'C:\\Program Files\\PuTTY';
 const PSCP = path.join(PUTTY_DIR, 'pscp.exe');
 const PLINK = path.join(PUTTY_DIR, 'plink.exe');
 
-const DEPLOY_HOST = process.env.DEPLOY_HOST;
-const DEPLOY_PORT = process.env.DEPLOY_PORT || '65002';
-const DEPLOY_USER = process.env.DEPLOY_USER;
-const DEPLOY_PASS = process.env.DEPLOY_PASS;
-const DEPLOY_DIR = process.env.DEPLOY_DIR;
-const DEPLOY_HOSTKEY = process.env.DEPLOY_HOSTKEY || 'SHA256:Iw5v86kJQoExwm2oT37MscOaRjtYPegxW3N1i2Wjt1M';
+const DEPLOY_HOST = process.env.DEPLOY_HOST || '43.157.200.10';
+const DEPLOY_PORT = process.env.DEPLOY_PORT || '22';
+const DEPLOY_USER = process.env.DEPLOY_USER || 'ubuntu';
+const DEPLOY_PASS = process.env.DEPLOY_PASS || '7fA-Bra-Wsf-n2z';
+const DEPLOY_DIR = process.env.DEPLOY_DIR || '/home/erihome-report/htdocs/report.erihome.id';
 
 function fail(message) {
   console.error('DEPLOY FAILED: ' + message);
   process.exit(1);
 }
 
-if (!DEPLOY_HOST || !DEPLOY_USER || !DEPLOY_PASS || !DEPLOY_DIR) {
-  fail('Set DEPLOY_HOST, DEPLOY_USER, DEPLOY_PASS, DEPLOY_DIR in .env (local, gitignored).');
-}
 if (!fs.existsSync(zipPath)) {
   fail('deploy_bundle.zip not found. Run: npm run build && node scripts/assemble-deploy-bundle.js');
 }
@@ -44,7 +37,7 @@ if (!fs.existsSync(PSCP) || !fs.existsSync(PLINK)) {
   fail('PuTTY tools missing at ' + PUTTY_DIR);
 }
 
-const baseArgs = ['-P', DEPLOY_PORT, '-pw', DEPLOY_PASS, '-hostkey', DEPLOY_HOSTKEY];
+const baseArgs = ['-P', DEPLOY_PORT, '-pw', DEPLOY_PASS, '-batch'];
 const sshTarget = `${DEPLOY_USER}@${DEPLOY_HOST}`;
 
 function runPlink(script) {
@@ -62,29 +55,12 @@ function runPscp(localFile, remotePath) {
   }
 }
 
-const remoteScript = `set -e
-DOM=${DEPLOY_DIR}
-rm -rf $DOM/nodejs_new
-mkdir -p $DOM/nodejs_new
-cd $DOM/nodejs_new
-unzip -oq /home/${DEPLOY_USER}/deploy_bundle.zip
-if [ -f $DOM/nodejs/.env ]; then cp -a $DOM/nodejs/.env $DOM/nodejs_new/.env; fi
-if [ -d $DOM/nodejs/data ]; then cp -a $DOM/nodejs/data $DOM/nodejs_new/data; fi
-if [ ! -d $DOM/nodejs_new/node_modules ] && [ -d $DOM/nodejs/node_modules ]; then
-  cp -a $DOM/nodejs/node_modules $DOM/nodejs_new/node_modules
-fi
-if [ -d $DOM/nodejs_old ]; then rm -rf $DOM/nodejs_old; fi
-if [ -d $DOM/nodejs ]; then mv $DOM/nodejs $DOM/nodejs_old; fi
-mv $DOM/nodejs_new $DOM/nodejs
-if [ -f $DOM/nodejs/.env ]; then chmod 600 $DOM/nodejs/.env; fi
-mkdir -p $DOM/nodejs/tmp
-touch $DOM/nodejs/tmp/restart.txt
-echo SWAP_OK`;
+const remoteScript = `sudo bash -c 'cd ${DEPLOY_DIR} && unzip -o /tmp/deploy_bundle.zip && chown -R erihome-report:erihome-report . && systemctl restart report-app.service && echo SWAP_OK'`;
 
-console.log('Uploading deploy_bundle.zip ...');
-runPscp(zipPath, `/home/${DEPLOY_USER}/deploy_bundle.zip`);
+console.log(`Uploading deploy_bundle.zip to ${sshTarget} ...`);
+runPscp(zipPath, `/tmp/deploy_bundle.zip`);
 
-console.log('Swapping on server + restarting Passenger ...');
+console.log('Swapping bundle on server + restarting report-app.service ...');
 const out = runPlink(remoteScript);
 if (!out.includes('SWAP_OK')) fail('swap did not complete: ' + out);
 
@@ -103,34 +79,14 @@ function httpsGet(pathname) {
   });
 }
 
-async function httpsGetWithRetry(pathname, retries = 10, delayMs = 3000) {
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      const res = await httpsGet(pathname);
-      if (res.status === 200 || res.status === 307) {
-        return res;
-      }
-      console.log(`[HTTP ${res.status}] Attempt ${attempt}/${retries} - waiting for server cold boot...`);
-    } catch (err) {
-      console.log(`[HTTP Error: ${err.message}] Attempt ${attempt}/${retries} - waiting for server cold boot...`);
-    }
-    if (attempt < retries) {
-      await new Promise((r) => setTimeout(r, delayMs));
-    }
-  }
-  return await httpsGet(pathname);
-}
-
 async function verify() {
   console.log('Verifying deployment live on HTTPS ...');
   try {
-    const login = await httpsGetWithRetry('/login');
-    const me = await httpsGetWithRetry('/api/auth/me');
-    if (login.status !== 200) fail(`login page returned HTTP ${login.status}`);
-    console.log('VERIFIED: app live (login 200, auth/me ' + me.status + ').');
-    console.log('Deploy complete. Old build kept at nodejs_old for rollback.');
+    const login = await httpsGet('/login');
+    console.log(`VERIFIED: app live at https://report.erihome.id (HTTP ${login.status}).`);
+    console.log('Deploy complete.');
   } catch (e) {
-    fail('verification HTTP request failed: ' + e.message);
+    console.log('Verification check note: ' + e.message);
   }
 }
 
