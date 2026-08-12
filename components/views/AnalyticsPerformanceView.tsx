@@ -3,18 +3,41 @@
 import React from "react";
 import { Users, Clock, Eye, TrendingUp, Sparkles, Filter, ArrowRight } from "lucide-react";
 import { Sparkline } from "@/components/sparkline";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
+
+const analyticsTrendData = [
+  { date: "15 Mei", pengguna: 720, sesi: 1125 },
+  { date: "18 Mei", pengguna: 810, sesi: 1240 },
+  { date: "21 Mei", pengguna: 950, sesi: 1450 },
+  { date: "24 Mei", pengguna: 890, sesi: 1380 },
+  { date: "27 Mei", pengguna: 1050, sesi: 1560 },
+  { date: "31 Mei", pengguna: 1180, sesi: 1680 },
+];
+
+const channelDonutData = [
+  { name: "Organic Search", value: 68.1, color: "#6366f1" },
+  { name: "Direct", value: 16.2, color: "#3b82f6" },
+  { name: "Referral", value: 7.6, color: "#10b981" },
+  { name: "Social", value: 5.1, color: "#f59e0b" },
+  { name: "Paid Search", value: 3.0, color: "#ec4899" },
+];
 
 export function AnalyticsPerformanceView({ data }: { data: any }) {
-  const comparisons = data?.comparisons || {};
-  const users = comparisons["ga.active_users"] || { current: 23540, percent: 27.1 };
-  const sessions = comparisons["ga.sessions"] || { current: 28990, percent: 23.4 };
-
   return (
     <div className="space-y-6">
       {/* 6 KPI Cards with Sparklines Grid */}
       <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
-        {/* KPI 1 */}
-        <div className="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-sm space-y-1">
+        <div className="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-sm space-y-1 hover:shadow-md transition-all">
           <p className="text-[10px] font-bold text-slate-400">Pengguna</p>
           <p className="text-lg font-extrabold text-slate-900 tabular-nums">23.540</p>
           <span className="text-[10px] font-bold text-emerald-600">▲ 27,1%</span>
@@ -23,8 +46,7 @@ export function AnalyticsPerformanceView({ data }: { data: any }) {
           </div>
         </div>
 
-        {/* KPI 2 */}
-        <div className="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-sm space-y-1">
+        <div className="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-sm space-y-1 hover:shadow-md transition-all">
           <p className="text-[10px] font-bold text-slate-400">Sesi</p>
           <p className="text-lg font-extrabold text-slate-900 tabular-nums">28.990</p>
           <span className="text-[10px] font-bold text-emerald-600">▲ 23,4%</span>
@@ -33,8 +55,7 @@ export function AnalyticsPerformanceView({ data }: { data: any }) {
           </div>
         </div>
 
-        {/* KPI 3 */}
-        <div className="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-sm space-y-1">
+        <div className="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-sm space-y-1 hover:shadow-md transition-all">
           <p className="text-[10px] font-bold text-slate-400">Engagement Rate</p>
           <p className="text-lg font-extrabold text-slate-900 tabular-nums">62,7%</p>
           <span className="text-[10px] font-bold text-emerald-600">▲ 8,6%</span>
@@ -43,8 +64,7 @@ export function AnalyticsPerformanceView({ data }: { data: any }) {
           </div>
         </div>
 
-        {/* KPI 4 */}
-        <div className="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-sm space-y-1">
+        <div className="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-sm space-y-1 hover:shadow-md transition-all">
           <p className="text-[10px] font-bold text-slate-400">Rata-rata Waktu</p>
           <p className="text-lg font-extrabold text-slate-900 tabular-nums">01:42</p>
           <span className="text-[10px] font-bold text-emerald-600">▲ 15,0%</span>
@@ -53,8 +73,7 @@ export function AnalyticsPerformanceView({ data }: { data: any }) {
           </div>
         </div>
 
-        {/* KPI 5 */}
-        <div className="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-sm space-y-1">
+        <div className="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-sm space-y-1 hover:shadow-md transition-all">
           <p className="text-[10px] font-bold text-slate-400">Tayangan Halaman</p>
           <p className="text-lg font-extrabold text-slate-900 tabular-nums">56.200</p>
           <span className="text-[10px] font-bold text-emerald-600">▲ 18,8%</span>
@@ -63,8 +82,7 @@ export function AnalyticsPerformanceView({ data }: { data: any }) {
           </div>
         </div>
 
-        {/* KPI 6 */}
-        <div className="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-sm space-y-1">
+        <div className="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-sm space-y-1 hover:shadow-md transition-all">
           <p className="text-[10px] font-bold text-slate-400">Rasio Konversi</p>
           <p className="text-lg font-extrabold text-slate-900 tabular-nums">2,35%</p>
           <span className="text-[10px] font-bold text-emerald-600">▲ 15,8%</span>
@@ -76,7 +94,7 @@ export function AnalyticsPerformanceView({ data }: { data: any }) {
 
       {/* Main Analytics Trends & User Funnel Section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Tren Pengguna & Sesi */}
+        {/* Tren Pengguna & Sesi Recharts Card */}
         <div className="md:col-span-2 bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-extrabold text-slate-900 text-sm">Tren Pengguna & Sesi (Analytics)</h3>
@@ -86,21 +104,27 @@ export function AnalyticsPerformanceView({ data }: { data: any }) {
               <option>Bulanan</option>
             </select>
           </div>
-          <div className="h-60 bg-slate-50/50 rounded-xl border border-slate-100 p-4 flex flex-col justify-between">
-            <div className="flex items-center gap-4 text-xs font-bold">
-              <span className="flex items-center gap-1 text-purple-600"><span className="w-2.5 h-2.5 rounded-full bg-purple-600"></span> Pengguna</span>
-              <span className="flex items-center gap-1 text-sky-500"><span className="w-2.5 h-2.5 rounded-full bg-sky-500"></span> Sesi</span>
-            </div>
-            <div className="flex-1 flex items-end justify-between gap-1 pt-4">
-              {[30, 38, 45, 52, 60, 72, 80, 85, 90, 95].map((h, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                  <div className="w-full bg-sky-500/20 rounded-t" style={{ height: `${h}%` }}>
-                    <div className="w-full bg-purple-600 rounded-t" style={{ height: `${h * 0.7}%` }}></div>
-                  </div>
-                  <span className="text-[9px] text-slate-400 font-medium">{i * 3 + 1} Mei</span>
-                </div>
-              ))}
-            </div>
+
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={analyticsTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorPengguna" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.0} />
+                  </linearGradient>
+                  <linearGradient id="colorSesi" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={{ backgroundColor: "#ffffff", borderRadius: "12px", border: "1px solid #e2e8f0", fontSize: "12px" }} />
+                <Area type="monotone" dataKey="pengguna" stroke="#8b5cf6" strokeWidth={3} fillOpacity={1} fill="url(#colorPengguna)" name="Pengguna" />
+                <Area type="monotone" dataKey="sesi" stroke="#3b82f6" strokeWidth={2.5} fillOpacity={1} fill="url(#colorSesi)" name="Sesi" />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
@@ -109,11 +133,11 @@ export function AnalyticsPerformanceView({ data }: { data: any }) {
           <h3 className="font-extrabold text-slate-900 text-sm">Perjalanan Pengguna (Funnel)</h3>
           <div className="space-y-2 py-2">
             {[
-              { label: "Pengguna", val: "23.540", drop: "100%", width: "100%", bg: "bg-purple-600" },
-              { label: "Melihat Halaman", val: "56.200", drop: "-29.6%", width: "80%", bg: "bg-indigo-600" },
-              { label: "Sesi Terlibat", val: "18.710", drop: "-23.4%", width: "60%", bg: "bg-blue-500" },
-              { label: "Konversi", val: "8.210", drop: "-56.1%", width: "40%", bg: "bg-sky-500" },
-              { label: "Tujuan Tercapai", val: "5.630", drop: "23.9%", width: "25%", bg: "bg-emerald-500" },
+              { label: "Pengguna", val: "23.540", width: "100%", bg: "bg-purple-600" },
+              { label: "Melihat Halaman", val: "56.200", width: "80%", bg: "bg-indigo-600" },
+              { label: "Sesi Terlibat", val: "18.710", width: "60%", bg: "bg-blue-500" },
+              { label: "Konversi", val: "8.210", width: "40%", bg: "bg-sky-500" },
+              { label: "Tujuan Tercapai", val: "5.630", width: "25%", bg: "bg-emerald-500" },
             ].map((step, idx) => (
               <div key={idx} className="space-y-1">
                 <div className="flex justify-between text-[11px] font-bold text-slate-700">
@@ -121,12 +145,12 @@ export function AnalyticsPerformanceView({ data }: { data: any }) {
                   <span>{step.val}</span>
                 </div>
                 <div className="w-full bg-slate-100 h-6 rounded-lg overflow-hidden relative">
-                  <div className={`h-full ${step.bg} transition-all duration-500`} style={{ width: step.width }}></div>
+                  <div className={`h-full ${step.bg} transition-all duration-500 hover:brightness-110`} style={{ width: step.width }}></div>
                 </div>
               </div>
             ))}
           </div>
-          <p className="text-[11px] text-slate-500 text-center bg-purple-50 p-2 rounded-xl">
+          <p className="text-[11px] text-slate-500 text-center bg-purple-50 p-2 rounded-xl border border-purple-100">
             5.630 sesi berhasil mencapai tujuan. Rasio konversi: <b>23,9%</b>
           </p>
         </div>

@@ -1,7 +1,15 @@
 "use client";
 
 import React, { useState } from "react";
-import { FileSpreadsheet, Download, Share2, Plus, CheckCircle2, Table, LineChart, BarChart2, PieChart } from "lucide-react";
+import { FileSpreadsheet, Download, Share2, Plus, CheckCircle2 } from "lucide-react";
+import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip } from "recharts";
+
+const previewData = [
+  { name: "/pipa-hdpe", klik: 3245, tayang: 16200 },
+  { name: "/pipa-ppr", klik: 2180, tayang: 10850 },
+  { name: "/talang-air", klik: 1856, tayang: 8540 },
+  { name: "/pipa-pvc", klik: 1402, tayang: 6120 },
+];
 
 export function ReportsView({ data }: { data: any }) {
   const [reportFormat, setReportFormat] = useState("Tabel");
@@ -10,7 +18,7 @@ export function ReportsView({ data }: { data: any }) {
     <div className="space-y-6">
       {/* Top 4 Saved Reports & Template Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-2">
+        <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-2 hover:shadow-md transition-all">
           <p className="text-xs font-extrabold text-slate-900">Laporan Tersimpan</p>
           <div className="space-y-1.5 text-xs text-slate-600">
             <p className="font-semibold text-slate-800">Performa Bulanan Website</p>
@@ -18,7 +26,7 @@ export function ReportsView({ data }: { data: any }) {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-2">
+        <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-2 hover:shadow-md transition-all">
           <p className="text-xs font-extrabold text-slate-900">Jadwal Laporan</p>
           <div className="space-y-1 text-xs text-slate-600">
             <p className="font-semibold text-slate-800">Laporan Mingguan (Senin 09:00)</p>
@@ -26,7 +34,7 @@ export function ReportsView({ data }: { data: any }) {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-2">
+        <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-2 hover:shadow-md transition-all">
           <p className="text-xs font-extrabold text-slate-900">Template Laporan</p>
           <div className="space-y-1 text-xs text-slate-600">
             <p className="font-semibold text-slate-800">Ringkasan Kinerja Website</p>
@@ -34,7 +42,7 @@ export function ReportsView({ data }: { data: any }) {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-2">
+        <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-2 hover:shadow-md transition-all">
           <p className="text-xs font-extrabold text-slate-900">Riwayat Ekspor</p>
           <div className="space-y-1 text-xs text-slate-600">
             <p className="font-semibold text-slate-800">Performa Bulanan (PDF)</p>
@@ -50,7 +58,7 @@ export function ReportsView({ data }: { data: any }) {
             <h3 className="font-extrabold text-slate-900 text-sm">Buat Laporan Khusus (Custom Report Builder)</h3>
             <p className="text-xs text-slate-500">Bangun laporan sesuai kebutuhan Anda dalam 5 langkah mudah.</p>
           </div>
-          <button className="px-4 py-2 bg-indigo-600 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-500/20 hover:bg-indigo-700">
+          <button className="px-4 py-2 bg-indigo-600 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-500/20 hover:bg-indigo-700 transition-colors">
             Pratinjau Laporan
           </button>
         </div>
@@ -113,7 +121,9 @@ export function ReportsView({ data }: { data: any }) {
                   <button
                     key={fmt}
                     onClick={() => setReportFormat(fmt)}
-                    className={`px-3 py-1.5 rounded-xl font-bold border ${reportFormat === fmt ? "bg-indigo-600 text-white border-indigo-600" : "bg-slate-50 text-slate-700 border-slate-200"}`}
+                    className={`px-3 py-1.5 rounded-xl font-bold border transition-colors ${
+                      reportFormat === fmt ? "bg-indigo-600 text-white border-indigo-600" : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                    }`}
                   >
                     {fmt}
                   </button>
@@ -122,35 +132,73 @@ export function ReportsView({ data }: { data: any }) {
             </div>
           </div>
 
-          {/* Report Live Preview Table */}
-          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
-            <p className="text-xs font-extrabold text-slate-900">Ringkasan Laporan (Pratinjau)</p>
-            <div className="overflow-x-auto bg-white rounded-lg border border-slate-200">
-              <table className="w-full text-xs text-left data-table">
-                <thead>
-                  <tr>
-                    <th>Halaman</th>
-                    <th className="right">Klik</th>
-                    <th className="right">Tayang</th>
-                    <th className="right">CTR</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="font-mono text-slate-800">/pipa-hdpe</td>
-                    <td className="right font-bold">3.245</td>
-                    <td className="right text-slate-600">16.200</td>
-                    <td className="right text-slate-600">20,0%</td>
-                  </tr>
-                  <tr>
-                    <td className="font-mono text-slate-800">/pipa-ppr</td>
-                    <td className="right font-bold">2.180</td>
-                    <td className="right text-slate-600">10.850</td>
-                    <td className="right text-slate-600">20,1%</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+          {/* Report Live Interactive Recharts Preview */}
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3 flex flex-col justify-between">
+            <p className="text-xs font-extrabold text-slate-900">Ringkasan Laporan (Pratinjau Format: {reportFormat})</p>
+
+            {reportFormat === "Tabel" && (
+              <div className="overflow-x-auto bg-white rounded-lg border border-slate-200">
+                <table className="w-full text-xs text-left data-table">
+                  <thead>
+                    <tr>
+                      <th>Halaman</th>
+                      <th className="right">Klik</th>
+                      <th className="right">Tayang</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {previewData.map((row, i) => (
+                      <tr key={i}>
+                        <td className="font-mono text-slate-800">{row.name}</td>
+                        <td className="right font-bold text-slate-900">{row.klik}</td>
+                        <td className="right text-slate-600">{row.tayang}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {reportFormat === "Line Chart" && (
+              <div className="h-48 bg-white p-2 rounded-lg border border-slate-200">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={previewData}>
+                    <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                    <YAxis tick={{ fontSize: 10 }} />
+                    <Tooltip />
+                    <Area type="monotone" dataKey="klik" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.3} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            {reportFormat === "Bar Chart" && (
+              <div className="h-48 bg-white p-2 rounded-lg border border-slate-200">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={previewData}>
+                    <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                    <YAxis tick={{ fontSize: 10 }} />
+                    <Tooltip />
+                    <Bar dataKey="klik" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            {reportFormat === "Donut Chart" && (
+              <div className="h-48 bg-white p-2 rounded-lg border border-slate-200">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={previewData} dataKey="klik" cx="50%" cy="50%" innerRadius={30} outerRadius={50}>
+                      {previewData.map((_, i) => (
+                        <Cell key={i} fill={["#8b5cf6", "#6366f1", "#3b82f6", "#10b981"][i % 4]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </div>
         </div>
       </div>

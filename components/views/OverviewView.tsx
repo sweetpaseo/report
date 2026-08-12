@@ -3,6 +3,17 @@
 import React, { useState } from "react";
 import { Sparkline } from "@/components/sparkline";
 import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
+import {
   TrendingUp,
   TrendingDown,
   Eye,
@@ -10,21 +21,47 @@ import {
   Users,
   Clock,
   CheckCircle2,
-  AlertTriangle,
   HelpCircle,
   ArrowRight,
   Sparkles,
   Bot,
   Search,
-  LineChart,
+  LineChart as LineChartIcon,
 } from "lucide-react";
 
-interface OverviewViewProps {
-  data: any;
-  onSelectTab: (tab: any) => void;
-}
+const gscChartData = [
+  { date: "1 Mei", klik: 850, tayang: 42000 },
+  { date: "4 Mei", klik: 920, tayang: 45000 },
+  { date: "8 Mei", klik: 1100, tayang: 48000 },
+  { date: "11 Mei", klik: 1050, tayang: 46000 },
+  { date: "15 Mei", klik: 1250, tayang: 56200 },
+  { date: "18 Mei", klik: 1180, tayang: 54000 },
+  { date: "22 Mei", klik: 1350, tayang: 58000 },
+  { date: "25 Mei", klik: 1420, tayang: 62000 },
+  { date: "28 Mei", klik: 1550, tayang: 65000 },
+  { date: "31 Mei", klik: 1680, tayang: 68000 },
+];
 
-export function OverviewView({ data, onSelectTab }: OverviewViewProps) {
+const gaChartData = [
+  { date: "1 Mei", pengguna: 720, sesi: 950 },
+  { date: "4 Mei", pengguna: 780, sesi: 1020 },
+  { date: "8 Mei", pengguna: 850, sesi: 1100 },
+  { date: "11 Mei", pengguna: 820, sesi: 1080 },
+  { date: "15 Mei", pengguna: 910, sesi: 1180 },
+  { date: "18 Mei", pengguna: 950, sesi: 1240 },
+  { date: "22 Mei", pengguna: 1020, sesi: 1310 },
+  { date: "25 Mei", pengguna: 1100, sesi: 1420 },
+  { date: "28 Mei", pengguna: 1180, sesi: 1510 },
+  { date: "31 Mei", pengguna: 1250, sesi: 1620 },
+];
+
+const deviceData = [
+  { name: "Mobile", value: 68.7, color: "#6366f1" },
+  { name: "Desktop", value: 28.3, color: "#10b981" },
+  { name: "Tablet", value: 3.0, color: "#f59e0b" },
+];
+
+export function OverviewView({ data, onSelectTab }: { data: any; onSelectTab: (tab: any) => void }) {
   const comparisons = data?.comparisons || {};
   const gscClicks = comparisons["gsc.clicks"] || { current: 18629, percent: 32.5 };
   const gscImpressions = comparisons["gsc.impressions"] || { current: 1020000, percent: 18.6 };
@@ -32,17 +69,12 @@ export function OverviewView({ data, onSelectTab }: OverviewViewProps) {
   const gaSessions = comparisons["ga.sessions"] || { current: 28990, percent: 23.4 };
   const gaConversion = comparisons["ga.chat_conversion_rate"] || { current: 2.35, percent: 15.8 };
 
-  const topQueries = data?.topQueries?.web || [];
-  const topGscPages = data?.topGscPages?.web || [];
-  const channels = data?.channels || [];
-  const events = data?.events || [];
-
   return (
     <div className="space-y-6">
       {/* Top 5 KPI Cards Grid with Sparklines */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         {/* KPI 1: Total Klik */}
-        <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-2">
+        <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-2 hover:shadow-md transition-all">
           <div className="flex items-center justify-between text-slate-500">
             <div className="w-8 h-8 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
               <MousePointer className="w-4 h-4" />
@@ -57,7 +89,7 @@ export function OverviewView({ data, onSelectTab }: OverviewViewProps) {
               </span>
               <span className="text-xs font-bold text-emerald-600 flex items-center gap-0.5">
                 <TrendingUp className="w-3 h-3" />
-                <span>{gscClicks.percent ? `${gscClicks.percent.toFixed(1)}%` : "32.5%"}</span>
+                <span>{gscClicks.percent ? `${gscClicks.percent.toFixed(1)}%` : "32,5%"}</span>
               </span>
             </div>
             <p className="text-[10px] text-slate-400 mt-0.5">vs 1 Apr - 30 Apr 2025</p>
@@ -68,7 +100,7 @@ export function OverviewView({ data, onSelectTab }: OverviewViewProps) {
         </div>
 
         {/* KPI 2: Total Tayang */}
-        <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-2">
+        <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-2 hover:shadow-md transition-all">
           <div className="flex items-center justify-between text-slate-500">
             <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
               <Eye className="w-4 h-4" />
@@ -78,12 +110,10 @@ export function OverviewView({ data, onSelectTab }: OverviewViewProps) {
           <div>
             <p className="text-[11px] font-bold text-slate-400">Total Tayang (Google)</p>
             <div className="flex items-baseline gap-2 mt-0.5">
-              <span className="text-xl font-extrabold text-slate-900 tabular-nums">
-                {gscImpressions.current ? `${(gscImpressions.current / 1000000).toFixed(2)} jt` : "1,02 jt"}
-              </span>
+              <span className="text-xl font-extrabold text-slate-900 tabular-nums">1,02 jt</span>
               <span className="text-xs font-bold text-emerald-600 flex items-center gap-0.5">
                 <TrendingUp className="w-3 h-3" />
-                <span>{gscImpressions.percent ? `${gscImpressions.percent.toFixed(1)}%` : "18.6%"}</span>
+                <span>{gscImpressions.percent ? `${gscImpressions.percent.toFixed(1)}%` : "18,6%"}</span>
               </span>
             </div>
             <p className="text-[10px] text-slate-400 mt-0.5">vs 1 Apr - 30 Apr 2025</p>
@@ -94,7 +124,7 @@ export function OverviewView({ data, onSelectTab }: OverviewViewProps) {
         </div>
 
         {/* KPI 3: Total Pengguna */}
-        <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-2">
+        <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-2 hover:shadow-md transition-all">
           <div className="flex items-center justify-between text-slate-500">
             <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
               <Users className="w-4 h-4" />
@@ -109,7 +139,7 @@ export function OverviewView({ data, onSelectTab }: OverviewViewProps) {
               </span>
               <span className="text-xs font-bold text-emerald-600 flex items-center gap-0.5">
                 <TrendingUp className="w-3 h-3" />
-                <span>{gaUsers.percent ? `${gaUsers.percent.toFixed(1)}%` : "27.1%"}</span>
+                <span>{gaUsers.percent ? `${gaUsers.percent.toFixed(1)}%` : "27,1%"}</span>
               </span>
             </div>
             <p className="text-[10px] text-slate-400 mt-0.5">vs 1 Apr - 30 Apr 2025</p>
@@ -120,7 +150,7 @@ export function OverviewView({ data, onSelectTab }: OverviewViewProps) {
         </div>
 
         {/* KPI 4: Sesi GA */}
-        <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-2">
+        <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-2 hover:shadow-md transition-all">
           <div className="flex items-center justify-between text-slate-500">
             <div className="w-8 h-8 rounded-xl bg-sky-50 flex items-center justify-center text-sky-600">
               <Clock className="w-4 h-4" />
@@ -135,7 +165,7 @@ export function OverviewView({ data, onSelectTab }: OverviewViewProps) {
               </span>
               <span className="text-xs font-bold text-emerald-600 flex items-center gap-0.5">
                 <TrendingUp className="w-3 h-3" />
-                <span>{gaSessions.percent ? `${gaSessions.percent.toFixed(1)}%` : "23.4%"}</span>
+                <span>{gaSessions.percent ? `${gaSessions.percent.toFixed(1)}%` : "23,4%"}</span>
               </span>
             </div>
             <p className="text-[10px] text-slate-400 mt-0.5">vs 1 Apr - 30 Apr 2025</p>
@@ -146,7 +176,7 @@ export function OverviewView({ data, onSelectTab }: OverviewViewProps) {
         </div>
 
         {/* KPI 5: Rasio Konversi */}
-        <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-2">
+        <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-2 hover:shadow-md transition-all">
           <div className="flex items-center justify-between text-slate-500">
             <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
               <TrendingUp className="w-4 h-4" />
@@ -156,12 +186,10 @@ export function OverviewView({ data, onSelectTab }: OverviewViewProps) {
           <div>
             <p className="text-[11px] font-bold text-slate-400">Rasio Konversi (GA)</p>
             <div className="flex items-baseline gap-2 mt-0.5">
-              <span className="text-xl font-extrabold text-slate-900 tabular-nums">
-                {gaConversion.current ? `${gaConversion.current}%` : "2,35%"}
-              </span>
+              <span className="text-xl font-extrabold text-slate-900 tabular-nums">2,35%</span>
               <span className="text-xs font-bold text-emerald-600 flex items-center gap-0.5">
                 <TrendingUp className="w-3 h-3" />
-                <span>{gaConversion.percent ? `${gaConversion.percent.toFixed(1)}%` : "15.8%"}</span>
+                <span>15,8%</span>
               </span>
             </div>
             <p className="text-[10px] text-slate-400 mt-0.5">vs 1 Apr - 30 Apr 2025</p>
@@ -172,13 +200,13 @@ export function OverviewView({ data, onSelectTab }: OverviewViewProps) {
         </div>
       </div>
 
-      {/* AI Insight Mascot Banner Card */}
-      <div className="robot-mascot-banner flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+      {/* AI Mascot Card with Animated Pulse Graphic */}
+      <div className="robot-mascot-banner flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm hover:shadow-md transition-all">
         <div className="flex-1 space-y-3">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-indigo-600 fill-indigo-200" />
+            <Sparkles className="w-5 h-5 text-indigo-600 fill-indigo-200 animate-spin" style={{ animationDuration: "6s" }} />
             <h2 className="text-lg font-extrabold text-slate-900">Insight Otomatis</h2>
-            <span className="px-2 py-0.5 bg-indigo-600 text-white font-bold text-[10px] rounded-full">Baru</span>
+            <span className="px-2 py-0.5 bg-indigo-600 text-white font-bold text-[10px] rounded-full animate-pulse">Baru</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-700 pt-1">
@@ -210,7 +238,7 @@ export function OverviewView({ data, onSelectTab }: OverviewViewProps) {
         </div>
 
         <div className="flex flex-col items-center justify-center shrink-0">
-          <div className="robot-3d-graphic">
+          <div className="robot-3d-graphic animate-bounce" style={{ animationDuration: "3s" }}>
             <Bot className="w-12 h-12 text-white" />
           </div>
           <button
@@ -222,72 +250,73 @@ export function OverviewView({ data, onSelectTab }: OverviewViewProps) {
         </div>
       </div>
 
-      {/* Main Performance Line Charts Grid */}
+      {/* Main Performance Charts Grid (Interactive Recharts) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Google Search Performance Card */}
+        {/* Google Search Performance Recharts Card */}
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
-                <Search className="w-4 h-4 text-indigo-600" /> Performa di Google Search
-              </h3>
-            </div>
+            <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+              <Search className="w-4 h-4 text-indigo-600" /> Performa di Google Search (GSC)
+            </h3>
             <button onClick={() => onSelectTab("search_performance")} className="text-xs font-bold text-indigo-600 flex items-center gap-1">
               Lihat detail <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          <div className="h-56 bg-slate-50/50 rounded-xl border border-slate-100 p-4 flex flex-col justify-between">
-            <div className="flex items-center gap-4 text-xs font-bold">
-              <span className="flex items-center gap-1 text-purple-600"><span className="w-2.5 h-2.5 rounded-full bg-purple-600"></span> Klik</span>
-              <span className="flex items-center gap-1 text-sky-500"><span className="w-2.5 h-2.5 rounded-full bg-sky-500"></span> Tayang</span>
-            </div>
-            <div className="flex-1 flex items-end justify-between gap-1 pt-4">
-              {[40, 45, 55, 60, 75, 80, 70, 85, 90, 100].map((h, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                  <div className="w-full bg-indigo-500/20 rounded-t" style={{ height: `${h}%` }}>
-                    <div className="w-full bg-purple-600 rounded-t" style={{ height: `${h * 0.6}%` }}></div>
-                  </div>
-                  <span className="text-[9px] text-slate-400 font-medium">{i * 3 + 1} Mei</span>
-                </div>
-              ))}
-            </div>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={gscChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorKlik" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={{ backgroundColor: "#ffffff", borderRadius: "12px", border: "1px solid #e2e8f0", fontSize: "12px" }} />
+                <Area type="monotone" dataKey="klik" stroke="#8b5cf6" strokeWidth={3} fillOpacity={1} fill="url(#colorKlik)" name="Klik" />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Google Analytics Performance Card */}
+        {/* Google Analytics Performance Recharts Card */}
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
-                <LineChart className="w-4 h-4 text-indigo-600" /> Performa di Google Analytics
-              </h3>
-            </div>
+            <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+              <LineChartIcon className="w-4 h-4 text-indigo-600" /> Performa di Google Analytics (GA4)
+            </h3>
             <button onClick={() => onSelectTab("analytics_performance")} className="text-xs font-bold text-indigo-600 flex items-center gap-1">
               Lihat detail <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          <div className="h-56 bg-slate-50/50 rounded-xl border border-slate-100 p-4 flex flex-col justify-between">
-            <div className="flex items-center gap-4 text-xs font-bold">
-              <span className="flex items-center gap-1 text-blue-600"><span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span> Pengguna</span>
-              <span className="flex items-center gap-1 text-emerald-500"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Sesi</span>
-            </div>
-            <div className="flex-1 flex items-end justify-between gap-1 pt-4">
-              {[35, 42, 48, 52, 68, 74, 82, 88, 92, 98].map((h, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                  <div className="w-full bg-blue-500/20 rounded-t" style={{ height: `${h}%` }}>
-                    <div className="w-full bg-emerald-500 rounded-t" style={{ height: `${h * 0.75}%` }}></div>
-                  </div>
-                  <span className="text-[9px] text-slate-400 font-medium">{i * 3 + 1} Mei</span>
-                </div>
-              ))}
-            </div>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={gaChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorPengguna" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.0} />
+                  </linearGradient>
+                  <linearGradient id="colorSesi" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={{ backgroundColor: "#ffffff", borderRadius: "12px", border: "1px solid #e2e8f0", fontSize: "12px" }} />
+                <Area type="monotone" dataKey="pengguna" stroke="#3b82f6" strokeWidth={2.5} fillOpacity={1} fill="url(#colorPengguna)" name="Pengguna" />
+                <Area type="monotone" dataKey="sesi" stroke="#10b981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorSesi)" name="Sesi" />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>
 
-      {/* Breakdown Section 1: Halaman Teratas, Query Teratas, Performa Perangkat */}
+      {/* Breakdown Section 1: Halaman, Query, and Interactive Animated Device Donut Chart */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Top Pages Table */}
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-3">
@@ -297,12 +326,12 @@ export function OverviewView({ data, onSelectTab }: OverviewViewProps) {
           </div>
           <div className="space-y-2">
             {[
-              { path: "/pipa-hdpe", clicks: "3.245", ctr: "20,0%", pos: "1.2" },
-              { path: "/pipa-ppr", clicks: "2.180", ctr: "20,1%", pos: "2.3" },
-              { path: "/talang-air-pvc", clicks: "1.856", ctr: "22,0%", pos: "2.3" },
-              { path: "/pipa-u-pvc", clicks: "1.402", ctr: "22,9%", pos: "2.4" },
+              { path: "/pipa-hdpe", clicks: "3.245", pos: "1.2" },
+              { path: "/pipa-ppr", clicks: "2.180", pos: "2.3" },
+              { path: "/talang-air-pvc", clicks: "1.856", pos: "2.3" },
+              { path: "/pipa-u-pvc", clicks: "1.402", pos: "2.4" },
             ].map((row, idx) => (
-              <div key={idx} className="flex items-center justify-between p-2 rounded-xl bg-slate-50 text-xs">
+              <div key={idx} className="flex items-center justify-between p-2 rounded-xl bg-slate-50 text-xs hover:bg-slate-100 transition-colors">
                 <span className="font-mono text-slate-800 truncate max-w-[120px]">{row.path}</span>
                 <div className="flex items-center gap-3">
                   <span className="font-bold text-slate-900">{row.clicks}</span>
@@ -321,12 +350,12 @@ export function OverviewView({ data, onSelectTab }: OverviewViewProps) {
           </div>
           <div className="space-y-2">
             {[
-              { query: "pipa hdpe sni", clicks: "1.245", ctr: "68,0%", pos: "1" },
-              { query: "pipa ppr sni", clicks: "987", ctr: "41,3%", pos: "2" },
-              { query: "talang air pvc", clicks: "876", ctr: "22,5%", pos: "3" },
-              { query: "harga pipa hdpe", clicks: "543", ctr: "9,2%", pos: "5" },
+              { query: "pipa hdpe sni", clicks: "1.245", pos: "1" },
+              { query: "pipa ppr sni", clicks: "987", pos: "2" },
+              { query: "talang air pvc", clicks: "876", pos: "3" },
+              { query: "harga pipa hdpe", clicks: "543", pos: "5" },
             ].map((row, idx) => (
-              <div key={idx} className="flex items-center justify-between p-2 rounded-xl bg-slate-50 text-xs">
+              <div key={idx} className="flex items-center justify-between p-2 rounded-xl bg-slate-50 text-xs hover:bg-slate-100 transition-colors">
                 <span className="font-semibold text-slate-800 truncate max-w-[130px]">{row.query}</span>
                 <div className="flex items-center gap-3">
                   <span className="font-bold text-slate-900">{row.clicks}</span>
@@ -337,23 +366,31 @@ export function OverviewView({ data, onSelectTab }: OverviewViewProps) {
           </div>
         </div>
 
-        {/* Device Performance Donut Card */}
+        {/* Interactive Device Donut Recharts Card */}
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-3 flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <h4 className="font-extrabold text-slate-900 text-xs">Performa Perangkat (Analytics)</h4>
             <button onClick={() => onSelectTab("devices")} className="text-[11px] font-bold text-indigo-600">Lihat detail</button>
           </div>
-          <div className="flex items-center justify-around py-2">
-            <div className="w-24 h-24 rounded-full border-8 border-indigo-600 border-t-emerald-500 border-r-amber-400 flex items-center justify-center font-extrabold text-xs text-slate-700">
-              Mobile 68.7%
-            </div>
-            <div className="space-y-1.5 text-xs">
-              <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-indigo-600"></span> Mobile: 68,7%</div>
-              <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Desktop: 28,3%</div>
-              <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span> Tablet: 3,0%</div>
-            </div>
+
+          <div className="h-40 relative flex items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={deviceData} cx="50%" cy="50%" innerRadius={35} outerRadius={55} paddingAngle={4} dataKey="value">
+                  {deviceData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={{ backgroundColor: "#ffffff", borderRadius: "12px", fontSize: "12px" }} />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
-          <p className="text-[10px] text-slate-400 text-center">Mobile menjadi sumber trafik utama Anda.</p>
+
+          <div className="flex justify-around text-xs font-bold pt-1">
+            <span className="text-indigo-600">● Mobile 68,7%</span>
+            <span className="text-emerald-600">● Desktop 28,3%</span>
+            <span className="text-amber-500">● Tablet 3,0%</span>
+          </div>
         </div>
       </div>
     </div>
