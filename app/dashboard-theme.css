@@ -1,10 +1,11 @@
 /* ==========================================================================
    APPLE TECH PREMIUM LIGHT MODE DESIGN SYSTEM
-   Website Health Report — Crisp Light Glassmorphism & Soft Structuralism
+   Website Health Report — Crisp Light Glassmorphism, Doppelrand & Soft Structuralism
    ========================================================================== */
 
 :root {
   --apple-bg: #f8fafc;
+  --apple-bg-subtle: #f1f5f9;
   --apple-card-bg: #ffffff;
   --apple-card-border: #e2e8f0;
   --apple-card-border-hover: #c7d2fe;
@@ -15,22 +16,25 @@
   --accent-indigo: #4f46e5;
   --accent-purple: #7c3aed;
   --accent-blue: #2563eb;
+  --accent-cyan: #0891b2;
   --accent-emerald: #059669;
   --accent-amber: #d97706;
   --accent-rose: #e11d48;
 }
 
-/* Global Canvas Background */
+/* Global Canvas Background & Fonts */
 body {
   background-color: var(--apple-bg) !important;
   color: var(--apple-text-main) !important;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif !important;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Geist", "Segoe UI", Roboto, sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .main-content {
   background: 
-    radial-gradient(1200px 600px at 85% -10%, rgba(99, 102, 241, 0.07), transparent 60%),
-    radial-gradient(1000px 500px at -10% 20%, rgba(59, 130, 246, 0.05), transparent 55%),
+    radial-gradient(1200px 600px at 85% -10%, rgba(99, 102, 241, 0.08), transparent 60%),
+    radial-gradient(1000px 500px at -10% 20%, rgba(59, 130, 246, 0.06), transparent 55%),
     radial-gradient(900px 500px at 50% 110%, rgba(168, 85, 247, 0.05), transparent 60%),
     #f8fafc !important;
   min-height: 100dvh;
@@ -66,7 +70,7 @@ body {
   color: var(--apple-text-sub) !important;
   border-radius: 12px;
   font-weight: 500;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 .sidebar nav a:hover {
@@ -102,6 +106,7 @@ body {
   letter-spacing: 0.16em !important;
   font-size: 10.5px !important;
   font-weight: 700 !important;
+  text-transform: uppercase !important;
 }
 
 /* Apple Buttons */
@@ -122,6 +127,10 @@ body {
 .button.primary:hover {
   transform: translateY(-1px) scale(1.02);
   box-shadow: 0 8px 22px rgba(79, 70, 229, 0.4) !important;
+}
+
+.button.primary:active {
+  transform: scale(0.98);
 }
 
 .button.secondary {
@@ -147,7 +156,8 @@ body {
 }
 
 .control-bar {
-  background: rgba(255, 255, 255, 0.7) !important;
+  background: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(20px) !important;
   border: 1px solid var(--apple-card-border) !important;
   border-radius: 18px !important;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
@@ -160,6 +170,13 @@ body {
   border: 1px solid var(--apple-card-border) !important;
   border-radius: 10px !important;
   font-weight: 500;
+}
+
+.control-bar select:focus,
+.control-bar input:focus {
+  border-color: var(--accent-indigo) !important;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12) !important;
 }
 
 /* CRISP WHITE DOPPELRAND CARDS */
@@ -192,14 +209,28 @@ body {
 .health-summary {
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
   border: 1px solid #cbd5e1 !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.health-summary::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, rgba(79, 70, 229, 0.06) 0%, transparent 70%);
+  pointer-events: none;
 }
 
 .status-pill {
   border-radius: 9999px !important;
-  padding: 4px 12px !important;
+  padding: 4px 14px !important;
   font-size: 11px !important;
   font-weight: 700 !important;
   letter-spacing: 0.05em !important;
+  text-transform: uppercase;
 }
 
 .status-pill.success {
@@ -239,6 +270,7 @@ body {
   border-radius: 14px !important;
   padding: 16px !important;
   margin-top: 12px;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.8);
 }
 
 .metric-block span {
@@ -258,16 +290,26 @@ body {
   font-weight: 700 !important;
   font-size: 11px !important;
   padding: 3px 10px !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .change.positive {
   background: #ecfdf5 !important;
   color: #047857 !important;
+  border: 1px solid #a7f3d0;
 }
 
 .change.negative {
   background: #fff1f2 !important;
   color: #be123c !important;
+  border: 1px solid #fecdd3;
+}
+
+.change.neutral {
+  background: #f1f5f9 !important;
+  color: #64748b !important;
 }
 
 /* Section Headings */
@@ -330,6 +372,7 @@ body {
   background: #f1f5f9 !important;
   border-radius: 9999px !important;
   height: 8px !important;
+  overflow: hidden;
 }
 
 .bar-row div i {
@@ -346,6 +389,7 @@ body {
 .quick-jump-menu {
   background: rgba(255, 255, 255, 0.9) !important;
   backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
   border: 1px solid #cbd5e1 !important;
   border-radius: 9999px !important;
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.1) !important;
@@ -356,6 +400,7 @@ body {
   color: var(--apple-text-sub) !important;
   font-weight: 600 !important;
   border-radius: 9999px !important;
+  transition: all 0.2s ease;
 }
 
 .quick-jump-menu a:hover {
@@ -365,7 +410,7 @@ body {
 
 /* macOS Frosted Light Glass Modals */
 .modal-overlay {
-  background: rgba(15, 23, 42, 0.5) !important;
+  background: rgba(15, 23, 42, 0.4) !important;
   backdrop-filter: blur(16px) !important;
 }
 
@@ -374,7 +419,7 @@ body {
   background: rgba(255, 255, 255, 0.96) !important;
   border: 1px solid #cbd5e1 !important;
   border-radius: 24px !important;
-  box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.25) !important;
+  box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.2) !important;
   color: var(--apple-text-main) !important;
 }
 
@@ -387,6 +432,10 @@ body {
   background: #f1f5f9 !important;
   color: var(--apple-text-main) !important;
   border-radius: 9999px !important;
+}
+
+.modal-close:hover {
+  background: #e2e8f0 !important;
 }
 
 /* Data Tables */
@@ -408,6 +457,87 @@ body {
 
 .data-table tr:hover td {
   background: #f8fafc !important;
+}
+
+/* Monthly Trend Chart Light Theme Styling */
+.trend-card {
+  background: #ffffff !important;
+}
+
+.trend-controls select {
+  background: #ffffff !important;
+  color: var(--apple-text-main) !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 10px !important;
+  padding: 6px 12px !important;
+  font-size: 13px !important;
+}
+
+.trend-grid {
+  stroke: #e2e8f0 !important;
+  stroke-dasharray: 4 4;
+}
+
+.trend-axis-label {
+  fill: var(--apple-text-muted) !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+}
+
+.trend-area {
+  fill: url(#trendGrad) !important;
+  opacity: 0.8;
+}
+
+.trend-line {
+  stroke: #4f46e5 !important;
+  stroke-width: 3px !important;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.trend-dot {
+  fill: #6366f1 !important;
+  stroke: #ffffff !important;
+  stroke-width: 2px !important;
+}
+
+.trend-dot.last {
+  fill: #059669 !important;
+  r: 6 !important;
+}
+
+.trend-value {
+  fill: #64748b !important;
+  font-size: 10.5px !important;
+  font-weight: 600 !important;
+}
+
+.trend-tooltip rect {
+  fill: #ffffff !important;
+  stroke: #cbd5e1 !important;
+  filter: drop-shadow(0 4px 12px rgba(15, 23, 42, 0.08));
+}
+
+.trend-tip-title {
+  fill: #64748b !important;
+  font-size: 11px !important;
+}
+
+.trend-tip-value {
+  fill: #0f172a !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+}
+
+.trend-caption {
+  color: var(--apple-text-sub) !important;
+  font-size: 13px !important;
+}
+
+.trend-sub {
+  color: var(--apple-text-muted) !important;
+  font-size: 12px !important;
 }
 
 /* Full Data View Page Styling */

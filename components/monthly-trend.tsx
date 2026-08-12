@@ -137,6 +137,12 @@ export function MonthlyTrend({ data }: { data: any }) {
         aria-label={`Grafik tren ${metric.label}`}
         onMouseLeave={() => setHover(null)}
       >
+        <defs>
+          <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#6366f1" stopOpacity="0.45" />
+            <stop offset="100%" stopColor="#6366f1" stopOpacity="0.0" />
+          </linearGradient>
+        </defs>
         {ticks.map((tick, index) => {
           const y = yAt(tick);
           return (

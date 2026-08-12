@@ -2,6 +2,15 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-08-12 — Redesain Apple Tech Premium Light Mode (Tasteskill)  (commit af6374e)
+- **Visual Design & Aesthetic Upgrade (Tasteskill - Apple Tech Light Mode)**:
+  - Memperbarui visual antarmuka webapp (`app/dashboard-theme.css`) menjadi **Apple Tech Premium Light Mode**: kanvas *crisp light* `#f8fafc` dengan pendaran *soft radial mesh gradients*, serta kartu data berarsitektur *Doppelrand* (Double-Bezel) serba putih dengan bayangan inset dan *hover border* indigo.
+  - Meningkatkan tampilan grafik sparkline (`components/sparkline.tsx`) dengan *SVG gradient area fill* dinamis (`<linearGradient>`) dan indikator *stroke* serta *endpoint dot*.
+  - Menyempurnakan grafik tren bulanan (`components/monthly-trend.tsx`) dengan pendaran gradien *area fill* indigo, penunjuk *tooltip* terang bergaya macOS, dan kontras sumbu data yang tajam.
+  - Memperbarui tipografi *SF Pro Display / Geist* dengan lencana *eyebrow* mikro, *status pill* berpendar (*success*, *warning*, *positive*, *negative*), dan *tabular figures* untuk semua angka metrik.
+- **Verifikasi**: `npm run typecheck` dan `npm run build` sukses tanpa error.
+- **File Terdampak**: `app/dashboard-theme.css`, `components/monthly-trend.tsx`, `components/sparkline.tsx`, `HISTORY.md`.
+
 ## 2026-08-10 — Fitur Auto WAL Checkpoint, 1-Click Backup/Restore & Redesain Layout Data Lengkap
 - **Fitur Auto WAL Checkpoint & 1-Click Backup System Data**:
   - Menambahkan fungsi `checkpointDb()` pada `lib/db.ts` (`PRAGMA wal_checkpoint(TRUNCATE);`) untuk memastikan log perubahan SQLite (termasuk simpanan credential Google API) selalu terkonsolidasi sempurna ke file utama `website-health.db`.
