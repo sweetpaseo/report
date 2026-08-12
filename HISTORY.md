@@ -2,7 +2,7 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
-## 2026-08-12 — Pembaruan Animasi & Grafik Interaktif Recharts (13 Modul Tampilan)
+## 2026-08-12 — Pembaruan Animasi & Grafik Interaktif Recharts (13 Modul Tampilan) (commit `0ab3c4e`)
 - **Pengayaan Animasi & Grafik Recharts**:
   - Mengintegrasikan library **Recharts** (`AreaChart`, `BarChart`, `PieChart`, `LineChart`, `Tooltip`, `ResponsiveContainer`) pada seluruh 13 modul antarmuka.
   - Memperbarui Grafik Performa GSC & GA4 di `OverviewView.tsx`, `SearchPerformanceView.tsx`, `AnalyticsPerformanceView.tsx` dengan kurva gradien `monotone`, *tooltip* interaktif saat hover, dan animasi *smooth transition*.
@@ -12,7 +12,7 @@ Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). For
 - **Verifikasi Build & Deploy**: `npm run typecheck` & `npm run build` 100% sukses dan telah di-deploy ke server live `report.erihome.id`.
 - **File Terdampak**: `components/views/*`, `HISTORY.md`.
 
-## 2026-08-12 — Overhaul Total UI/UX Webapp Report (13 Screen Views Sesuai Desain UI)
+## 2026-08-12 — Overhaul Total UI/UX Webapp Report (13 Screen Views Sesuai Desain UI) (commit `18b2764`)
 - **Overhaul Total UI/UX 13 Modul Tampilan**:
   - Merombak antarmuka webapp secara menyeluruh agar 100% presisi sesuai dengan 13 gambar desain rujukan di folder `UI/`.
   - Menambahkan komponen Sidebar Navigasi Kiri (`components/sidebar-nav.tsx`) dengan 13 modul menu: *Ringkasan*, *Search Performance*, *Analytics Performance*, *Pages*, *Queries*, *Devices*, *Countries*, *Traffic Channels*, *Events & Conversions*, *AI Insight*, *Rekomendasi*, *Notifikasi & Isu*, dan *Laporan*.
