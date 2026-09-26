@@ -26,6 +26,9 @@ const CSP = "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-
 function withSecurityHeaders(response: NextResponse): NextResponse {
   response.headers.delete("content-security-policy");
   response.headers.set("content-security-policy", CSP);
+  response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0");
+  response.headers.set("Pragma", "no-cache");
+  response.headers.set("Expires", "0");
   return response;
 }
 

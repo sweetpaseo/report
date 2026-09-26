@@ -156,8 +156,11 @@ export function DashboardApp({
         {/* Sticky Header Topbar */}
         <header className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-8 py-4 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-              {activeNavItem?.label || "Ringkasan"}
+            <h1 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
+              <span>{activeNavItem?.label || "Ringkasan"}</span>
+              <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200/80 shadow-xs">
+                v{process.env.NEXT_PUBLIC_APP_VERSION || "0.1.2"}
+              </span>
             </h1>
             <p className="text-xs font-medium text-slate-500 mt-0.5">
               Ringkasan performa website Anda dari Google Search Console & Google Analytics

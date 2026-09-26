@@ -61,13 +61,22 @@ export function SidebarNav({ activeTab, onSelectTab, issuesCount = 42 }: Sidebar
   return (
     <aside className="w-64 bg-white/90 backdrop-blur-xl border-r border-slate-200 flex flex-col shrink-0 h-screen sticky top-0 z-30 select-none">
       {/* Brand Header */}
-      <div className="p-5 border-b border-slate-100 flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white font-black text-sm shadow-md shadow-indigo-500/20">
-          AcS
+      <div className="p-4 border-b border-slate-100 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white font-black text-xs shadow-md shadow-indigo-500/20 shrink-0">
+            AcS
+          </div>
+          <div className="min-w-0">
+            <h1 className="font-extrabold text-slate-900 text-xs leading-tight truncate">AI Creative Studio</h1>
+            <p className="text-[10px] font-medium text-slate-400">Studio Analytics</p>
+          </div>
         </div>
-        <div>
-          <h1 className="font-extrabold text-slate-900 text-sm leading-tight">AI Creative Studio</h1>
-          <p className="text-[11px] font-medium text-slate-400">Studio Analytics</p>
+        <div
+          className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-full shrink-0"
+          title={`Versi ${process.env.NEXT_PUBLIC_APP_VERSION || "0.1.2"}`}
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-[10px] font-extrabold text-emerald-700">v{process.env.NEXT_PUBLIC_APP_VERSION || "0.1.2"}</span>
         </div>
       </div>
 

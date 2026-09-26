@@ -2,6 +2,16 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-09-26 — Versi 0.1.2: Penanda Versi di UI, Dynamic Rendering & Anti-Cache Cloudflare
+- **Penanda Versi (Version Tag) di UI**:
+  - Menampilkan lencana versi `v0.1.2` berpendar hijau di Sidebar Header (`AI Creative Studio`) dan badge versi di judul halaman (`Ringkasan v0.1.2`).
+  - Menghubungkan nomor versi otomatis dari `package.json` (`0.1.2`).
+- **Pencegahan Cache Statis & Cloudflare Edge Cache**:
+  - Mengubah rute `/dashboard` menjadi `force-dynamic` (`revalidate = 0`) agar Next.js tidak lagi mem-prerender halaman menjadi file HTML statis yang di-cache Cloudflare secara permanen.
+  - Menambahkan header anti-cache pada `middleware.ts` (`Cache-Control: no-store, no-cache, must-revalidate, max-age=0`, `Pragma: no-cache`, `Expires: 0`) sehingga CDN Cloudflare dan browser tidak lagi menyimpan file HTML usang.
+- **Verifikasi & Deploy**: Berhasil di-build dan di-deploy ke server live `https://report.erihome.id`.
+- **File Terdampak**: `package.json`, `app/dashboard/page.tsx`, `middleware.ts`, `components/sidebar-nav.tsx`, `components/dashboard-app.tsx`, `HISTORY.md`.
+
 ## 2026-09-26 — Auto-load Daftar Website, Pemilih Periode & Tombol Tarik Data Google API di Header (commit `3da450b`)
 - **Auto-load & Integrasi Data Nyata Website**:
   - Menambahkan pemanggilan otomatis ke `/api/websites` pada saat komponen `DashboardApp` di-*mount*, sehingga dropdown website di header langsung menampilkan seluruh website yang ada di database (misal: Erihome dan Kurnia Printing).
