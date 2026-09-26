@@ -2,6 +2,21 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-09-26 — Versi 0.1.3: Endpoint Autonomous Cron Sync Google Search & Analytics (commit `9d367ee`)
+- **Fitur Sinkronisasi Otomatis / Autonomous Cron Sync**:
+  - Membuat endpoint internal `app/api/cron/sync/route.ts` yang mendukung metode `GET` dan `POST`.
+  - Mengamankan akses endpoint dengan verifikasi `x-cron-secret`, `Authorization: Bearer <secret>`, atau parameter `?secret=<secret>` yang cocok dengan `CRON_SECRET` atau `SESSION_SECRET`, serta verifikasi localhost internal.
+  - Secara otomatis menelusuri seluruh website aktif di database SQLite yang memiliki konfigurasi Google API (`gsc_site_url` atau `ga_property_id`).
+  - Menghitung rentang tanggal secara cerdas:
+    1. **Bulan Lalu**: Dari tanggal 1 s/d hari terakhir bulan sebelumnya untuk mengunci data final.
+    2. **Bulan Berjalan (H-2)**: Dari tanggal 1 s/d H-2 hari ini untuk memperbarui metrik mutakhir dengan mempertimbangkan latensi pemrosesan data Google Search Console.
+  - Memanfaatkan `syncGoogleDataForWebsite` yang aman terhadap duplikasi data (atomic delete & replace dalam transaksi SQLite WAL).
+  - Menyediakan opsi kustomisasi rentang tanggal dan filter website melalui query params (`?startDate=...&endDate=...&websiteId=...`).
+- **Verifikasi & Versi**:
+  - Menaikkan versi package ke `0.1.3`.
+  - Lulus `npm run typecheck` dan `npm run build` tanpa error.
+- **File Terdampak**: `package.json`, `app/api/cron/sync/route.ts`, `HISTORY.md`.
+
 ## 2026-09-26 — Versi 0.1.2: Penanda Versi di UI, Dynamic Rendering & Anti-Cache Cloudflare (commit `e287700`)
 - **Penanda Versi (Version Tag) di UI**:
   - Menampilkan lencana versi `v0.1.2` berpendar hijau di Sidebar Header (`AI Creative Studio`) dan badge versi di judul halaman (`Ringkasan v0.1.2`).
