@@ -39,9 +39,14 @@ export async function POST(
     return NextResponse.json({ error: result.error || "Gagal sinkronisasi data dari Google API" }, { status: 500 });
   }
 
+  const sources = [];
+  if (result.gscSynced) sources.push("Google Search Console");
+  if (result.gaSynced) sources.push("Google Analytics 4");
+  const sourceText = sources.length > 0 ? sources.join(" & ") : "Google API";
+
   return NextResponse.json({
     success: true,
-    message: "Berhasil menarik data dari Google API!",
+    message: `Berhasil menarik data lengkap ${sourceText}!`,
     periodId: result.periodId,
     gscSynced: result.gscSynced,
     gaSynced: result.gaSynced,
