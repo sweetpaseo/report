@@ -55,14 +55,14 @@ export function DashboardApp({
   const [showGoogleApiModal, setShowGoogleApiModal] = useState(false);
   const [isComparing, setIsComparing] = useState(true);
 
-  const selectedWebsite = websites.find((w) => w.id === selectedWebsiteId) || websites[0];
-  const activeNavItem = NAV_ITEMS.find((item) => item.id === activeTab);
-
   // Fetch updated dashboard data when website or period changes
-  const handleSelectWebsite = async (id: string) => {
+  const handleSelectWebsite = async (id: string, periodId?: string) => {
     setSelectedWebsiteId(id);
     try {
-      const res = await fetch(`/api/dashboard?websiteId=${id}`);
+      const url = periodId
+        ? `/api/dashboard?websiteId=${id}&periodId=${periodId}`
+        : `/api/dashboard?websiteId=${id}`;
+      const res = await fetch(url);
       if (res.ok) {
         const json = await res.json();
         setDashboardData(json);
@@ -71,6 +71,76 @@ export function DashboardApp({
       console.error("Gagal mengambil data dashboard:", err);
     }
   };
+
+  // Auto-load websites and dashboard data on mount
+  useEffect(() => {
+    async function loadInitialData() {
+      if (publicToken) {
+        try {
+          const res = await fetch(`/api/public/report/${publicToken}`);
+          if (res.ok) {
+            const json = await res.json();
+            setDashboardData(json);
+            if (json.website) {
+              setWebsites([json.website]);
+              setSelectedWebsiteId(json.website.id);
+            }
+          }
+        } catch (err) {
+          console.error("Gagal memuat laporan publik:", err);
+        }
+        return;
+      }
+
+      if (clientToken) {
+        try {
+          const res = await fetch(`/api/public/client/${clientToken}`);
+          if (res.ok) {
+            const json = await res.json();
+            const clientSites = json.websites || [];
+            setWebsites(clientSites);
+            if (clientSites.length > 0) {
+              const firstId = clientSites[0].id;
+              setSelectedWebsiteId(firstId);
+              const firstToken = clientSites[0].public_token;
+              if (firstToken) {
+                const repRes = await fetch(`/api/public/report/${firstToken}`);
+                if (repRes.ok) setDashboardData(await repRes.json());
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Gagal memuat data client:", err);
+        }
+        return;
+      }
+
+      // Admin mode: fetch from /api/websites
+      try {
+        const res = await fetch("/api/websites");
+        if (res.ok) {
+          const json = await res.json();
+          const siteList = json.websites || [];
+          setWebsites(siteList);
+          if (siteList.length > 0) {
+            const targetId = selectedWebsiteId || siteList[0].id;
+            setSelectedWebsiteId(targetId);
+            const dashRes = await fetch(`/api/dashboard?websiteId=${targetId}`);
+            if (dashRes.ok) {
+              setDashboardData(await dashRes.json());
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Gagal memuat daftar website:", err);
+      }
+    }
+
+    loadInitialData();
+  }, [publicToken, clientToken]);
+
+  const selectedWebsite = websites.find((w) => w.id === selectedWebsiteId) || websites[0];
+  const activeNavItem = NAV_ITEMS.find((item) => item.id === activeTab);
 
   return (
     <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900 antialiased">
@@ -97,25 +167,49 @@ export function DashboardApp({
           {/* Top Controls */}
           <div className="flex flex-wrap items-center gap-3 text-xs">
             {/* Website Selector */}
-            <div className="flex items-center gap-1.5 bg-slate-100/80 border border-slate-200 rounded-xl px-3 py-1.5">
-              <Globe className="w-3.5 h-3.5 text-indigo-600" />
+            <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5 shadow-sm hover:border-indigo-300 transition-colors">
+              <Globe className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
               <select
                 value={selectedWebsiteId}
                 onChange={(e) => handleSelectWebsite(e.target.value)}
-                className="bg-transparent font-bold text-slate-800 outline-none cursor-pointer"
+                className="bg-transparent font-bold text-slate-800 outline-none cursor-pointer pr-1 text-xs"
               >
-                {websites.map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.domain || w.name}
-                  </option>
-                ))}
+                {websites.length > 0 ? (
+                  websites.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.name ? `${w.name} (${w.domain})` : w.domain}
+                    </option>
+                  ))
+                ) : (
+                  <option value="">Memuat website...</option>
+                )}
               </select>
             </div>
 
-            {/* Date Range Picker */}
+            {/* Date Range Picker / Period Selector */}
             <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-3 py-1.5 shadow-sm">
-              <Calendar className="w-3.5 h-3.5 text-slate-500" />
-              <span className="font-bold text-slate-700">1 Mei – 31 Mei 2025</span>
+              <Calendar className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+              {dashboardData?.periods && dashboardData.periods.length > 0 ? (
+                <select
+                  value={dashboardData.selected?.id || ""}
+                  onChange={(e) => {
+                    if (selectedWebsiteId) {
+                      handleSelectWebsite(selectedWebsiteId, e.target.value);
+                    }
+                  }}
+                  className="bg-transparent font-bold text-slate-700 outline-none cursor-pointer text-xs"
+                >
+                  {dashboardData.periods.map((p: any) => (
+                    <option key={p.id} value={p.id}>
+                      {p.period_label || `${p.period_start} – ${p.period_end}`}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <span className="font-bold text-slate-700">
+                  {dashboardData?.selected?.period_label || "1 Mei – 31 Mei 2025"}
+                </span>
+              )}
             </div>
 
             {/* Compare Toggle */}
@@ -134,6 +228,28 @@ export function DashboardApp({
                 />
               </button>
             </div>
+
+            {/* Tarik Data Google API Button */}
+            {selectedWebsite && (
+              <button
+                onClick={() => setShowGoogleApiModal(true)}
+                title="Tarik data terbaru dari Google Search Console & Google Analytics API"
+                className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold px-3 py-1.5 rounded-xl hover:bg-indigo-100 transition-colors shadow-sm"
+              >
+                <RefreshCw className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Tarik Data Google</span>
+              </button>
+            )}
+
+            {/* Backup Button */}
+            <button
+              onClick={() => setShowBackupModal(true)}
+              title="Backup data kredensial & konfigurasi database"
+              className="flex items-center gap-1.5 bg-white border border-slate-200 text-slate-700 font-bold px-3 py-1.5 rounded-xl shadow-sm hover:bg-slate-50 transition-colors"
+            >
+              <Database className="w-3.5 h-3.5 text-slate-500" />
+              <span>Backup</span>
+            </button>
 
             {/* Export Button */}
             <button
@@ -185,7 +301,12 @@ export function DashboardApp({
           website={selectedWebsite}
           isOpen={showGoogleApiModal}
           onClose={() => setShowGoogleApiModal(false)}
-          onSuccess={() => setShowGoogleApiModal(false)}
+          onSuccess={() => {
+            setShowGoogleApiModal(false);
+            if (selectedWebsiteId) {
+              handleSelectWebsite(selectedWebsiteId);
+            }
+          }}
         />
       )}
     </div>

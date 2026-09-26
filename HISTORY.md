@@ -2,6 +2,17 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-09-26 — Auto-load Daftar Website, Pemilih Periode & Tombol Tarik Data Google API di Header
+- **Auto-load & Integrasi Data Nyata Website**:
+  - Menambahkan pemanggilan otomatis ke `/api/websites` pada saat komponen `DashboardApp` di-*mount*, sehingga dropdown website di header langsung menampilkan seluruh website yang ada di database (misal: Erihome dan Kurnia Printing).
+  - Menyambungkan dropdown pemilih periode tanggal di header dengan `dashboardData.periods` yang tersimpan di SQLite, memungkinkan penggantian periode laporan secara instan.
+- **Tombol Integrasi Tarik Data Google & Backup**:
+  - Menambahkan tombol "Tarik Data Google" pada header bar dengan ikon sinkronisasi untuk memicu `GoogleApiModal`, memungkinkan penarikan data langsung via Google Search Console & GA4 Data API.
+  - Menambahkan tombol "Backup" pada header bar untuk memicu `BackupModal`.
+  - Mengonfigurasi `onSuccess` pada modal Google API untuk me-*refresh* data dashboard secara otomatis setelah sinkronisasi selesai.
+- **Verifikasi**: `npm run typecheck` dan `npm run build` sukses 100%.
+- **File Terdampak**: `components/dashboard-app.tsx`, `HISTORY.md`.
+
 ## 2026-08-12 — Pembaruan Animasi & Grafik Interaktif Recharts (13 Modul Tampilan) (commit `0ab3c4e`)
 - **Pengayaan Animasi & Grafik Recharts**:
   - Mengintegrasikan library **Recharts** (`AreaChart`, `BarChart`, `PieChart`, `LineChart`, `Tooltip`, `ResponsiveContainer`) pada seluruh 13 modul antarmuka.
