@@ -1,0 +1,4 @@
+# /etc/cron.d/website-health-cron
+# Autonomous Google API Sync for Website Health Report
+# Runs daily at 03:00 and 15:00 server time
+0 3,15 * * * erihome-report /bin/bash /home/erihome-report/cron-sync.sh
