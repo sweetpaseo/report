@@ -9,8 +9,16 @@ import {
   formatPosition,
 } from "@/lib/view-helpers";
 
-export function PagesView({ data }: { data: any }) {
+export function PagesView({
+  data,
+  isComparing = true,
+}: {
+  data: any;
+  isComparing?: boolean;
+}) {
   const rawPages = data?.topGscPages?.web || [];
+  const periodLabel = data?.selected?.period_label || "Periode Terpilih";
+  const prevPeriodLabel = (data?.comparePeriod || data?.previous)?.period_label;
   const [searchPage, setSearchPage] = useState("");
   const [selectedPageIndex, setSelectedPageIndex] = useState(0);
 
@@ -95,7 +103,13 @@ export function PagesView({ data }: { data: any }) {
             <thead className="sticky top-0 bg-white">
               <tr>
                 <th>URL Halaman</th>
-                <th className="right">Klik</th>
+                <th className="right">Klik ({periodLabel})</th>
+                {isComparing && prevPeriodLabel && (
+                  <>
+                    <th className="right text-amber-700">Klik ({prevPeriodLabel})</th>
+                    <th className="center">Selisih</th>
+                  </>
+                )}
                 <th className="right">Tayang</th>
                 <th className="right">CTR</th>
               </tr>
@@ -123,6 +137,20 @@ export function PagesView({ data }: { data: any }) {
                         {path}
                       </td>
                       <td className="right font-bold text-slate-900">{formatNumber(row.clicks)}</td>
+                      {isComparing && prevPeriodLabel && (
+                        <>
+                          <td className="right font-semibold text-amber-700">{formatNumber(row.previousClicks || 0)}</td>
+                          <td className="text-center font-bold">
+                            {(row.clicksDiff || 0) > 0 ? (
+                              <span className="text-emerald-600">+{row.clicksDiff} ▲</span>
+                            ) : (row.clicksDiff || 0) < 0 ? (
+                              <span className="text-rose-600">{row.clicksDiff} ▼</span>
+                            ) : (
+                              <span className="text-slate-400">0</span>
+                            )}
+                          </td>
+                        </>
+                      )}
                       <td className="right text-slate-600">{formatNumber(row.impressions)}</td>
                       <td className="right font-medium text-slate-700">{formatPercent(row.ctr * 100)}</td>
                     </tr>
@@ -130,7 +158,7 @@ export function PagesView({ data }: { data: any }) {
                 })
               ) : (
                 <tr>
-                  <td colSpan={4} className="text-center py-8 text-slate-400">
+                  <td colSpan={isComparing && prevPeriodLabel ? 6 : 4} className="text-center py-8 text-slate-400">
                     Tidak ada halaman yang cocok dengan pencarian.
                   </td>
                 </tr>

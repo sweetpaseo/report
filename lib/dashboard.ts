@@ -65,7 +65,12 @@ function dimensionRows(
 
 type PeriodContext = { periods: PeriodRow[]; selected: PeriodRow; previous?: PeriodRow; isPartialMonth: boolean };
 
-function resolvePeriodContext(db: DatabaseSync, websiteId: string, requestedPeriodId?: string): PeriodContext | null {
+function resolvePeriodContext(
+  db: DatabaseSync,
+  websiteId: string,
+  requestedPeriodId?: string,
+  requestedComparePeriodId?: string
+): PeriodContext | null {
   const periods = db.prepare(`
     SELECT DISTINCT rp.id, rp.period_start, rp.period_end, rp.period_label
     FROM report_periods rp
@@ -76,26 +81,34 @@ function resolvePeriodContext(db: DatabaseSync, websiteId: string, requestedPeri
   if (!periods.length) return null;
   const selected = periods.find((period) => period.id === requestedPeriodId) || periods[0];
   const selectedIndex = periods.findIndex((period) => period.id === selected.id);
-  const previous = selectedIndex >= 0 ? periods[selectedIndex + 1] : undefined;
+
+  let previous: PeriodRow | undefined;
+  if (requestedComparePeriodId && requestedComparePeriodId !== selected.id) {
+    previous = periods.find((period) => period.id === requestedComparePeriodId);
+  }
+  if (!previous && selectedIndex >= 0 && selectedIndex + 1 < periods.length) {
+    previous = periods[selectedIndex + 1];
+  }
+
   const periodEnd = new Date(selected.period_end);
   const isPartialMonth = !Number.isNaN(periodEnd.getTime()) && periodEnd > new Date();
   return { periods, selected, previous, isPartialMonth };
 }
 
-export function getDashboard(db: DatabaseSync, websiteId: string, requestedPeriodId?: string) {
+export function getDashboard(db: DatabaseSync, websiteId: string, requestedPeriodId?: string, requestedComparePeriodId?: string) {
   try {
-    return _getDashboard(db, websiteId, requestedPeriodId);
+    return _getDashboard(db, websiteId, requestedPeriodId, requestedComparePeriodId);
   } catch (error) {
-    logError("dashboard", "Gagal memuat data dashboard", { websiteId, requestedPeriodId, error: error instanceof Error ? error.message : String(error) });
+    logError("dashboard", "Gagal memuat data dashboard", { websiteId, requestedPeriodId, requestedComparePeriodId, error: error instanceof Error ? error.message : String(error) });
     throw error;
   }
 }
 
-function _getDashboard(db: DatabaseSync, websiteId: string, requestedPeriodId?: string) {
+function _getDashboard(db: DatabaseSync, websiteId: string, requestedPeriodId?: string, requestedComparePeriodId?: string) {
   const website = db.prepare("SELECT * FROM websites WHERE id = ?").get(websiteId) as Record<string, string> | undefined;
   if (!website) return null;
 
-  const ctx = resolvePeriodContext(db, websiteId, requestedPeriodId);
+  const ctx = resolvePeriodContext(db, websiteId, requestedPeriodId, requestedComparePeriodId);
   if (!ctx) return { website, periods: [], empty: true };
   const { periods, selected, previous, isPartialMonth } = ctx;
 
@@ -128,17 +141,55 @@ function _getDashboard(db: DatabaseSync, websiteId: string, requestedPeriodId?: 
   ];
   const comparisons = Object.fromEntries(keys.map((key) => [key, change(currentMetrics[key] || 0, previousMetrics[key] || 0)]));
 
-  const getGscTrend = (searchType: string) => db.prepare(`
+  const getGscTrend = (searchType: string, periodId: string) => db.prepare(`
     SELECT metric_date AS date, clicks, impressions, ctr, average_position AS averagePosition
     FROM gsc_daily_metrics WHERE website_id = ? AND report_period_id = ? AND search_type = ? ORDER BY metric_date
-  `).all(websiteId, selected.id, searchType);
-  const gscWebTrend = getGscTrend("web");
-  const gscAigenTrend = getGscTrend("aigen");
+  `).all(websiteId, periodId, searchType) as Array<{ date: string; clicks: number; impressions: number; ctr: number; averagePosition: number }>;
 
-  const gaTrend = db.prepare(`
+  const selectedGscWeb = getGscTrend("web", selected.id);
+  const previousGscWeb = previous ? getGscTrend("web", previous.id) : [];
+  const gscWebTrend = selectedGscWeb.map((item, idx) => {
+    const prev = previousGscWeb[idx];
+    return {
+      ...item,
+      clicksCompare: prev ? prev.clicks : null,
+      impressionsCompare: prev ? prev.impressions : null,
+      compareDate: prev ? prev.date : null,
+    };
+  });
+
+  const selectedGscAigen = getGscTrend("aigen", selected.id);
+  const previousGscAigen = previous ? getGscTrend("aigen", previous.id) : [];
+  const gscAigenTrend = selectedGscAigen.map((item, idx) => {
+    const prev = previousGscAigen[idx];
+    return {
+      ...item,
+      clicksCompare: prev ? prev.clicks : null,
+      impressionsCompare: prev ? prev.impressions : null,
+      compareDate: prev ? prev.date : null,
+    };
+  });
+
+  const selectedGaTrend = db.prepare(`
     SELECT metric_date AS date, active_users AS activeUsers, new_users AS newUsers, engagement_seconds AS engagementSeconds
     FROM ga_daily_metrics WHERE website_id = ? AND report_period_id = ? ORDER BY metric_date
-  `).all(websiteId, selected.id);
+  `).all(websiteId, selected.id) as Array<{ date: string; activeUsers: number; newUsers: number; engagementSeconds: number }>;
+
+  const previousGaTrend = previous ? db.prepare(`
+    SELECT metric_date AS date, active_users AS activeUsers, new_users AS newUsers, engagement_seconds AS engagementSeconds
+    FROM ga_daily_metrics WHERE website_id = ? AND report_period_id = ? ORDER BY metric_date
+  `).all(websiteId, previous.id) as Array<{ date: string; activeUsers: number; newUsers: number; engagementSeconds: number }> : [];
+
+  const gaTrend = selectedGaTrend.map((item, idx) => {
+    const prev = previousGaTrend[idx];
+    return {
+      ...item,
+      activeUsersCompare: prev ? prev.activeUsers : null,
+      newUsersCompare: prev ? prev.newUsers : null,
+      compareDate: prev ? prev.date : null,
+    };
+  });
+
   const channels = db.prepare(`
     SELECT channel, sessions, new_users AS newUsers FROM ga_channels
     WHERE website_id = ? AND report_period_id = ? ORDER BY sessions DESC LIMIT 8
@@ -154,21 +205,57 @@ function _getDashboard(db: DatabaseSync, websiteId: string, requestedPeriodId?: 
   `).all(websiteId, queryPeriodId, searchType);
   const opportunities = { web: getOpportunities("web"), aigen: getOpportunities("aigen") };
   
-  const getTopQueries = (searchType: string) => db.prepare(`
+  const getTopQueries = (searchType: string, periodId: string) => db.prepare(`
     SELECT query, clicks, impressions, ctr, average_position AS averagePosition
     FROM gsc_queries WHERE website_id = ? AND report_period_id = ? AND search_type = ?
-    ORDER BY impressions DESC LIMIT 10
-  `).all(websiteId, queryPeriodId, searchType) as QueryRow[];
-  const topQueries = { web: getTopQueries("web"), aigen: getTopQueries("aigen") };
+    ORDER BY impressions DESC LIMIT 50
+  `).all(websiteId, periodId, searchType) as QueryRow[];
+
+  const rawTopQueriesWeb = getTopQueries("web", queryPeriodId);
+  const prevTopQueriesWeb = previous ? getTopQueries("web", getGscPeriod(db, websiteId, previous.id, "gsc_queries")) : [];
+  const prevQueriesMap = new Map(prevTopQueriesWeb.map((q) => [q.query, q]));
+
+  const topQueriesWebWithComp = rawTopQueriesWeb.map((q) => {
+    const prev = prevQueriesMap.get(q.query);
+    const prevClicks = prev ? prev.clicks : 0;
+    const prevImp = prev ? prev.impressions : 0;
+    const prevPos = prev ? prev.averagePosition : null;
+    return {
+      ...q,
+      previousClicks: prevClicks,
+      previousImpressions: prevImp,
+      previousPosition: prevPos,
+      clicksDiff: q.clicks - prevClicks,
+      clicksPercent: prevClicks > 0 ? ((q.clicks - prevClicks) / prevClicks) * 100 : null,
+      positionDiff: prevPos !== null ? Number((prevPos - q.averagePosition).toFixed(1)) : null,
+    };
+  });
+  const topQueries = { web: topQueriesWebWithComp, aigen: getTopQueries("aigen", queryPeriodId) };
 
   const getDevices = (searchType: "web" | "aigen") => dimensionRows(db, websiteId, selected.id, "gsc_devices", "device", searchType).map((row) => ({ device: row.name, clicks: row.clicks, impressions: row.impressions, ctr: row.ctr, averagePosition: row.averagePosition }));
   const devices = { web: getDevices("web"), aigen: getDevices("aigen") };
 
-  const getTopGscPages = (searchType: "web" | "aigen") => dimensionRows(db, websiteId, selected.id, "gsc_pages", "page", searchType)
+  const getTopGscPages = (searchType: "web" | "aigen", periodId: string) => dimensionRows(db, websiteId, periodId, "gsc_pages", "page", searchType)
     .map((row) => ({ page: row.name, clicks: row.clicks, impressions: row.impressions, ctr: row.ctr }))
-    .sort((a, b) => b.clicks - a.clicks)
-    .slice(0, 10);
-  const topGscPages = { web: getTopGscPages("web"), aigen: getTopGscPages("aigen") };
+    .sort((a, b) => b.clicks - a.clicks);
+
+  const rawTopPagesWeb = getTopGscPages("web", selected.id);
+  const prevTopPagesWeb = previous ? getTopGscPages("web", previous.id) : [];
+  const prevPagesMap = new Map(prevTopPagesWeb.map((p) => [p.page, p]));
+
+  const topGscPagesWebWithComp = rawTopPagesWeb.map((p) => {
+    const prev = prevPagesMap.get(p.page);
+    const prevClicks = prev ? prev.clicks : 0;
+    const prevImp = prev ? prev.impressions : 0;
+    return {
+      ...p,
+      previousClicks: prevClicks,
+      previousImpressions: prevImp,
+      clicksDiff: p.clicks - prevClicks,
+      clicksPercent: prevClicks > 0 ? ((p.clicks - prevClicks) / prevClicks) * 100 : null,
+    };
+  });
+  const topGscPages = { web: topGscPagesWebWithComp, aigen: getTopGscPages("aigen", selected.id).slice(0, 10) };
 
   const countries = { web: dimensionRows(db, websiteId, selected.id, "gsc_countries", "country", "web"), aigen: dimensionRows(db, websiteId, selected.id, "gsc_countries", "country", "aigen") };
   const appearances = { web: dimensionRows(db, websiteId, selected.id, "gsc_appearance", "appearance", "web"), aigen: dimensionRows(db, websiteId, selected.id, "gsc_appearance", "appearance", "aigen") };
@@ -327,6 +414,7 @@ function _getDashboard(db: DatabaseSync, websiteId: string, requestedPeriodId?: 
     periods,
     selected,
     previous,
+    comparePeriod: previous,
     isPartialMonth,
     metrics: currentMetrics,
     comparisons,

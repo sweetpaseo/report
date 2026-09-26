@@ -10,11 +10,19 @@ import {
   formatPosition,
 } from "@/lib/view-helpers";
 
-export function QueriesView({ data }: { data: any }) {
+export function QueriesView({
+  data,
+  isComparing = true,
+}: {
+  data: any;
+  isComparing?: boolean;
+}) {
   const rawQueries = data?.topQueries?.web || [];
   const opportunities = data?.opportunities?.web || [];
   const websiteName = (data?.website?.name || "").toLowerCase();
   const websiteDomain = (data?.website?.domain || "").toLowerCase();
+  const periodLabel = data?.selected?.period_label || "Periode Terpilih";
+  const prevPeriodLabel = (data?.comparePeriod || data?.previous)?.period_label;
 
   // Branded vs Non-Branded Calculation
   const { brandedCount, nonBrandedCount, brandedPct, nonBrandedPct } = useMemo(() => {
@@ -147,7 +155,14 @@ export function QueriesView({ data }: { data: any }) {
                 </div>
                 <div className="flex items-center gap-4">
                   <span className="text-slate-600">{formatNumber(q.impressions)} tayang</span>
-                  <span className="font-extrabold text-indigo-600">{formatNumber(q.clicks)} klik</span>
+                  <div className="text-right">
+                    <span className="font-extrabold text-indigo-600">{formatNumber(q.clicks)} klik</span>
+                    {isComparing && prevPeriodLabel && q.clicksDiff !== undefined && (
+                      <span className={`block text-[10px] font-bold ${q.clicksDiff >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                        {q.clicksDiff >= 0 ? `+${q.clicksDiff}` : q.clicksDiff} vs lalu
+                      </span>
+                    )}
+                  </div>
                   <span className="pos-badge pos-badge-green">Pos {formatPosition(q.averagePosition)}</span>
                 </div>
               </div>

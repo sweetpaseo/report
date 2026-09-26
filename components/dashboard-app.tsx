@@ -54,18 +54,32 @@ export function DashboardApp({
   const [showBackupModal, setShowBackupModal] = useState(false);
   const [showGoogleApiModal, setShowGoogleApiModal] = useState(false);
   const [isComparing, setIsComparing] = useState(true);
+  const [comparePeriodId, setComparePeriodId] = useState<string>(
+    initialData?.comparePeriod?.id || initialData?.previous?.id || ""
+  );
 
   // Fetch updated dashboard data when website or period changes
-  const handleSelectWebsite = async (id: string, periodId?: string) => {
+  const handleSelectWebsite = async (
+    id: string,
+    periodId?: string,
+    cmpId?: string,
+    cmpActive?: boolean
+  ) => {
     setSelectedWebsiteId(id);
     try {
-      const url = periodId
-        ? `/api/dashboard?websiteId=${id}&periodId=${periodId}`
-        : `/api/dashboard?websiteId=${id}`;
+      const activeCmp = cmpActive !== undefined ? cmpActive : isComparing;
+      const targetCmpId = cmpId !== undefined ? cmpId : comparePeriodId;
+      let url = `/api/dashboard?websiteId=${id}`;
+      if (periodId) url += `&periodId=${periodId}`;
+      if (activeCmp && targetCmpId) url += `&comparePeriodId=${targetCmpId}`;
+
       const res = await fetch(url);
       if (res.ok) {
         const json = await res.json();
         setDashboardData(json);
+        if (json.comparePeriod?.id) {
+          setComparePeriodId(json.comparePeriod.id);
+        }
       }
     } catch (err) {
       console.error("Gagal mengambil data dashboard:", err);
@@ -215,11 +229,18 @@ export function DashboardApp({
               )}
             </div>
 
-            {/* Compare Toggle */}
+            {/* Compare Toggle & Comparison Period Selector */}
             <div className="flex items-center gap-2 bg-slate-100/80 px-3 py-1.5 rounded-xl border border-slate-200">
               <span className="font-bold text-slate-600">Bandingkan</span>
               <button
-                onClick={() => setIsComparing(!isComparing)}
+                onClick={() => {
+                  const nextCmp = !isComparing;
+                  setIsComparing(nextCmp);
+                  if (selectedWebsiteId) {
+                    handleSelectWebsite(selectedWebsiteId, dashboardData?.selected?.id, comparePeriodId, nextCmp);
+                  }
+                }}
+                title={isComparing ? "Nonaktifkan perbandingan" : "Aktifkan perbandingan antar periode"}
                 className={`w-9 h-5 rounded-full p-0.5 transition-colors ${
                   isComparing ? "bg-indigo-600" : "bg-slate-300"
                 }`}
@@ -230,6 +251,31 @@ export function DashboardApp({
                   }`}
                 />
               </button>
+
+              {isComparing && dashboardData?.periods && dashboardData.periods.length > 1 && (
+                <div className="flex items-center gap-1.5 pl-2 border-l border-slate-300">
+                  <span className="text-[11px] font-bold text-slate-500">vs</span>
+                  <select
+                    value={dashboardData?.comparePeriod?.id || comparePeriodId}
+                    onChange={(e) => {
+                      const nextCmpId = e.target.value;
+                      setComparePeriodId(nextCmpId);
+                      if (selectedWebsiteId) {
+                        handleSelectWebsite(selectedWebsiteId, dashboardData?.selected?.id, nextCmpId, true);
+                      }
+                    }}
+                    className="bg-white border border-slate-300 rounded-lg px-2 py-0.5 font-bold text-indigo-700 outline-none cursor-pointer text-xs shadow-xs"
+                  >
+                    {dashboardData.periods
+                      .filter((p: any) => p.id !== dashboardData.selected?.id)
+                      .map((p: any) => (
+                        <option key={p.id} value={p.id}>
+                          {p.period_label || `${p.period_start} – ${p.period_end}`}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             {/* Tarik Data Google API Button */}
@@ -268,28 +314,28 @@ export function DashboardApp({
         {/* Dynamic View Canvas */}
         <div className="p-8 max-w-[1440px] w-full mx-auto space-y-6 flex-1">
           {activeTab === "ringkasan" && (
-            <OverviewView data={dashboardData} onSelectTab={(t) => setActiveTab(t)} />
+            <OverviewView data={dashboardData} isComparing={isComparing} onSelectTab={(t) => setActiveTab(t)} />
           )}
           {activeTab === "search_performance" && (
-            <SearchPerformanceView data={dashboardData} />
+            <SearchPerformanceView data={dashboardData} isComparing={isComparing} />
           )}
           {activeTab === "analytics_performance" && (
-            <AnalyticsPerformanceView data={dashboardData} />
+            <AnalyticsPerformanceView data={dashboardData} isComparing={isComparing} />
           )}
-          {activeTab === "pages" && <PagesView data={dashboardData} />}
-          {activeTab === "queries" && <QueriesView data={dashboardData} />}
-          {activeTab === "devices" && <DevicesView data={dashboardData} />}
-          {activeTab === "countries" && <CountriesView data={dashboardData} />}
-          {activeTab === "traffic_channels" && <TrafficChannelsView data={dashboardData} />}
+          {activeTab === "pages" && <PagesView data={dashboardData} isComparing={isComparing} />}
+          {activeTab === "queries" && <QueriesView data={dashboardData} isComparing={isComparing} />}
+          {activeTab === "devices" && <DevicesView data={dashboardData} isComparing={isComparing} />}
+          {activeTab === "countries" && <CountriesView data={dashboardData} isComparing={isComparing} />}
+          {activeTab === "traffic_channels" && <TrafficChannelsView data={dashboardData} isComparing={isComparing} />}
           {activeTab === "events_conversions" && (
-            <EventsConversionsView data={dashboardData} />
+            <EventsConversionsView data={dashboardData} isComparing={isComparing} />
           )}
-          {activeTab === "ai_insight" && <AiInsightView data={dashboardData} />}
-          {activeTab === "rekomendasi" && <RecommendationsView data={dashboardData} />}
+          {activeTab === "ai_insight" && <AiInsightView data={dashboardData} isComparing={isComparing} />}
+          {activeTab === "rekomendasi" && <RecommendationsView data={dashboardData} isComparing={isComparing} />}
           {activeTab === "notifikasi_isu" && (
-            <NotificationsIssuesView data={dashboardData} />
+            <NotificationsIssuesView data={dashboardData} isComparing={isComparing} />
           )}
-          {activeTab === "laporan" && <ReportsView data={dashboardData} />}
+          {activeTab === "laporan" && <ReportsView data={dashboardData} isComparing={isComparing} />}
         </div>
       </main>
 

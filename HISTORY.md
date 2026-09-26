@@ -2,6 +2,25 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-09-26 — Versi 0.1.5: Fitur Bandingkan Antar Periode Bebas (Dual-Curve & Comparative Tables) (commit `ff93b5b`)
+- **Fitur Bandingkan Antar Periode Bebas (Setara Google Search Console & GA4)**:
+  - **Backend (`lib/dashboard.ts`, `app/api/dashboard/route.ts`, `app/api/public/report/[token]/route.ts`)**:
+    - Mendukung parameter `comparePeriodId` untuk memilih periode pembanding secara bebas tanpa terkunci hanya ke bulan sebelumnya.
+    - Menghasilkan dataset tren harian komparatif (`clicksCompare`, `impressionsCompare`, `activeUsersCompare`, `compareDate`) yang diselaraskan per hari.
+    - Menghasilkan komparasi dimensi kueri dan halaman (`previousClicks`, `previousImpressions`, `clicksDiff`, `clicksPercent`, `positionDiff`).
+  - **Antarmuka Pengguna / UI (`components/dashboard-app.tsx` & Views)**:
+    - Menambahkan dropdown pemilih periode pembanding sekunder (`vs [Periode Pembanding...]`) di topbar header saat switch "Bandingkan" diaktifkan.
+    - Menyambungkan state `isComparing` ke seluruh 13 modul tampilan dashboard.
+    - **OverviewView**: Menampilkan kurva ganda pada grafik Recharts GSC & GA4 (garis solid untuk periode terpilih, garis putus-putus oranye untuk periode pembanding).
+    - **SearchPerformanceView**: Grafik harian dual-curve klik/tayang dan tabel performa kueri dengan kolom perbandingan klik periode lalu beserta badge selisih (`+X ▲` / `-Y ▼`).
+    - **AnalyticsPerformanceView**: Area chart dual-curve pengguna aktif & sesi komparatif.
+    - **PagesView**: Tabel halaman dengan kolom komparasi klik periode pembanding dan indikator selisih.
+    - **QueriesView**: Kartu Top 5 kueri dengan selisih klik terhadap periode pembanding.
+- **Verifikasi & Versi**:
+  - Versi dinaikkan ke `0.1.5`.
+  - Lolos `npm run typecheck` dan `npm run build` standalone 100% tanpa error.
+- **File Terdampak**: `lib/dashboard.ts`, `app/api/dashboard/route.ts`, `app/api/public/report/[token]/route.ts`, `components/dashboard-app.tsx`, `components/views/*.tsx`, `package.json`, `HISTORY.md`.
+
 ## 2026-09-26 — Versi 0.1.4: Audit Menyeluruh & Dynamic Real-Data Binding pada 13 View, Filter & Grafik (commit `6b8a4af`)
 - **Pembersihan Data Tiruan / Dummy Mockup Menjadi 100% Real Data**:
   - Mengaudit 15 screenshot live antarmuka dari direktori `C:\Users\Fanto\Desktop\antigravity\gr\pages`.

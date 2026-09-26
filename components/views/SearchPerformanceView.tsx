@@ -32,12 +32,21 @@ import {
   getCountryDisplay,
 } from "@/lib/view-helpers";
 
-export function SearchPerformanceView({ data }: { data: any }) {
+export function SearchPerformanceView({
+  data,
+  isComparing = true,
+}: {
+  data: any;
+  isComparing?: boolean;
+}) {
   const comparisons = data?.comparisons || {};
   const clicks = comparisons["gsc.clicks"] || { current: 0, percent: null };
   const impressions = comparisons["gsc.impressions"] || { current: 0, percent: null };
   const ctr = comparisons["gsc.ctr"] || { current: 0, percent: null };
   const avgPos = comparisons["gsc.average_position"] || { current: 0, percent: null };
+
+  const periodLabel = data?.selected?.period_label || "Periode Terpilih";
+  const prevPeriodLabel = (data?.comparePeriod || data?.previous)?.period_label;
 
   const [searchQuery, setSearchQuery] = useState("");
   const [deviceFilter, setDeviceFilter] = useState("all");
@@ -92,6 +101,8 @@ export function SearchPerformanceView({ data }: { data: any }) {
       date: formatDateLabel(r.date),
       klik: r.clicks || 0,
       tayang: r.impressions || 0,
+      klikBandingkan: r.clicksCompare,
+      tayangBandingkan: r.impressionsCompare,
       ctr: Math.round((r.ctr || 0) * 1000) / 10,
     }));
   }, [gscDaily]);
@@ -248,7 +259,10 @@ export function SearchPerformanceView({ data }: { data: any }) {
                 <YAxis yAxisId="left" tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
                 <YAxis yAxisId="right" orientation="right" hide />
                 <Tooltip contentStyle={{ backgroundColor: "#ffffff", borderRadius: "12px", border: "1px solid #e2e8f0", fontSize: "12px" }} />
-                <Line yAxisId="left" type="monotone" dataKey="klik" stroke="#6366f1" strokeWidth={3} dot={{ r: 3 }} name="Klik" />
+                <Line yAxisId="left" type="monotone" dataKey="klik" stroke="#6366f1" strokeWidth={3} dot={{ r: 3 }} name={`Klik (${periodLabel})`} />
+                {isComparing && prevPeriodLabel && (
+                  <Line yAxisId="left" type="monotone" dataKey="klikBandingkan" stroke="#f59e0b" strokeWidth={2} strokeDasharray="4 4" dot={false} name={`Klik (${prevPeriodLabel})`} />
+                )}
                 <Line yAxisId="right" type="monotone" dataKey="tayang" stroke="#c084fc" strokeWidth={2} strokeDasharray="3 3" dot={false} name="Tayangan" />
               </LineChart>
             </ResponsiveContainer>
@@ -307,7 +321,13 @@ export function SearchPerformanceView({ data }: { data: any }) {
               <thead className="sticky top-0 bg-white">
                 <tr>
                   <th>Query</th>
-                  <th className="right">Klik</th>
+                  <th className="right">Klik ({periodLabel})</th>
+                  {isComparing && prevPeriodLabel && (
+                    <>
+                      <th className="right text-amber-700">Klik ({prevPeriodLabel})</th>
+                      <th className="center">Selisih</th>
+                    </>
+                  )}
                   <th className="right">Tayang</th>
                   <th className="right">CTR</th>
                   <th className="center">Posisi</th>
@@ -330,6 +350,20 @@ export function SearchPerformanceView({ data }: { data: any }) {
                           {row.query}
                         </td>
                         <td className="right font-bold text-slate-800">{formatNumber(row.clicks)}</td>
+                        {isComparing && prevPeriodLabel && (
+                          <>
+                            <td className="right font-semibold text-amber-700">{formatNumber(row.previousClicks || 0)}</td>
+                            <td className="text-center font-bold">
+                              {(row.clicksDiff || 0) > 0 ? (
+                                <span className="text-emerald-600">+{row.clicksDiff} ▲</span>
+                              ) : (row.clicksDiff || 0) < 0 ? (
+                                <span className="text-rose-600">{row.clicksDiff} ▼</span>
+                              ) : (
+                                <span className="text-slate-400">0</span>
+                              )}
+                            </td>
+                          </>
+                        )}
                         <td className="right text-slate-600">{formatNumber(row.impressions)}</td>
                         <td className="right text-slate-600">{formatPercent(row.ctr * 100)}</td>
                         <td className="text-center">
@@ -340,7 +374,7 @@ export function SearchPerformanceView({ data }: { data: any }) {
                   })
                 ) : (
                   <tr>
-                    <td colSpan={5} className="text-center py-8 text-slate-400">
+                    <td colSpan={isComparing && prevPeriodLabel ? 7 : 5} className="text-center py-8 text-slate-400">
                       Tidak ada query yang sesuai dengan filter pencarian.
                     </td>
                   </tr>

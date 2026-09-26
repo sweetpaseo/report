@@ -5,7 +5,13 @@ import { Share2, TrendingUp, Layers } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from "recharts";
 import { formatNumber, formatPercent } from "@/lib/view-helpers";
 
-export function TrafficChannelsView({ data }: { data: any }) {
+export function TrafficChannelsView({
+  data,
+  isComparing = true,
+}: {
+  data: any;
+  isComparing?: boolean;
+}) {
   const channels = data?.channels || [];
   const sourceMedium = data?.sourceMedium || [];
   const totalSessions = data?.metrics?.["ga.sessions"] || channels.reduce((sum: number, c: any) => sum + (c.sessions || 0), 0) || 1;

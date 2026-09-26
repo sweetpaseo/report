@@ -15,7 +15,13 @@ import {
 } from "recharts";
 import { formatNumber, formatPercent, formatPosition, getCountryDisplay } from "@/lib/view-helpers";
 
-export function ReportsView({ data }: { data: any }) {
+export function ReportsView({
+  data,
+  isComparing = true,
+}: {
+  data: any;
+  isComparing?: boolean;
+}) {
   const [dimension, setDimension] = useState<"pages" | "queries" | "devices" | "countries">("pages");
   const [visualFormat, setVisualFormat] = useState<"table" | "bar" | "pie">("table");
 

@@ -11,7 +11,13 @@ import {
   getCountryDisplay,
 } from "@/lib/view-helpers";
 
-export function CountriesView({ data }: { data: any }) {
+export function CountriesView({
+  data,
+  isComparing = true,
+}: {
+  data: any;
+  isComparing?: boolean;
+}) {
   const rawCountries = data?.countries?.web || [];
   const topCities = data?.topCities || [];
 

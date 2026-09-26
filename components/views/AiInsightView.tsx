@@ -4,7 +4,13 @@ import React from "react";
 import { Sparkles, Bot, TrendingUp, TrendingDown, AlertTriangle, Lightbulb, CheckCircle2, ArrowRight } from "lucide-react";
 import { formatNumber, formatPercent, formatCompactNumber } from "@/lib/view-helpers";
 
-export function AiInsightView({ data }: { data: any }) {
+export function AiInsightView({
+  data,
+  isComparing = true,
+}: {
+  data: any;
+  isComparing?: boolean;
+}) {
   const websiteName = data?.website?.name || "Website";
   const comparisons = data?.comparisons || {};
   const clicks = comparisons["gsc.clicks"] || { current: 0, percent: null };

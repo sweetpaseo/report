@@ -17,6 +17,8 @@ export async function GET(request: Request, context: { params: Promise<{ token: 
     return NextResponse.json({ error: "Laporan tidak ditemukan." }, { status: 404 });
   }
   const db = getDb();
-  const periodId = new URL(request.url).searchParams.get("periodId") || undefined;
-  return NextResponse.json(getDashboard(db, website.id, periodId));
+  const url = new URL(request.url);
+  const periodId = url.searchParams.get("periodId") || undefined;
+  const comparePeriodId = url.searchParams.get("comparePeriodId") || undefined;
+  return NextResponse.json(getDashboard(db, website.id, periodId, comparePeriodId));
 }

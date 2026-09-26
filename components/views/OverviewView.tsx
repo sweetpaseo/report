@@ -36,7 +36,15 @@ import {
   formatPosition,
 } from "@/lib/view-helpers";
 
-export function OverviewView({ data, onSelectTab }: { data: any; onSelectTab: (tab: any) => void }) {
+export function OverviewView({
+  data,
+  onSelectTab,
+  isComparing = true,
+}: {
+  data: any;
+  onSelectTab: (tab: any) => void;
+  isComparing?: boolean;
+}) {
   const comparisons = data?.comparisons || {};
   const gscClicks = comparisons["gsc.clicks"] || { current: 0, percent: null };
   const gscImpressions = comparisons["gsc.impressions"] || { current: 0, percent: null };
@@ -45,8 +53,8 @@ export function OverviewView({ data, onSelectTab }: { data: any; onSelectTab: (t
   const gaConversion = comparisons["ga.chat_conversion_rate"] || { current: 0, percent: null };
 
   const periodLabel = data?.selected?.period_label || "Periode Terpilih";
-  const prevPeriodLabel = data?.previous?.period_label;
-  const vsText = prevPeriodLabel ? `vs ${prevPeriodLabel}` : "Periode ini";
+  const prevPeriodLabel = (data?.comparePeriod || data?.previous)?.period_label;
+  const vsText = isComparing && prevPeriodLabel ? `vs ${prevPeriodLabel}` : "Periode ini";
 
   // Trends
   const gscDaily = data?.trends?.gscWeb || [];
@@ -54,6 +62,8 @@ export function OverviewView({ data, onSelectTab }: { data: any; onSelectTab: (t
     date: formatDateLabel(r.date),
     klik: r.clicks || 0,
     tayang: r.impressions || 0,
+    klikBandingkan: r.clicksCompare,
+    tayangBandingkan: r.impressionsCompare,
   }));
 
   const gaDaily = data?.trends?.ga || [];
@@ -61,6 +71,7 @@ export function OverviewView({ data, onSelectTab }: { data: any; onSelectTab: (t
     date: formatDateLabel(r.date),
     pengguna: r.activeUsers || 0,
     sesi: r.newUsers || r.activeUsers || 0,
+    penggunaBandingkan: r.activeUsersCompare,
   }));
 
   // Sparkline arrays
@@ -319,7 +330,10 @@ export function OverviewView({ data, onSelectTab }: { data: any; onSelectTab: (t
                   <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={{ backgroundColor: "#ffffff", borderRadius: "12px", border: "1px solid #e2e8f0", fontSize: "12px" }} />
-                  <Area type="monotone" dataKey="klik" stroke="#8b5cf6" strokeWidth={2.5} fillOpacity={1} fill="url(#colorKlik)" name="Klik" />
+                  <Area type="monotone" dataKey="klik" stroke="#8b5cf6" strokeWidth={2.5} fillOpacity={1} fill="url(#colorKlik)" name={`Klik (${periodLabel})`} />
+                  {isComparing && prevPeriodLabel && (
+                    <Area type="monotone" dataKey="klikBandingkan" stroke="#f59e0b" strokeWidth={2} strokeDasharray="4 4" fill="none" name={`Klik (${prevPeriodLabel})`} />
+                  )}
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
@@ -358,8 +372,11 @@ export function OverviewView({ data, onSelectTab }: { data: any; onSelectTab: (t
                   <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={{ backgroundColor: "#ffffff", borderRadius: "12px", border: "1px solid #e2e8f0", fontSize: "12px" }} />
-                  <Area type="monotone" dataKey="pengguna" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorPengguna)" name="Pengguna" />
+                  <Area type="monotone" dataKey="pengguna" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorPengguna)" name={`Pengguna (${periodLabel})`} />
                   <Area type="monotone" dataKey="sesi" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorSesi)" name="Sesi" />
+                  {isComparing && prevPeriodLabel && (
+                    <Area type="monotone" dataKey="penggunaBandingkan" stroke="#f59e0b" strokeWidth={2} strokeDasharray="4 4" fill="none" name={`Pengguna (${prevPeriodLabel})`} />
+                  )}
                 </AreaChart>
               </ResponsiveContainer>
             ) : (

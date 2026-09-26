@@ -4,7 +4,13 @@ import React from "react";
 import { Target, TrendingUp, CheckCircle2, Zap } from "lucide-react";
 import { formatNumber, formatPercent } from "@/lib/view-helpers";
 
-export function EventsConversionsView({ data }: { data: any }) {
+export function EventsConversionsView({
+  data,
+  isComparing = true,
+}: {
+  data: any;
+  isComparing?: boolean;
+}) {
   const events = data?.events || [];
   const totalEventCount = events.reduce((sum: number, e: any) => sum + (e.count || 0), 0);
   const totalKeyEvents = events.reduce((sum: number, e: any) => sum + (e.keyCount || 0), 0);

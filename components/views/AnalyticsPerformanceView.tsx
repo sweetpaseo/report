@@ -22,7 +22,13 @@ import {
   formatDuration,
 } from "@/lib/view-helpers";
 
-export function AnalyticsPerformanceView({ data }: { data: any }) {
+export function AnalyticsPerformanceView({
+  data,
+  isComparing = true,
+}: {
+  data: any;
+  isComparing?: boolean;
+}) {
   const comparisons = data?.comparisons || {};
   const activeUsers = comparisons["ga.active_users"] || { current: 0, percent: null };
   const sessions = comparisons["ga.sessions"] || { current: 0, percent: null };
@@ -30,6 +36,9 @@ export function AnalyticsPerformanceView({ data }: { data: any }) {
   const pageViews = comparisons["ga.page_views"] || { current: 0, percent: null };
   const avgTime = data?.metrics?.["ga.average_engagement_seconds"] || 0;
   const conversionRate = comparisons["ga.chat_conversion_rate"] || { current: 0, percent: null };
+
+  const periodLabel = data?.selected?.period_label || "Periode Terpilih";
+  const prevPeriodLabel = (data?.comparePeriod || data?.previous)?.period_label;
 
   const gaDaily = data?.trends?.ga || [];
   const channels = data?.channels || [];
@@ -40,6 +49,7 @@ export function AnalyticsPerformanceView({ data }: { data: any }) {
       date: formatDateLabel(r.date),
       pengguna: r.activeUsers || 0,
       sesi: r.newUsers || r.activeUsers || 0,
+      penggunaBandingkan: r.activeUsersCompare,
     }));
   }, [gaDaily]);
 
@@ -157,8 +167,11 @@ export function AnalyticsPerformanceView({ data }: { data: any }) {
                   <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={{ backgroundColor: "#ffffff", borderRadius: "12px", border: "1px solid #e2e8f0", fontSize: "12px" }} />
-                  <Area type="monotone" dataKey="pengguna" stroke="#3b82f6" strokeWidth={2.5} fillOpacity={1} fill="url(#colorGaUsers)" name="Pengguna" />
+                  <Area type="monotone" dataKey="pengguna" stroke="#3b82f6" strokeWidth={2.5} fillOpacity={1} fill="url(#colorGaUsers)" name={`Pengguna (${periodLabel})`} />
                   <Area type="monotone" dataKey="sesi" stroke="#10b981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorGaSessions)" name="Sesi" />
+                  {isComparing && prevPeriodLabel && (
+                    <Area type="monotone" dataKey="penggunaBandingkan" stroke="#f59e0b" strokeWidth={2} strokeDasharray="4 4" fill="none" name={`Pengguna (${prevPeriodLabel})`} />
+                  )}
                 </AreaChart>
               </ResponsiveContainer>
             ) : (

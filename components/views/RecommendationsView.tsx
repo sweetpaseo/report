@@ -4,7 +4,13 @@ import React, { useState, useMemo } from "react";
 import { Lightbulb, CheckSquare, Sparkles, Zap, CheckCircle2 } from "lucide-react";
 import { formatNumber } from "@/lib/view-helpers";
 
-export function RecommendationsView({ data }: { data: any }) {
+export function RecommendationsView({
+  data,
+  isComparing = true,
+}: {
+  data: any;
+  isComparing?: boolean;
+}) {
   const [completedItems, setCompletedItems] = useState<Record<number, boolean>>({});
 
   const topPage = data?.topGscPages?.web?.[0];

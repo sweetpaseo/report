@@ -9,7 +9,13 @@ import {
   formatPosition,
 } from "@/lib/view-helpers";
 
-export function DevicesView({ data }: { data: any }) {
+export function DevicesView({
+  data,
+  isComparing = true,
+}: {
+  data: any;
+  isComparing?: boolean;
+}) {
   const rawDevices = data?.devices?.web || [];
   const deviceModels = data?.deviceModels || [];
 

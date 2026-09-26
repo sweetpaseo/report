@@ -5,7 +5,13 @@ import { Bell, AlertTriangle, CheckCircle2, Info, XCircle } from "lucide-react";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
 import { formatNumber } from "@/lib/view-helpers";
 
-export function NotificationsIssuesView({ data }: { data: any }) {
+export function NotificationsIssuesView({
+  data,
+  isComparing = true,
+}: {
+  data: any;
+  isComparing?: boolean;
+}) {
   const anomalies = data?.anomalies || [];
   const dataQuality = data?.dataQuality || [];
 
