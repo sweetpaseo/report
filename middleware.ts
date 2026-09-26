@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 
 const PUBLIC_EXACT = new Set(["/login", "/api/auth/login", "/manifest.webmanifest"]);
-const PUBLIC_PREFIXES = ["/report/", "/api/public/", "/report-data/"];
+const PUBLIC_PREFIXES = ["/report/", "/api/public/", "/report-data/", "/api/cron/"];
 const CLIENT_BLOCKED = new Set(["/api/upload", "/api/websites"]);
 const ADMIN_MUTATIONS = new Set([
   "/api/upload",
