@@ -2,7 +2,7 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
-## 2026-09-26 — Versi 0.1.4: Audit Menyeluruh & Dynamic Real-Data Binding pada 13 View, Filter & Grafik (commit `c48f281`)
+## 2026-09-26 — Versi 0.1.4: Audit Menyeluruh & Dynamic Real-Data Binding pada 13 View, Filter & Grafik (commit `6b8a4af`)
 - **Pembersihan Data Tiruan / Dummy Mockup Menjadi 100% Real Data**:
   - Mengaudit 15 screenshot live antarmuka dari direktori `C:\Users\Fanto\Desktop\antigravity\gr\pages`.
   - Mengeliminasi seluruh array dan teks statis tiruan (seperti data pipa HDPE, sepatu lari, data tahun 2025 yang tidak relevan dengan Kurnia Printing / Erihome) di seluruh 13 komponen view.
