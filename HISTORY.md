@@ -2,6 +2,36 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-09-26 — Versi 0.1.8: Google PageSpeed & Core Web Vitals Audit, Database Cache, & Instant Date Range Presets (commit `pending`)
+- **Audit Kecepatan & Core Web Vitals Google PageSpeed (`app/api/pagespeed/route.ts` & `components/views/CoreWebVitalsView.tsx`)**:
+  - Integrasi API resmi Google PageSpeed Insights (PSI v5) langsung ke dalam dashboard tanpa ketergantungan tool pihak ketiga.
+  - Skema tabel database `pagespeed_audits` di SQLite dengan mekanisme caching pintar (otomatis memakai cache jika usia audit < 24 jam kecuali tombol "Audit Ulang Sekarang" ditekan).
+  - Tampilan visual komprehensif:
+    - Pengalih strategi perangkat (Mobile / Desktop).
+    - 4 Lingkaran Skor Indeks Berwarna (Kinerja / Performance, Aksesibilitas, Praktik Terbaik, dan SEO).
+    - Kartu metrik Core Web Vitals (CWV) esensial Google:
+      - **LCP (Largest Contentful Paint)**: Kecepatan munculnya elemen konten terbesar (Target: < 2.5s).
+      - **TBT (Total Blocking Time)**: Responsivitas interaksi & kelancaran klik (Target: < 200ms).
+      - **CLS (Cumulative Layout Shift)**: Stabilitas visual tata letak halaman (Target: < 0.1).
+      - **FCP (First Contentful Paint)**: Detik pertama halaman mulai menggambar konten (Target: < 1.8s).
+    - Daftar diagnosis peluang optimasi konkret (*Google PSI Opportunities & Diagnostics*) lengkap dengan estimasi penghematan waktu muat (*Savings*).
+  - Item menu baru di sidebar navigasi: `⚡ Kecepatan & Vitals` (`core_web_vitals`).
+- **Filter Rentang Tanggal Cepat / Quick Date Range Presets (`components/dashboard-app.tsx`)**:
+  - Tombol pintas pemotong rentang tanggal instan di topbar header: **Bulan Penuh**, **30 Hari**, **14 Hari**, dan **7 Hari**.
+  - Menghitung ulang total Klik, Impresi, CTR, Posisi Rata-rata, Pengguna Aktif, dan Sesi secara instan (0ms client-side re-aggregation) serta memotong kurva grafik tren harian tanpa perlu menunggu reload dari server.
+- **File Terdampak**:
+  - `app/api/pagespeed/route.ts` (baru)
+  - `components/views/CoreWebVitalsView.tsx` (baru)
+  - `components/dashboard-app.tsx`
+  - `components/sidebar-nav.tsx`
+  - `lib/db.ts`
+  - `package.json` (versi `0.1.8`)
+  - `HISTORY.md`
+  - `CHECKPOINT.md`
+- **Verifikasi & Versi**:
+  - Lolos `npm run typecheck` dan `npm run build` standalone 100% tanpa error.
+  - Berhasil di-deploy ke server live `https://report.erihome.id`.
+
 ## 2026-09-26 — Versi 0.1.7: Executive Official A4 Report, Business ROI Calculator in Rupiah, & Pinned Target Keywords Watchlist (commit `2e6fecb`)
 - **Dokumen Laporan Resmi Eksekutif A4 (`components/ExecutiveReportModal.tsx`)**:
   - Modal dan tata cetak laporan formal A4 resmi untuk pimpinan bisnis atau klien:

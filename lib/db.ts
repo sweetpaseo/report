@@ -296,6 +296,26 @@ function initialize(db: DatabaseSync) {
       created_at TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_system_logs_created_at ON system_logs(created_at DESC);
+
+    CREATE TABLE IF NOT EXISTS pagespeed_audits (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      website_id TEXT NOT NULL,
+      url TEXT NOT NULL,
+      strategy TEXT NOT NULL,
+      performance_score INTEGER,
+      accessibility_score INTEGER,
+      best_practices_score INTEGER,
+      seo_score INTEGER,
+      lcp REAL,
+      tbt REAL,
+      cls REAL,
+      fcp REAL,
+      speed_index REAL,
+      diagnostics_json TEXT,
+      audited_at TEXT NOT NULL,
+      FOREIGN KEY(website_id) REFERENCES websites(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_pagespeed_site ON pagespeed_audits(website_id, strategy, audited_at DESC);
   `);
 
 

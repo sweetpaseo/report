@@ -5,12 +5,12 @@ Dokumen ini adalah ringkasan status teknis, arsitektur, fitur aktif, dan riwayat
 ---
 
 ## 📌 Status Terkini Proyek
-- **Versi Aplikasi**: `v0.1.7`
+- **Versi Aplikasi**: `v0.1.8`
 - **Tanggal Pembaruan Terakhir**: 26 September 2026
 - **Status Server Produksi**: **ONLINE & LIVE** (`HTTP 200 OK`)
 - **URL Publik**: [https://report.erihome.id](https://report.erihome.id)
 - **Git Branch**: `main` (Up to date dengan `origin/main`)
-- **Commit Terakhir**: `2e6fecb` (*feat(executive): add executive A4 PDF report, organic ROI calculator, and pinned target keywords watchlist*)
+- **Commit Terakhir**: `pending` (*feat(pagespeed): add Google PageSpeed Core Web Vitals audit and quick date range presets*)
 
 ---
 
@@ -28,9 +28,27 @@ Dokumen ini adalah ringkasan status teknis, arsitektur, fitur aktif, dan riwayat
 
 ---
 
-## 🚀 Fitur Unggulan Aktif (v0.1.7)
+## 🚀 Fitur Unggulan Aktif (v0.1.8)
 
-### 1. Ekspor & Dokumen Resmi Eksekutif A4
+### 1. Audit Kecepatan & Core Web Vitals Google PageSpeed
+- **Komponen**: `app/api/pagespeed/route.ts` & `components/views/CoreWebVitalsView.tsx`
+- **Akses**: Sidebar menu **⚡ Kecepatan & Vitals** (`core_web_vitals`).
+- **Fitur**:
+  - Pengujian langsung ke Google PageSpeed Insights API (PSI v5) untuk Mobile dan Desktop.
+  - Caching cerdas di tabel SQLite `pagespeed_audits` (retensi 24 jam dengan opsi paksa audit ulang).
+  - 4 Lingkaran Skor Indeks Berwarna: Performa, Aksesibilitas, Praktik Terbaik, dan SEO.
+  - Kartu Metrik Esensial Core Web Vitals: LCP (Largest Contentful Paint), TBT (Total Blocking Time), CLS (Cumulative Layout Shift), dan FCP (First Contentful Paint).
+  - Daftar Peluang Optimasi Konkret Google (*Opportunities & Diagnostics*) dengan perkiraan penghematan waktu muat.
+
+### 2. Filter Rentang Tanggal Cepat (Quick Date Range Presets)
+- **Komponen**: `components/dashboard-app.tsx`
+- **Akses**: Tombol pemilih rentang cepat di topbar (Bulan Penuh, 30 Hari, 14 Hari, 7 Hari).
+- **Fitur**:
+  - Pemotongan rentang waktu instan (0ms client-side re-aggregation) tanpa menunggu reload server.
+  - Rekalkulasi dinamis metrik total: Klik, Impresi, CTR, Posisi Rata-rata, Pengguna Aktif, dan Sesi.
+  - Sinkronisasi instan terhadap kurva tren harian di seluruh kartu dan grafik.
+
+### 3. Ekspor & Dokumen Resmi Eksekutif A4
 - **Komponen**: `components/ExecutiveReportModal.tsx`
 - **Akses**: Tombol *Laporan Eksekutif* di topbar dan halaman *Laporan*.
 - **Fitur**:

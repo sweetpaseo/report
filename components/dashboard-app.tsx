@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { SidebarNav, NavTabId, NAV_ITEMS } from "./sidebar-nav";
 import { OverviewView } from "./views/OverviewView";
+import { CoreWebVitalsView } from "./views/CoreWebVitalsView";
 import { SearchPerformanceView } from "./views/SearchPerformanceView";
 import { AnalyticsPerformanceView } from "./views/AnalyticsPerformanceView";
 import { PagesView } from "./views/PagesView";
@@ -60,6 +61,66 @@ export function DashboardApp({
   const [comparePeriodId, setComparePeriodId] = useState<string>(
     initialData?.comparePeriod?.id || initialData?.previous?.id || ""
   );
+
+  type QuickRange = "all" | "30d" | "14d" | "7d";
+  const [quickRange, setQuickRange] = useState<QuickRange>("all");
+
+  // Re-calculate active metrics and trends based on quick range filter
+  const activeDashboardData = useMemo(() => {
+    if (!dashboardData || quickRange === "all") return dashboardData;
+
+    const days = quickRange === "7d" ? 7 : quickRange === "14d" ? 14 : 30;
+
+    const origGsc = dashboardData.trends?.gscWeb || [];
+    const origGa = dashboardData.trends?.ga || [];
+
+    const slicedGsc = origGsc.slice(-days);
+    const slicedGa = origGa.slice(-days);
+
+    if (slicedGsc.length === 0 && slicedGa.length === 0) return dashboardData;
+
+    const totalClicks = slicedGsc.reduce((acc: number, d: any) => acc + (Number(d.clicks) || 0), 0);
+    const totalImpressions = slicedGsc.reduce((acc: number, d: any) => acc + (Number(d.impressions) || 0), 0);
+    const ctr = totalImpressions > 0 ? totalClicks / totalImpressions : 0;
+
+    let avgPos = 0;
+    if (slicedGsc.length > 0) {
+      let weightSum = 0;
+      let posSum = 0;
+      for (const d of slicedGsc) {
+        const imp = Number(d.impressions) || 0;
+        const pos = Number(d.averagePosition || d.position) || 0;
+        if (imp > 0 && pos > 0) {
+          posSum += pos * imp;
+          weightSum += imp;
+        }
+      }
+      avgPos = weightSum > 0 ? posSum / weightSum : (slicedGsc.reduce((acc: number, d: any) => acc + (Number(d.averagePosition || d.position) || 0), 0) / slicedGsc.length);
+    }
+
+    const totalUsers = slicedGa.reduce((acc: number, d: any) => acc + (Number(d.activeUsers || d.users) || 0), 0);
+    const totalSessions = slicedGa.reduce((acc: number, d: any) => acc + (Number(d.sessions) || 0), 0);
+    const totalNewUsers = slicedGa.reduce((acc: number, d: any) => acc + (Number(d.newUsers) || 0), 0);
+
+    return {
+      ...dashboardData,
+      metrics: {
+        ...dashboardData.metrics,
+        "gsc.clicks": totalClicks || dashboardData.metrics?.["gsc.clicks"],
+        "gsc.impressions": totalImpressions || dashboardData.metrics?.["gsc.impressions"],
+        "gsc.ctr": totalImpressions > 0 ? ctr : dashboardData.metrics?.["gsc.ctr"],
+        "gsc.average_position": avgPos || dashboardData.metrics?.["gsc.average_position"],
+        "ga.users": totalUsers || dashboardData.metrics?.["ga.users"],
+        "ga.sessions": totalSessions || dashboardData.metrics?.["ga.sessions"],
+        "ga.new_users": totalNewUsers || dashboardData.metrics?.["ga.new_users"],
+      },
+      trends: {
+        ...dashboardData.trends,
+        gscWeb: slicedGsc,
+        ga: slicedGa,
+      },
+    };
+  }, [dashboardData, quickRange]);
 
   // Fetch updated dashboard data when website or period changes
   const handleSelectWebsite = async (
@@ -232,6 +293,30 @@ export function DashboardApp({
               )}
             </div>
 
+            {/* Quick Range Presets (Bulan Penuh, 30 Hari, 14 Hari, 7 Hari) */}
+            <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+              {(
+                [
+                  { id: "all", label: "Bulan Penuh" },
+                  { id: "30d", label: "30 Hari" },
+                  { id: "14d", label: "14 Hari" },
+                  { id: "7d", label: "7 Hari" },
+                ] as const
+              ).map((preset) => (
+                <button
+                  key={preset.id}
+                  onClick={() => setQuickRange(preset.id)}
+                  className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                    quickRange === preset.id
+                      ? "bg-white text-indigo-700 shadow-xs"
+                      : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+
             {/* Compare Toggle & Comparison Period Selector */}
             <div className="flex items-center gap-2 bg-slate-100/80 px-3 py-1.5 rounded-xl border border-slate-200">
               <span className="font-bold text-slate-600">Bandingkan</span>
@@ -327,28 +412,31 @@ export function DashboardApp({
         {/* Dynamic View Canvas */}
         <div className="p-8 max-w-[1440px] w-full mx-auto space-y-6 flex-1">
           {activeTab === "ringkasan" && (
-            <OverviewView data={dashboardData} isComparing={isComparing} onSelectTab={(t) => setActiveTab(t)} />
+            <OverviewView data={activeDashboardData} isComparing={isComparing} onSelectTab={(t) => setActiveTab(t)} />
+          )}
+          {activeTab === "core_web_vitals" && (
+            <CoreWebVitalsView data={activeDashboardData} />
           )}
           {activeTab === "search_performance" && (
-            <SearchPerformanceView data={dashboardData} isComparing={isComparing} />
+            <SearchPerformanceView data={activeDashboardData} isComparing={isComparing} />
           )}
           {activeTab === "analytics_performance" && (
-            <AnalyticsPerformanceView data={dashboardData} isComparing={isComparing} />
+            <AnalyticsPerformanceView data={activeDashboardData} isComparing={isComparing} />
           )}
-          {activeTab === "pages" && <PagesView data={dashboardData} isComparing={isComparing} />}
-          {activeTab === "queries" && <QueriesView data={dashboardData} isComparing={isComparing} />}
-          {activeTab === "devices" && <DevicesView data={dashboardData} isComparing={isComparing} />}
-          {activeTab === "countries" && <CountriesView data={dashboardData} isComparing={isComparing} />}
-          {activeTab === "traffic_channels" && <TrafficChannelsView data={dashboardData} isComparing={isComparing} />}
+          {activeTab === "pages" && <PagesView data={activeDashboardData} isComparing={isComparing} />}
+          {activeTab === "queries" && <QueriesView data={activeDashboardData} isComparing={isComparing} />}
+          {activeTab === "devices" && <DevicesView data={activeDashboardData} isComparing={isComparing} />}
+          {activeTab === "countries" && <CountriesView data={activeDashboardData} isComparing={isComparing} />}
+          {activeTab === "traffic_channels" && <TrafficChannelsView data={activeDashboardData} isComparing={isComparing} />}
           {activeTab === "events_conversions" && (
-            <EventsConversionsView data={dashboardData} isComparing={isComparing} />
+            <EventsConversionsView data={activeDashboardData} isComparing={isComparing} />
           )}
-          {activeTab === "ai_insight" && <AiInsightView data={dashboardData} isComparing={isComparing} />}
-          {activeTab === "rekomendasi" && <RecommendationsView data={dashboardData} isComparing={isComparing} />}
+          {activeTab === "ai_insight" && <AiInsightView data={activeDashboardData} isComparing={isComparing} />}
+          {activeTab === "rekomendasi" && <RecommendationsView data={activeDashboardData} isComparing={isComparing} />}
           {activeTab === "notifikasi_isu" && (
-            <NotificationsIssuesView data={dashboardData} isComparing={isComparing} />
+            <NotificationsIssuesView data={activeDashboardData} isComparing={isComparing} />
           )}
-          {activeTab === "laporan" && <ReportsView data={dashboardData} isComparing={isComparing} />}
+          {activeTab === "laporan" && <ReportsView data={activeDashboardData} isComparing={isComparing} />}
         </div>
       </main>
 
@@ -382,7 +470,7 @@ export function DashboardApp({
       {/* Executive Report Modal */}
       {showExecutiveReportModal && (
         <ExecutiveReportModal
-          data={dashboardData}
+          data={activeDashboardData}
           isComparing={isComparing}
           onClose={() => setShowExecutiveReportModal(false)}
         />

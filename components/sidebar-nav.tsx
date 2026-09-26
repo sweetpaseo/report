@@ -30,6 +30,7 @@ export type NavTabId =
   | "countries"
   | "traffic_channels"
   | "events_conversions"
+  | "core_web_vitals"
   | "ai_insight"
   | "rekomendasi"
   | "notifikasi_isu"
@@ -51,6 +52,7 @@ export const NAV_ITEMS: { id: NavTabId; label: string; icon: React.ComponentType
   { id: "countries", label: "Countries", icon: Globe },
   { id: "traffic_channels", label: "Traffic Channels", icon: Share2 },
   { id: "events_conversions", label: "Events & Conversions", icon: Target },
+  { id: "core_web_vitals", label: "Kecepatan & Vitals", icon: Zap },
   { id: "ai_insight", label: "AI Insight", icon: Sparkles },
   { id: "rekomendasi", label: "Rekomendasi", icon: Lightbulb },
   { id: "notifikasi_isu", label: "Notifikasi & Isu", icon: Bell },
