@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { Sparkline } from "@/components/sparkline";
 import {
   ResponsiveContainer,
@@ -83,9 +83,18 @@ export function OverviewView({
   const usersSpark = gaDaily.length > 0 ? gaDaily.map((r: any) => r.activeUsers || 0) : [0, 0];
   const sessionsSpark = gaDaily.length > 0 ? gaDaily.map((r: any) => r.newUsers || r.activeUsers || 0) : [0, 0];
 
-  // Top Pages & Queries
-  const topPages = (data?.topGscPages?.web || []).slice(0, 5);
-  const topQueries = (data?.topQueries?.web || []).slice(0, 5);
+  // Top Pages & Queries (Always sorted by clicks descending, then impressions descending)
+  const topPages = useMemo(() => {
+    return [...(data?.topGscPages?.web || [])]
+      .sort((a: any, b: any) => (b.clicks || 0) - (a.clicks || 0) || (b.impressions || 0) - (a.impressions || 0))
+      .slice(0, 5);
+  }, [data?.topGscPages?.web]);
+
+  const topQueries = useMemo(() => {
+    return [...(data?.topQueries?.web || [])]
+      .sort((a: any, b: any) => (b.clicks || 0) - (a.clicks || 0) || (b.impressions || 0) - (a.impressions || 0))
+      .slice(0, 5);
+  }, [data?.topQueries?.web]);
 
   // Devices Donut
   const rawDevices = data?.devices?.web || [];

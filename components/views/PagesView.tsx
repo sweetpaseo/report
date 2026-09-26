@@ -27,17 +27,52 @@ export function PagesView({
   const [searchPage, setSearchPage] = useState("");
   const [selectedPageIndex, setSelectedPageIndex] = useState(0);
 
+  // Sorting state (default: clicks descending)
+  type PageSortField = "page" | "clicks" | "previousClicks" | "clicksDiff" | "impressions" | "ctr";
+  const [sortField, setSortField] = useState<PageSortField>("clicks");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+
+  const handleSort = (field: PageSortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("desc");
+    }
+  };
+
   // Modal and pagination states
   const [selectedModalPage, setSelectedModalPage] = useState<any | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
+  // Filtered & Sorted pages (Default: Klik terbanyak menuju terkecil)
   const filteredPages = useMemo(() => {
-    return rawPages.filter((p: any) => {
+    const list = rawPages.filter((p: any) => {
       if (!searchPage) return true;
       return p.page.toLowerCase().includes(searchPage.toLowerCase());
     });
-  }, [rawPages, searchPage]);
+
+    return [...list].sort((a: any, b: any) => {
+      let diff = 0;
+      if (sortField === "page") {
+        diff = a.page.localeCompare(b.page);
+      } else if (sortField === "clicks") {
+        diff = (b.clicks || 0) - (a.clicks || 0);
+        if (diff === 0) diff = (b.impressions || 0) - (a.impressions || 0);
+        return sortDirection === "desc" ? diff : -diff;
+      } else if (sortField === "previousClicks") {
+        diff = (a.previousClicks || 0) - (b.previousClicks || 0);
+      } else if (sortField === "clicksDiff") {
+        diff = (a.clicksDiff || 0) - (b.clicksDiff || 0);
+      } else if (sortField === "impressions") {
+        diff = (a.impressions || 0) - (b.impressions || 0);
+      } else if (sortField === "ctr") {
+        diff = (a.ctr || 0) - (b.ctr || 0);
+      }
+      return sortDirection === "asc" ? diff : -diff;
+    });
+  }, [rawPages, searchPage, sortField, sortDirection]);
 
   // Paged pages for display
   const pagedPages = useMemo(() => {
@@ -118,7 +153,15 @@ export function PagesView({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h3 className="font-extrabold text-slate-900 text-sm">Analisis Performa Halaman Organik (GSC)</h3>
-            <p className="text-[11px] text-slate-400">Klik baris mana saja untuk melihat detail kartu sorotan di bawah</p>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Urut berdasarkan: <span className="font-bold text-indigo-700">{
+                sortField === "clicks" ? "Klik" :
+                sortField === "impressions" ? "Tayang" :
+                sortField === "ctr" ? "CTR" :
+                sortField === "clicksDiff" ? "Selisih Klik" :
+                sortField === "previousClicks" ? "Klik Periode Lalu" : "URL Halaman"
+              }</span> ({sortDirection === "desc" ? "Terbanyak/Tertinggi" : "Terkecil"}) • Klik baris untuk detail
+            </p>
           </div>
 
           <div className="relative">
@@ -137,26 +180,48 @@ export function PagesView({
           <table className="w-full text-xs text-left data-table">
             <thead className="sticky top-0 bg-white shadow-xs">
               <tr>
-                <th>URL Halaman</th>
-                <th className="right">Klik ({periodLabel})</th>
+                <th onClick={() => handleSort("page")} className="cursor-pointer select-none hover:text-indigo-600 transition-colors">
+                  <div className="inline-flex items-center gap-1">
+                    <span>URL Halaman</span>
+                    <span className="text-[10px] text-slate-400 font-mono">{sortField === "page" ? (sortDirection === "asc" ? "▲" : "▼") : "↕"}</span>
+                  </div>
+                </th>
+                <th onClick={() => handleSort("clicks")} className="right cursor-pointer select-none hover:text-indigo-600 transition-colors">
+                  <div className="inline-flex items-center justify-end gap-1">
+                    <span>Klik ({periodLabel})</span>
+                    <span className="text-[10px] text-slate-400 font-mono">{sortField === "clicks" ? (sortDirection === "desc" ? "▼" : "▲") : "↕"}</span>
+                  </div>
+                </th>
                 {isComparing && prevPeriodLabel && (
                   <>
-                    <th className="right text-amber-700">Klik ({prevPeriodLabel})</th>
-                    <th className="center">Selisih</th>
+                    <th onClick={() => handleSort("previousClicks")} className="right text-amber-700 cursor-pointer select-none hover:text-amber-900 transition-colors">
+                      <div className="inline-flex items-center justify-end gap-1">
+                        <span>Klik ({prevPeriodLabel})</span>
+                        <span className="text-[10px] text-amber-400 font-mono">{sortField === "previousClicks" ? (sortDirection === "desc" ? "▼" : "▲") : "↕"}</span>
+                      </div>
+                    </th>
+                    <th onClick={() => handleSort("clicksDiff")} className="center cursor-pointer select-none hover:text-indigo-600 transition-colors">
+                      <div className="inline-flex items-center justify-center gap-1">
+                        <span>Selisih</span>
+                        <span className="text-[10px] text-slate-400 font-mono">{sortField === "clicksDiff" ? (sortDirection === "desc" ? "▼" : "▲") : "↕"}</span>
+                      </div>
+                    </th>
                   </>
                 )}
-                <th className="right">
+                <th onClick={() => handleSort("impressions")} className="right cursor-pointer select-none hover:text-indigo-600 transition-colors">
                   <div className="inline-flex items-center justify-end gap-1">
                     <span>Tayang</span>
+                    <span className="text-[10px] text-slate-400 font-mono">{sortField === "impressions" ? (sortDirection === "desc" ? "▼" : "▲") : "↕"}</span>
                     <InfoTooltip
                       term="Tayangan Halaman"
                       explanation="Berapa kali URL halaman ini muncul di hasil pencarian Google bagi para pencari."
                     />
                   </div>
                 </th>
-                <th className="right">
+                <th onClick={() => handleSort("ctr")} className="right cursor-pointer select-none hover:text-indigo-600 transition-colors">
                   <div className="inline-flex items-center justify-end gap-1">
                     <span>CTR</span>
+                    <span className="text-[10px] text-slate-400 font-mono">{sortField === "ctr" ? (sortDirection === "desc" ? "▼" : "▲") : "↕"}</span>
                     <InfoTooltip
                       term="CTR (Click-Through Rate)"
                       explanation="Persentase pencari yang melihat halaman Anda lalu mengkliknya (Klik dibagi Tayang)."

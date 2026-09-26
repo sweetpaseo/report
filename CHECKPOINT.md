@@ -5,12 +5,12 @@ Dokumen ini adalah ringkasan status teknis, arsitektur, fitur aktif, dan riwayat
 ---
 
 ## 📌 Status Terkini Proyek
-- **Versi Aplikasi**: `v0.1.8`
+- **Versi Aplikasi**: `v0.1.9`
 - **Tanggal Pembaruan Terakhir**: 26 September 2026
 - **Status Server Produksi**: **ONLINE & LIVE** (`HTTP 200 OK`)
 - **URL Publik**: [https://report.erihome.id](https://report.erihome.id)
 - **Git Branch**: `main` (Up to date dengan `origin/main`)
-- **Commit Terakhir**: `baffbdb` (*feat(pagespeed): add Google PageSpeed Core Web Vitals audit and quick date range presets*)
+- **Commit Terakhir**: `pending` (*fix(sort): enforce default descending sort by primary metrics and add interactive multi-column sorting*)
 
 ---
 
@@ -28,9 +28,16 @@ Dokumen ini adalah ringkasan status teknis, arsitektur, fitur aktif, dan riwayat
 
 ---
 
-## 🚀 Fitur Unggulan Aktif (v0.1.8)
+## 🚀 Fitur Unggulan Aktif (v0.1.9)
 
-### 1. Audit Kecepatan & Core Web Vitals Google PageSpeed
+### 1. Urutan Default Terbanyak ke Terkecil/Nol (Default Descending Sort) & Multi-Kolom Interaktif
+- **File**: `lib/dashboard.ts`, `components/views/SearchPerformanceView.tsx`, `components/views/PagesView.tsx`, `components/views/QueriesView.tsx`, `components/views/OverviewView.tsx`
+- **Peningkatan**:
+  - Semua tabel (Kueri Organik, Halaman Organik, Top 5 Queries, Top 5 Pages) dipastikan menampilkan data dengan metrik terbesar (Klik terbanyak, misal: 8, 7, ..., lalu 0 dengan impresi terbesar) secara default.
+  - Setiap header kolom tabel pada menu *Search Performance* dan *Pages* kini interaktif: bisa diklik untuk mengubah urutan (Ascending/Descending) lengkap dengan panah indikator `▲`/`▼`/`↕`.
+  - Subtitle tabel secara otomatis menampilkan metrik dan arah pengurutan yang sedang aktif.
+
+### 2. Audit Kecepatan & Core Web Vitals Google PageSpeed
 - **Komponen**: `app/api/pagespeed/route.ts` & `components/views/CoreWebVitalsView.tsx`
 - **Akses**: Sidebar menu **⚡ Kecepatan & Vitals** (`core_web_vitals`).
 - **Fitur**:

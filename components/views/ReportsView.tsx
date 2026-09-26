@@ -35,44 +35,52 @@ export function ReportsView({
   const periodLabel = data?.selected?.period_label || "Periode Aktif";
   const websiteName = data?.website?.name || "Website";
 
-  // Data for current selected dimension
+  // Data for current selected dimension (Always sorted by clicks descending, then impressions descending)
   const reportRows = useMemo(() => {
     if (dimension === "pages") {
-      return topPages.slice(0, 10).map((p: any) => {
-        let label = p.page;
-        try { label = new URL(p.page).pathname || "/"; } catch {}
-        return { name: label, clicks: p.clicks || 0, impressions: p.impressions || 0, ctr: p.ctr || 0 };
-      });
+      return [...topPages]
+        .sort((a: any, b: any) => (b.clicks || 0) - (a.clicks || 0) || (b.impressions || 0) - (a.impressions || 0))
+        .slice(0, 10).map((p: any) => {
+          let label = p.page;
+          try { label = new URL(p.page).pathname || "/"; } catch {}
+          return { name: label, clicks: p.clicks || 0, impressions: p.impressions || 0, ctr: p.ctr || 0 };
+        });
     }
     if (dimension === "queries") {
-      return topQueries.slice(0, 10).map((q: any) => ({
-        name: q.query,
-        clicks: q.clicks || 0,
-        impressions: q.impressions || 0,
-        ctr: q.ctr || 0,
-        pos: q.averagePosition || 0,
-      }));
+      return [...topQueries]
+        .sort((a: any, b: any) => (b.clicks || 0) - (a.clicks || 0) || (b.impressions || 0) - (a.impressions || 0))
+        .slice(0, 10).map((q: any) => ({
+          name: q.query,
+          clicks: q.clicks || 0,
+          impressions: q.impressions || 0,
+          ctr: q.ctr || 0,
+          pos: q.averagePosition || 0,
+        }));
     }
     if (dimension === "devices") {
-      return devices.map((d: any) => ({
-        name: String(d.device),
-        clicks: d.clicks || 0,
-        impressions: d.impressions || 0,
-        ctr: d.ctr || 0,
-        pos: d.averagePosition || 0,
-      }));
+      return [...devices]
+        .sort((a: any, b: any) => (b.clicks || 0) - (a.clicks || 0) || (b.impressions || 0) - (a.impressions || 0))
+        .map((d: any) => ({
+          name: String(d.device),
+          clicks: d.clicks || 0,
+          impressions: d.impressions || 0,
+          ctr: d.ctr || 0,
+          pos: d.averagePosition || 0,
+        }));
     }
     if (dimension === "countries") {
-      return countries.slice(0, 10).map((c: any) => {
-        const info = getCountryDisplay(c.name);
-        return {
-          name: `${info.flag} ${info.name}`,
-          clicks: c.clicks || 0,
-          impressions: c.impressions || 0,
-          ctr: c.ctr || 0,
-          pos: c.averagePosition || 0,
-        };
-      });
+      return [...countries]
+        .sort((a: any, b: any) => (b.clicks || 0) - (a.clicks || 0) || (b.impressions || 0) - (a.impressions || 0))
+        .slice(0, 10).map((c: any) => {
+          const info = getCountryDisplay(c.name);
+          return {
+            name: `${info.flag} ${info.name}`,
+            clicks: c.clicks || 0,
+            impressions: c.impressions || 0,
+            ctr: c.ctr || 0,
+            pos: c.averagePosition || 0,
+          };
+        });
     }
     return [];
   }, [dimension, topPages, topQueries, devices, countries]);

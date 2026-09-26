@@ -2,6 +2,43 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-09-26 — Versi 0.1.9: Default Descending Sorting (Highest to Zero/Lowest) & Interactive Multi-Column Sort (commit `pending`)
+- **Penetapan Pengurutan Default Angka Terbesar ke Nol (Descending) di Seluruh Tabel & Kartu**:
+  - Menyempurnakan logika pengurutan data agar konsisten menampilkan angka performa terbanyak menuju ke paling kecil/nol:
+    - **Backend SQL (`lib/dashboard.ts`)**:
+      - `dimensionRows`: Mengubah urutan default dari `ORDER BY impressions DESC` menjadi `ORDER BY clicks DESC, impressions DESC`.
+      - `getTopQueries`: Mengubah urutan default dari `ORDER BY impressions DESC` menjadi `ORDER BY clicks DESC, impressions DESC`.
+      - `getFullReportData`: Mengubah kueri `gsc_queries` dan `gsc_pages` menjadi `ORDER BY clicks DESC, impressions DESC`.
+    - **Halaman Performa Kueri Pencarian (`components/views/SearchPerformanceView.tsx`)**:
+      - Default data teratas kini dipastikan bernilai Klik terbesar (misal: 8, 7, ..., lalu 0 dengan impresi terbesar), tidak lagi bercampur atau didahului angka 0.
+      - Fitur pengurutan multi-kolom interaktif: setiap judul kolom (`Query`, `Klik`, `Klik Lalu`, `Selisih`, `Tayang`, `CTR`, `Posisi`) dapat diklik untuk mengurutkan secara bolak-balik (Ascending/Descending) lengkap dengan panah indikator status (`▲`/`▼`/`↕`).
+      - Indikator subtitle dinamis yang memberitahu kolom dan arah pengurutan yang sedang aktif.
+    - **Halaman Performa Halaman Organik (`components/views/PagesView.tsx`)**:
+      - Default data diurutkan dari Klik halaman terbanyak menuju 0.
+      - Fitur klik judul kolom untuk mengurutkan URL, Klik, Klik Lalu, Selisih, Tayangan, dan CTR.
+    - **Halaman Analisis Kueri (`components/views/QueriesView.tsx`)**:
+      - Daftar "Kata Kunci Utama Penyumbang Trafik" (Top 5) dipastikan menampilkan kata kunci dengan klik tertinggi nyata, bukan kueri 0-klik dengan impresi tinggi.
+    - **Halaman Ringkasan (`components/views/OverviewView.tsx`)**:
+      - Top Pages dan Top Queries dipastikan menyajikan peringkat berdasarkan klik terbesar ke terkecil.
+    - **Laporan Eksekutif Resmi A4 (`components/ExecutiveReportModal.tsx`)**:
+      - Tabel Top 5 Halaman & Top 5 Kueri otomatis tersaring dari yang paling banyak mendatangkan klik dan konversi.
+    - **Halaman Laporan & Ekspor (`components/views/ReportsView.tsx`)**:
+      - Dimensi Halaman, Kueri, Perangkat, dan Negara diurutkan dari metrik terbanyak menuju ke terkecil.
+- **File Terdampak**:
+  - `lib/dashboard.ts`
+  - `components/views/SearchPerformanceView.tsx`
+  - `components/views/PagesView.tsx`
+  - `components/views/QueriesView.tsx`
+  - `components/views/OverviewView.tsx`
+  - `components/views/ReportsView.tsx`
+  - `components/ExecutiveReportModal.tsx`
+  - `package.json` (versi `0.1.9`)
+  - `HISTORY.md`
+  - `CHECKPOINT.md`
+- **Verifikasi & Versi**:
+  - Lolos `npm run typecheck` dan `npm run build` standalone 100% tanpa error.
+  - Berhasil di-deploy ke server live `https://report.erihome.id`.
+
 ## 2026-09-26 — Versi 0.1.8: Google PageSpeed & Core Web Vitals Audit, Database Cache, & Instant Date Range Presets (commit `baffbdb`)
 - **Audit Kecepatan & Core Web Vitals Google PageSpeed (`app/api/pagespeed/route.ts` & `components/views/CoreWebVitalsView.tsx`)**:
   - Integrasi API resmi Google PageSpeed Insights (PSI v5) langsung ke dalam dashboard tanpa ketergantungan tool pihak ketiga.

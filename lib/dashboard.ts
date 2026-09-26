@@ -59,7 +59,7 @@ function dimensionRows(
 ): DimensionRow[] {
   const periodId = getGscPeriod(db, websiteId, selectedId, table);
   return db.prepare(
-    `SELECT ${column} AS name, clicks, impressions, ctr, average_position AS averagePosition FROM ${table} WHERE website_id = ? AND report_period_id = ? AND search_type = ? ORDER BY impressions DESC`,
+    `SELECT ${column} AS name, clicks, impressions, ctr, average_position AS averagePosition FROM ${table} WHERE website_id = ? AND report_period_id = ? AND search_type = ? ORDER BY clicks DESC, impressions DESC`,
   ).all(websiteId, periodId, searchType) as DimensionRow[];
 }
 
@@ -208,7 +208,7 @@ function _getDashboard(db: DatabaseSync, websiteId: string, requestedPeriodId?: 
   const getTopQueries = (searchType: string, periodId: string) => db.prepare(`
     SELECT query, clicks, impressions, ctr, average_position AS averagePosition
     FROM gsc_queries WHERE website_id = ? AND report_period_id = ? AND search_type = ?
-    ORDER BY impressions DESC LIMIT 300
+    ORDER BY clicks DESC, impressions DESC LIMIT 300
   `).all(websiteId, periodId, searchType) as QueryRow[];
 
   const rawTopQueriesWeb = getTopQueries("web", queryPeriodId);
@@ -504,13 +504,13 @@ export function getFullReportData(
   const queryPeriodId = getGscPeriod(db, websiteId, selected.id, "gsc_queries");
   const queries = db.prepare(`
     SELECT query, clicks, impressions, ctr, average_position AS averagePosition
-    FROM gsc_queries WHERE website_id = ? AND report_period_id = ? AND search_type = ? ORDER BY impressions DESC LIMIT ?
+    FROM gsc_queries WHERE website_id = ? AND report_period_id = ? AND search_type = ? ORDER BY clicks DESC, impressions DESC LIMIT ?
   `).all(websiteId, queryPeriodId, searchType, rowLimit) as FullQueryRow[];
 
   const pagePeriodId = getGscPeriod(db, websiteId, selected.id, "gsc_pages");
   const gscPages = db.prepare(`
     SELECT page, clicks, impressions, ctr, average_position AS averagePosition
-    FROM gsc_pages WHERE website_id = ? AND report_period_id = ? AND search_type = ? ORDER BY impressions DESC LIMIT ?
+    FROM gsc_pages WHERE website_id = ? AND report_period_id = ? AND search_type = ? ORDER BY clicks DESC, impressions DESC LIMIT ?
   `).all(websiteId, pagePeriodId, searchType, rowLimit) as FullGscPageRow[];
 
   const pages = db.prepare(`

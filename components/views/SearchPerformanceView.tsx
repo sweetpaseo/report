@@ -56,6 +56,20 @@ export function SearchPerformanceView({
   const [deviceFilter, setDeviceFilter] = useState("all");
   const [positionFilter, setPositionFilter] = useState("all");
 
+  // Sorting state (default: clicks descending)
+  type SortField = "query" | "clicks" | "previousClicks" | "clicksDiff" | "impressions" | "ctr" | "averagePosition";
+  const [sortField, setSortField] = useState<SortField>("clicks");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection(field === "averagePosition" ? "asc" : "desc");
+    }
+  };
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -86,9 +100,9 @@ export function SearchPerformanceView({
   const rawQueries = data?.topQueries?.web || [];
   const gscDaily = data?.trends?.gscWeb || [];
 
-  // Filtered queries
+  // Filtered & Sorted queries (Default: Klik terbanyak menuju terkecil)
   const filteredQueries = useMemo(() => {
-    return rawQueries.filter((q: any) => {
+    const list = rawQueries.filter((q: any) => {
       if (searchQuery && !q.query.toLowerCase().includes(searchQuery.toLowerCase())) {
         return false;
       }
@@ -106,7 +120,29 @@ export function SearchPerformanceView({
       }
       return true;
     });
-  }, [rawQueries, searchQuery, positionFilter, pinnedQueries]);
+
+    return [...list].sort((a: any, b: any) => {
+      let diff = 0;
+      if (sortField === "query") {
+        diff = a.query.localeCompare(b.query);
+      } else if (sortField === "clicks") {
+        diff = (b.clicks || 0) - (a.clicks || 0);
+        if (diff === 0) diff = (b.impressions || 0) - (a.impressions || 0);
+        return sortDirection === "desc" ? diff : -diff;
+      } else if (sortField === "previousClicks") {
+        diff = (a.previousClicks || 0) - (b.previousClicks || 0);
+      } else if (sortField === "clicksDiff") {
+        diff = (a.clicksDiff || 0) - (b.clicksDiff || 0);
+      } else if (sortField === "impressions") {
+        diff = (a.impressions || 0) - (b.impressions || 0);
+      } else if (sortField === "ctr") {
+        diff = (a.ctr || 0) - (b.ctr || 0);
+      } else if (sortField === "averagePosition") {
+        diff = (a.averagePosition || 999) - (b.averagePosition || 999);
+      }
+      return sortDirection === "asc" ? diff : -diff;
+    });
+  }, [rawQueries, searchQuery, positionFilter, pinnedQueries, sortField, sortDirection]);
 
   // Paged queries for display
   const pagedQueries = useMemo(() => {
@@ -407,44 +443,81 @@ export function SearchPerformanceView({
 
         {/* Query Table with Sparklines */}
         <div className="md:col-span-2 bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-extrabold text-slate-900 text-sm">Performa Query Organik</h3>
-            <span className="text-[11px] text-slate-400">Urut berdasarkan tayang terbanyak</span>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h3 className="font-extrabold text-slate-900 text-sm">Performa Query Organik</h3>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Urut berdasarkan: <span className="font-bold text-indigo-700">{
+                  sortField === "clicks" ? "Klik" :
+                  sortField === "impressions" ? "Tayang" :
+                  sortField === "ctr" ? "CTR" :
+                  sortField === "averagePosition" ? "Posisi Rata-rata" :
+                  sortField === "clicksDiff" ? "Selisih Klik" :
+                  sortField === "previousClicks" ? "Klik Periode Lalu" : "Kata Kunci"
+                }</span> ({sortDirection === "desc" ? (sortField === "averagePosition" ? "Peringkat Terbawah" : "Terbanyak/Tertinggi") : (sortField === "averagePosition" ? "Peringkat Terbaik" : "Terkecil")})
+              </p>
+            </div>
+            <span className="text-[11px] text-slate-400 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200">
+              💡 Klik judul kolom untuk mengubah urutan
+            </span>
           </div>
 
           <div className="overflow-x-auto max-h-[480px] custom-scrollbar">
             <table className="w-full text-xs text-left data-table">
               <thead className="sticky top-0 bg-white shadow-xs">
                 <tr>
-                  <th>Query</th>
-                  <th className="right">Klik ({periodLabel})</th>
+                  <th onClick={() => handleSort("query")} className="cursor-pointer select-none hover:text-indigo-600 transition-colors">
+                    <div className="inline-flex items-center gap-1">
+                      <span>Query</span>
+                      <span className="text-[10px] text-slate-400 font-mono">{sortField === "query" ? (sortDirection === "asc" ? "▲" : "▼") : "↕"}</span>
+                    </div>
+                  </th>
+                  <th onClick={() => handleSort("clicks")} className="right cursor-pointer select-none hover:text-indigo-600 transition-colors">
+                    <div className="inline-flex items-center justify-end gap-1">
+                      <span>Klik ({periodLabel})</span>
+                      <span className="text-[10px] text-slate-400 font-mono">{sortField === "clicks" ? (sortDirection === "desc" ? "▼" : "▲") : "↕"}</span>
+                    </div>
+                  </th>
                   {isComparing && prevPeriodLabel && (
                     <>
-                      <th className="right text-amber-700">Klik ({prevPeriodLabel})</th>
-                      <th className="center">Selisih</th>
+                      <th onClick={() => handleSort("previousClicks")} className="right text-amber-700 cursor-pointer select-none hover:text-amber-900 transition-colors">
+                        <div className="inline-flex items-center justify-end gap-1">
+                          <span>Klik ({prevPeriodLabel})</span>
+                          <span className="text-[10px] text-amber-400 font-mono">{sortField === "previousClicks" ? (sortDirection === "desc" ? "▼" : "▲") : "↕"}</span>
+                        </div>
+                      </th>
+                      <th onClick={() => handleSort("clicksDiff")} className="center cursor-pointer select-none hover:text-indigo-600 transition-colors">
+                        <div className="inline-flex items-center justify-center gap-1">
+                          <span>Selisih</span>
+                          <span className="text-[10px] text-slate-400 font-mono">{sortField === "clicksDiff" ? (sortDirection === "desc" ? "▼" : "▲") : "↕"}</span>
+                        </div>
+                      </th>
                     </>
                   )}
-                  <th className="right">
+                  <th onClick={() => handleSort("impressions")} className="right cursor-pointer select-none hover:text-indigo-600 transition-colors">
                     <div className="inline-flex items-center justify-end gap-1">
                       <span>Tayang</span>
+                      <span className="text-[10px] text-slate-400 font-mono">{sortField === "impressions" ? (sortDirection === "desc" ? "▼" : "▲") : "↕"}</span>
                       <InfoTooltip
                         term="Tayangan Query"
                         explanation="Berapa kali kata kunci ini menampilkan tautan situs Anda saat dicari oleh pengguna Google."
                       />
                     </div>
                   </th>
-                  <th className="right">
+                  <th onClick={() => handleSort("ctr")} className="right cursor-pointer select-none hover:text-indigo-600 transition-colors">
                     <div className="inline-flex items-center justify-end gap-1">
                       <span>CTR</span>
+                      <span className="text-[10px] text-slate-400 font-mono">{sortField === "ctr" ? (sortDirection === "desc" ? "▼" : "▲") : "↕"}</span>
                       <InfoTooltip
                         term="CTR Query"
                         explanation="Rasio klik dibanding tayangan khusus untuk kata kunci ini."
                       />
                     </div>
                   </th>
-                  <th className="center">
+                  <th onClick={() => handleSort("averagePosition")} className="center cursor-pointer select-none hover:text-indigo-600 transition-colors">
                     <div className="inline-flex items-center justify-center gap-1">
                       <span>Posisi</span>
+                      <span className="text-[10px] text-slate-400 font-mono">{sortField === "averagePosition" ? (sortDirection === "asc" ? "▲" : "▼") : "↕"}</span>
                       <InfoTooltip
                         term="Peringkat Rata-rata"
                         explanation="Urutan rata-rata halaman Anda muncul di Google saat kata kunci ini diketikkan orang."

@@ -56,9 +56,14 @@ export function QueriesView({
     { name: "Branded", value: brandedPct, count: brandedCount, color: "#10b981" },
   ];
 
+  // Sort queries with highest clicks first, then highest impressions
+  const sortedQueriesByClicks = useMemo(() => {
+    return [...rawQueries].sort((a: any, b: any) => (b.clicks || 0) - (a.clicks || 0) || (b.impressions || 0) - (a.impressions || 0));
+  }, [rawQueries]);
+
   // Top 10 Share
   const totalClicks = rawQueries.reduce((sum: number, q: any) => sum + (q.clicks || 0), 0) || 1;
-  const top10Clicks = rawQueries.slice(0, 10).reduce((sum: number, q: any) => sum + (q.clicks || 0), 0);
+  const top10Clicks = sortedQueriesByClicks.slice(0, 10).reduce((sum: number, q: any) => sum + (q.clicks || 0), 0);
   const top10Share = Math.round((top10Clicks / totalClicks) * 100);
 
   // Fallback opportunities if empty: queries with pos 4-20
@@ -153,7 +158,7 @@ export function QueriesView({
           </div>
 
           <div className="space-y-2">
-            {rawQueries.slice(0, 5).map((q: any, idx: number) => (
+            {sortedQueriesByClicks.slice(0, 5).map((q: any, idx: number) => (
               <div key={idx} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 text-xs hover:bg-slate-100 transition-colors">
                 <div className="flex items-center gap-2">
                   <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 font-extrabold text-[10px] flex items-center justify-center">

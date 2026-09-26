@@ -52,8 +52,14 @@ export function ExecutiveReportModal({
   const gaSessions = comparisons["ga.sessions"] || { current: 0, previous: 0, percent: null };
   const gaConversion = comparisons["ga.chat_conversion_rate"] || { current: 0, previous: 0, percent: null };
 
-  const topPages = (data?.topGscPages?.web || []).slice(0, 10);
-  const topQueries = (data?.topQueries?.web || []).slice(0, 10);
+  const topPages = (data?.topGscPages?.web || [])
+    .slice()
+    .sort((a: any, b: any) => (b.clicks || 0) - (a.clicks || 0) || (b.impressions || 0) - (a.impressions || 0))
+    .slice(0, 10);
+  const topQueries = (data?.topQueries?.web || [])
+    .slice()
+    .sort((a: any, b: any) => (b.clicks || 0) - (a.clicks || 0) || (b.impressions || 0) - (a.impressions || 0))
+    .slice(0, 10);
   const devices = data?.devices?.web || [];
 
   // Health Score Calculation
