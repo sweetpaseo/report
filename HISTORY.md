@@ -2,7 +2,7 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
-## 2026-09-26 — Versi 0.1.9: Default Descending Sorting (Highest to Zero/Lowest) & Interactive Multi-Column Sort (commit `pending`)
+## 2026-09-26 — Versi 0.1.9: Default Descending Sorting (Highest to Zero/Lowest) & Interactive Multi-Column Sort (commit `c04525f`)
 - **Penetapan Pengurutan Default Angka Terbesar ke Nol (Descending) di Seluruh Tabel & Kartu**:
   - Menyempurnakan logika pengurutan data agar konsisten menampilkan angka performa terbanyak menuju ke paling kecil/nol:
     - **Backend SQL (`lib/dashboard.ts`)**:

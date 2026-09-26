@@ -10,7 +10,7 @@ Dokumen ini adalah ringkasan status teknis, arsitektur, fitur aktif, dan riwayat
 - **Status Server Produksi**: **ONLINE & LIVE** (`HTTP 200 OK`)
 - **URL Publik**: [https://report.erihome.id](https://report.erihome.id)
 - **Git Branch**: `main` (Up to date dengan `origin/main`)
-- **Commit Terakhir**: `pending` (*fix(sort): enforce default descending sort by primary metrics and add interactive multi-column sorting*)
+- **Commit Terakhir**: `c04525f` (*fix(sort): enforce default descending sort by primary metrics and add interactive multi-column sorting*)
 
 ---
 
