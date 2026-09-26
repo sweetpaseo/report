@@ -2,7 +2,7 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
-## 2026-09-26 — Versi 0.1.7: Executive Official A4 Report, Business ROI Calculator in Rupiah, & Pinned Target Keywords Watchlist (commit `764c3e7`)
+## 2026-09-26 — Versi 0.1.7: Executive Official A4 Report, Business ROI Calculator in Rupiah, & Pinned Target Keywords Watchlist (commit `2e6fecb`)
 - **Dokumen Laporan Resmi Eksekutif A4 (`components/ExecutiveReportModal.tsx`)**:
   - Modal dan tata cetak laporan formal A4 resmi untuk pimpinan bisnis atau klien:
     - Header kop resmi entitas website dengan tanggal penerbitan dan label verifikasi resmi Google Search Console & GA4.
@@ -29,10 +29,22 @@ Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). For
     - Tombol bintang ⭐ pin/unpin pada tabel kueri di *Performa Pencarian (GSC)*.
     - Filter cepat `⭐ Kata Kunci Dipantau` pada dropdown pemfilter peringkat.
     - Penyimpanan preferensi kata kunci target secara persisten di `localStorage` per website.
+- **File Terdampak**:
+  - `components/ExecutiveReportModal.tsx` (baru)
+  - `components/RoiCalculatorCard.tsx` (baru)
+  - `components/PinnedQueriesWatchlist.tsx` (baru)
+  - `components/dashboard-app.tsx`
+  - `components/views/OverviewView.tsx`
+  - `components/views/QueriesView.tsx`
+  - `components/views/ReportsView.tsx`
+  - `components/views/SearchPerformanceView.tsx`
+  - `package.json` (versi `0.1.7`)
+  - `HISTORY.md`
 - **Verifikasi & Versi**:
-  - Versi dinaikkan ke `0.1.7`.
+  - Lolos `npm run typecheck` dan `npm run build` standalone 100% tanpa error.
+  - Berhasil di-deploy ke server live `https://report.erihome.id` (status `active/running`, HTTP `200 OK`).
 
-## 2026-09-26 — Versi 0.1.6: Page Drill-Down Modal, Table Pagination, CSV Export, Layperson Tooltips, & Executive Health Score (commit `54b854b`)
+## 2026-09-26 — Versi 0.1.6: Page Drill-Down Modal, Table Pagination, CSV Export, Layperson Tooltips, & Executive Health Score (commit `117ead0`)
 - **Page Drill-Down Modal (`components/PageDetailModal.tsx`)**:
   - Modal interaktif inspeksi URL mendalam yang terbuka saat mengklik tombol "🔍 Detail" di tabel halaman atau tombol "🔍 Analisis Lengkap & Rekomendasi" di kartu sorotan halaman.
   - Menampilkan:
