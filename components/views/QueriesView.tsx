@@ -9,6 +9,7 @@ import {
   formatPercent,
   formatPosition,
 } from "@/lib/view-helpers";
+import { PinnedQueriesWatchlist } from "@/components/PinnedQueriesWatchlist";
 
 export function QueriesView({
   data,
@@ -68,6 +69,13 @@ export function QueriesView({
 
   return (
     <div className="space-y-6">
+      {/* Pinned Target Keywords Watchlist */}
+      <PinnedQueriesWatchlist
+        websiteId={data?.website?.id || ""}
+        allQueries={rawQueries}
+        periodLabel={periodLabel}
+      />
+
       {/* 4 KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-1 hover:shadow-md transition-all">

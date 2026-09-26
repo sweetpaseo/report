@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Search,
   TrendingUp,
@@ -10,6 +10,7 @@ import {
   Smartphone,
   Globe,
   HelpCircle,
+  Star,
 } from "lucide-react";
 import { Sparkline } from "@/components/sparkline";
 import {
@@ -59,6 +60,29 @@ export function SearchPerformanceView({
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
+  // Pinned Keywords Watchlist
+  const websiteId = data?.website?.id || "";
+  const [pinnedQueries, setPinnedQueries] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!websiteId) return;
+    try {
+      const stored = localStorage.getItem(`pinned_queries_${websiteId}`);
+      if (stored) setPinnedQueries(JSON.parse(stored));
+    } catch {}
+  }, [websiteId]);
+
+  const togglePinQuery = (query: string) => {
+    const isPinned = pinnedQueries.some((q) => q.toLowerCase() === query.toLowerCase());
+    const updated = isPinned
+      ? pinnedQueries.filter((q) => q.toLowerCase() !== query.toLowerCase())
+      : [...pinnedQueries, query];
+    setPinnedQueries(updated);
+    try {
+      localStorage.setItem(`pinned_queries_${websiteId}`, JSON.stringify(updated));
+    } catch {}
+  };
+
   const rawQueries = data?.topQueries?.web || [];
   const gscDaily = data?.trends?.gscWeb || [];
 
@@ -67,6 +91,9 @@ export function SearchPerformanceView({
     return rawQueries.filter((q: any) => {
       if (searchQuery && !q.query.toLowerCase().includes(searchQuery.toLowerCase())) {
         return false;
+      }
+      if (positionFilter === "pinned") {
+        return pinnedQueries.some((k) => k.toLowerCase() === q.query.toLowerCase());
       }
       if (positionFilter === "top10" && (q.averagePosition > 10 || q.averagePosition <= 0)) {
         return false;
@@ -79,7 +106,7 @@ export function SearchPerformanceView({
       }
       return true;
     });
-  }, [rawQueries, searchQuery, positionFilter]);
+  }, [rawQueries, searchQuery, positionFilter, pinnedQueries]);
 
   // Paged queries for display
   const pagedQueries = useMemo(() => {
@@ -175,6 +202,7 @@ export function SearchPerformanceView({
             className="text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-slate-700 outline-none cursor-pointer"
           >
             <option value="all">Semua Peringkat</option>
+            <option value="pinned">⭐ Kata Kunci Dipantau ({pinnedQueries.length})</option>
             <option value="top10">Halaman 1 (Pos 1–10)</option>
             <option value="p11_20">Peluang Emas (Pos 11–20)</option>
             <option value="gt20">Halaman 3+ (Pos &gt; 20)</option>
@@ -436,10 +464,31 @@ export function SearchPerformanceView({
                         ? "pos-badge pos-badge-yellow"
                         : "pos-badge pos-badge-gray";
 
+                    const isPinned = pinnedQueries.some(
+                      (k) => k.toLowerCase() === (row.query || "").toLowerCase()
+                    );
+
                     return (
                       <tr key={idx} className="hover:bg-slate-50 transition-colors">
                         <td className="font-semibold text-slate-900 max-w-xs truncate" title={row.query}>
-                          {row.query}
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                togglePinQuery(row.query);
+                              }}
+                              className="text-slate-300 hover:text-amber-500 transition-colors p-0.5 cursor-pointer shrink-0"
+                              title={isPinned ? "Hapus dari kata kunci dipantau" : "Tambahkan ke kata kunci dipantau"}
+                            >
+                              <Star
+                                className={`w-3.5 h-3.5 ${
+                                  isPinned ? "fill-amber-400 text-amber-500" : "text-slate-300"
+                                }`}
+                              />
+                            </button>
+                            <span className="truncate">{row.query}</span>
+                          </div>
                         </td>
                         <td className="right font-bold text-slate-800">{formatNumber(row.clicks)}</td>
                         {isComparing && prevPeriodLabel && (

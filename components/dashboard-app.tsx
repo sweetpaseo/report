@@ -17,6 +17,7 @@ import { NotificationsIssuesView } from "./views/NotificationsIssuesView";
 import { ReportsView } from "./views/ReportsView";
 import { BackupModal } from "./BackupModal";
 import { GoogleApiModal } from "./GoogleApiModal";
+import { ExecutiveReportModal } from "./ExecutiveReportModal";
 import {
   Download,
   Calendar,
@@ -27,6 +28,7 @@ import {
   LogOut,
   Sliders,
   Sparkles,
+  FileText,
 } from "lucide-react";
 
 interface DashboardAppProps {
@@ -53,6 +55,7 @@ export function DashboardApp({
   const [dashboardData, setDashboardData] = useState<any>(initialData);
   const [showBackupModal, setShowBackupModal] = useState(false);
   const [showGoogleApiModal, setShowGoogleApiModal] = useState(false);
+  const [showExecutiveReportModal, setShowExecutiveReportModal] = useState(false);
   const [isComparing, setIsComparing] = useState(true);
   const [comparePeriodId, setComparePeriodId] = useState<string>(
     initialData?.comparePeriod?.id || initialData?.previous?.id || ""
@@ -300,12 +303,22 @@ export function DashboardApp({
               <span>Backup</span>
             </button>
 
+            {/* Executive PDF Report Button */}
+            <button
+              onClick={() => setShowExecutiveReportModal(true)}
+              title="Buka dan cetak Dokumen Laporan Resmi Eksekutif A4 untuk Pimpinan / Klien"
+              className="flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold px-3.5 py-1.5 rounded-xl shadow-md shadow-indigo-600/25 hover:from-purple-700 hover:to-indigo-700 transition-all cursor-pointer"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>Laporan Eksekutif</span>
+            </button>
+
             {/* Export Button */}
             <button
               onClick={() => setActiveTab("laporan")}
-              className="flex items-center gap-1.5 bg-indigo-600 text-white font-bold px-4 py-1.5 rounded-xl shadow-md shadow-indigo-600/20 hover:bg-indigo-700 transition-colors"
+              className="flex items-center gap-1.5 bg-white border border-slate-200 text-slate-700 font-bold px-3 py-1.5 rounded-xl shadow-sm hover:bg-slate-50 transition-colors"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-3.5 h-3.5 text-slate-500" />
               <span>Ekspor</span>
             </button>
           </div>
@@ -363,6 +376,15 @@ export function DashboardApp({
               handleSelectWebsite(selectedWebsiteId);
             }
           }}
+        />
+      )}
+
+      {/* Executive Report Modal */}
+      {showExecutiveReportModal && (
+        <ExecutiveReportModal
+          data={dashboardData}
+          isComparing={isComparing}
+          onClose={() => setShowExecutiveReportModal(false)}
         />
       )}
     </div>

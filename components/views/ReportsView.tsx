@@ -14,6 +14,7 @@ import {
   Tooltip,
 } from "recharts";
 import { formatNumber, formatPercent, formatPosition, getCountryDisplay } from "@/lib/view-helpers";
+import { ExecutiveReportModal } from "@/components/ExecutiveReportModal";
 
 export function ReportsView({
   data,
@@ -22,6 +23,7 @@ export function ReportsView({
   data: any;
   isComparing?: boolean;
 }) {
+  const [showExecutiveModal, setShowExecutiveModal] = useState(false);
   const [dimension, setDimension] = useState<"pages" | "queries" | "devices" | "countries">("pages");
   const [visualFormat, setVisualFormat] = useState<"table" | "bar" | "pie">("table");
 
@@ -104,9 +106,13 @@ export function ReportsView({
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-2 hover:shadow-md transition-all">
           <p className="text-xs font-extrabold text-slate-900">Format Cetak / Ekspor</p>
           <div className="space-y-1 text-xs text-slate-600">
-            <p className="font-semibold text-slate-800">Cetak PDF / Pratinjau Siap Pakai</p>
-            <button onClick={handlePrint} className="text-[10px] font-bold text-indigo-600 hover:underline">
-              Cetak Sekarang →
+            <p className="font-semibold text-slate-800">Laporan Resmi Eksekutif A4</p>
+            <button
+              type="button"
+              onClick={() => setShowExecutiveModal(true)}
+              className="text-[10px] font-bold text-indigo-600 hover:underline cursor-pointer"
+            >
+              Buka Dokumen Resmi →
             </button>
           </div>
         </div>
@@ -128,11 +134,12 @@ export function ReportsView({
             <p className="text-xs text-slate-500">Pilih dimensi dan format tampilan untuk melihat data riil secara instan.</p>
           </div>
           <button
-            onClick={handlePrint}
-            className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-500/20 hover:bg-indigo-700 transition-colors"
+            type="button"
+            onClick={() => setShowExecutiveModal(true)}
+            className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-500/20 hover:from-purple-700 hover:to-indigo-700 transition-colors cursor-pointer"
           >
             <Printer className="w-3.5 h-3.5" />
-            <span>Cetak / Simpan PDF</span>
+            <span>Dokumen Resmi A4 (PDF)</span>
           </button>
         </div>
 
@@ -281,6 +288,15 @@ export function ReportsView({
           </div>
         </div>
       </div>
+
+      {/* Executive Official A4 Report Modal */}
+      {showExecutiveModal && (
+        <ExecutiveReportModal
+          data={data}
+          isComparing={isComparing}
+          onClose={() => setShowExecutiveModal(false)}
+        />
+      )}
     </div>
   );
 }

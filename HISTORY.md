@@ -2,6 +2,36 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-09-26 — Versi 0.1.7: Executive Official A4 Report, Business ROI Calculator in Rupiah, & Pinned Target Keywords Watchlist (commit `764c3e7`)
+- **Dokumen Laporan Resmi Eksekutif A4 (`components/ExecutiveReportModal.tsx`)**:
+  - Modal dan tata cetak laporan formal A4 resmi untuk pimpinan bisnis atau klien:
+    - Header kop resmi entitas website dengan tanggal penerbitan dan label verifikasi resmi Google Search Console & GA4.
+    - Cincin Indeks Kesehatan Website (*Executive Health Score*) berskala 1–100 dan status evaluasi.
+    - 3 Poin Rangkuman Evaluasi Eksekutif (daya tarik kunjungan, efisiensi anggaran promosi, dan peluang pertumbuhan omset).
+    - Tabel Kinerja Indikator Utama (KPI: Klik, Impresi, CTR, Posisi Rata-rata, Pengguna Aktif) lengkap dengan data periode pembanding dan tren perubahan.
+    - Tabel Top 5 Halaman Berkinerja Terbaik & Top 5 Kata Kunci Organik Teratas.
+    - Rekomendasi langkah strategis periode selanjutnya.
+    - Blok pengesahan tanda tangan ganda resmi (*Disiapkan Oleh: Analis Web & SEO* vs *Ditinjau & Disetujui Oleh: Pimpinan / Klien*).
+  - Dilengkapi tombol cetak PDF A4 langsung (`window.print()`) dengan CSS print layout yang bersih dan bebas elemen navigasi aplikasi.
+  - Dilengkapi tombol **"Salin Link Klien"** untuk membagikan tautan publik laporan (`/report/[token]`) yang dapat dibuka di HP atau laptop klien tanpa perlu login.
+  - Tersedia di tombol topbar *Laporan Eksekutif* dan halaman menu *Laporan*.
+- **Kalkulator Estimasi Nilai Bisnis & ROI Organik (`components/RoiCalculatorCard.tsx`)**:
+  - Mengonversi traffic klik organik Google menjadi estimasi nilai rupiah nyata yang dapat dipahami oleh pimpinan:
+    - **Penghematan Biaya Iklan Google Ads**: Berapa rupiah yang dihemat dibanding beriklan pay-per-click di Google Ads (Klik × CPC).
+    - **Estimasi Potensi Omset Bisnis**: Proyeksi omset dari transaksi yang berpotensi dihasilkan dari traffic organik pencari aktif.
+    - **Efisiensi Investasi Website**: Pertumbuhan traffic gratis 24 jam non-stop.
+    - Formulir penyesuaian asumsi model bisnis interaktif (CPC Google Ads, Rata-rata Nilai Order / AOV, dan Rasio Closing WA) yang tersimpan di `localStorage` per website.
+  - Ditempatkan di halaman *Ringkasan (Overview)* tepat di bawah Kartu Skor Kesehatan.
+- **Fitur Pantauan Kata Kunci Target / Keyword Watchlist (`components/PinnedQueriesWatchlist.tsx`)**:
+  - Memungkinkan pemantauan kata kunci target utama bisnis agar tidak tenggelam di antara ratusan query umum:
+    - Kartu kata kunci target terpilih dengan badge peringkat real-time (Juara Pos 1–3, Halaman 1 Pos 4–10, Peluang Emas Pos 11–20, Halaman 3+).
+    - Formulir penambahan kata kunci kustom secara instan.
+    - Tombol bintang ⭐ pin/unpin pada tabel kueri di *Performa Pencarian (GSC)*.
+    - Filter cepat `⭐ Kata Kunci Dipantau` pada dropdown pemfilter peringkat.
+    - Penyimpanan preferensi kata kunci target secara persisten di `localStorage` per website.
+- **Verifikasi & Versi**:
+  - Versi dinaikkan ke `0.1.7`.
+
 ## 2026-09-26 — Versi 0.1.6: Page Drill-Down Modal, Table Pagination, CSV Export, Layperson Tooltips, & Executive Health Score (commit `54b854b`)
 - **Page Drill-Down Modal (`components/PageDetailModal.tsx`)**:
   - Modal interaktif inspeksi URL mendalam yang terbuka saat mengklik tombol "🔍 Detail" di tabel halaman atau tombol "🔍 Analisis Lengkap & Rekomendasi" di kartu sorotan halaman.

@@ -37,6 +37,7 @@ import {
 } from "@/lib/view-helpers";
 import { HealthScoreCard } from "@/components/HealthScoreCard";
 import { InfoTooltip } from "@/components/InfoTooltip";
+import { RoiCalculatorCard } from "@/components/RoiCalculatorCard";
 
 export function OverviewView({
   data,
@@ -115,6 +116,14 @@ export function OverviewView({
     <div className="space-y-6">
       {/* Executive Health Score Card */}
       <HealthScoreCard data={data} isComparing={isComparing} />
+
+      {/* ROI & Business Value Calculator Card */}
+      <RoiCalculatorCard
+        websiteId={data?.website?.id || ""}
+        websiteName={websiteName}
+        organicClicks={gscClicks.current || 0}
+        periodLabel={periodLabel}
+      />
 
       {/* Top 5 KPI Cards Grid with Sparklines */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
