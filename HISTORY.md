@@ -2,7 +2,7 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
-## 2026-09-26 — Auto-load Daftar Website, Pemilih Periode & Tombol Tarik Data Google API di Header
+## 2026-09-26 — Auto-load Daftar Website, Pemilih Periode & Tombol Tarik Data Google API di Header (commit `3da450b`)
 - **Auto-load & Integrasi Data Nyata Website**:
   - Menambahkan pemanggilan otomatis ke `/api/websites` pada saat komponen `DashboardApp` di-*mount*, sehingga dropdown website di header langsung menampilkan seluruh website yang ada di database (misal: Erihome dan Kurnia Printing).
   - Menyambungkan dropdown pemilih periode tanggal di header dengan `dashboardData.periods` yang tersimpan di SQLite, memungkinkan penggantian periode laporan secara instan.
