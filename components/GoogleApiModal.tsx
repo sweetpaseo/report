@@ -62,9 +62,11 @@ export function GoogleApiModal({ website, isOpen, onClose, onSuccess }: GoogleAp
       if (data.configured) {
         setSaConfigured(true);
         setSaEmail(data.client_email || "");
+        setActiveTab("website"); // Auto open sync tab if credentials already configured
       } else {
         setSaConfigured(false);
         setSaEmail("");
+        setActiveTab("service-account");
       }
     } catch (e) {
       console.error("Failed to fetch SA status", e);
@@ -283,7 +285,50 @@ export function GoogleApiModal({ website, isOpen, onClose, onSuccess }: GoogleAp
           <hr style={{ border: 0, borderTop: "1px solid var(--line)", margin: "8px 0" }} />
 
           <div className="form-stack">
-            <h3 className="sub-head" style={{ margin: 0 }}>Tarik Data Realtime (Sync API)</h3>
+            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", margin: "6px 0" }}>
+              <button
+                type="button"
+                className="button subtle"
+                style={{ fontSize: "11px", padding: "4px 8px" }}
+                onClick={() => {
+                  const now = new Date();
+                  const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+                  const end = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+                  setStartDate(start);
+                  setEndDate(end);
+                }}
+              >
+                Bulan Ini (Berjalan)
+              </button>
+              <button
+                type="button"
+                className="button subtle"
+                style={{ fontSize: "11px", padding: "4px 8px" }}
+                onClick={() => {
+                  const now = new Date();
+                  const start = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split("T")[0];
+                  const end = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split("T")[0];
+                  setStartDate(start);
+                  setEndDate(end);
+                }}
+              >
+                Bulan Lalu (Lengkap)
+              </button>
+              <button
+                type="button"
+                className="button subtle"
+                style={{ fontSize: "11px", padding: "4px 8px" }}
+                onClick={() => {
+                  const now = new Date();
+                  const end = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+                  const start = new Date(now.getTime() - 32 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+                  setStartDate(start);
+                  setEndDate(end);
+                }}
+              >
+                30 Hari Terakhir
+              </button>
+            </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
               <label>
