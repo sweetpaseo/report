@@ -304,8 +304,15 @@ export function DashboardApp({
           website={selectedWebsite}
           isOpen={showGoogleApiModal}
           onClose={() => setShowGoogleApiModal(false)}
-          onSuccess={() => {
+          onSuccess={async () => {
             setShowGoogleApiModal(false);
+            try {
+              const res = await fetch("/api/websites");
+              if (res.ok) {
+                const json = await res.json();
+                if (json.websites) setWebsites(json.websites);
+              }
+            } catch (e) {}
             if (selectedWebsiteId) {
               handleSelectWebsite(selectedWebsiteId);
             }
