@@ -10,7 +10,7 @@ Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). For
   - Menambahkan tombol "Tarik Data Google" pada header bar dengan ikon sinkronisasi untuk memicu `GoogleApiModal`, memungkinkan penarikan data langsung via Google Search Console & GA4 Data API.
   - Menambahkan tombol "Backup" pada header bar untuk memicu `BackupModal`.
   - Mengonfigurasi `onSuccess` pada modal Google API untuk me-*refresh* data dashboard secara otomatis setelah sinkronisasi selesai.
-- **Verifikasi**: `npm run typecheck` dan `npm run build` sukses 100%.
+- **Verifikasi & Deploy**: `npm run typecheck` dan `npm run build` sukses 100%, serta bundle standalone telah di-deploy ke server live `https://report.erihome.id` (HTTP 200).
 - **File Terdampak**: `components/dashboard-app.tsx`, `HISTORY.md`.
 
 ## 2026-08-12 — Pembaruan Animasi & Grafik Interaktif Recharts (13 Modul Tampilan) (commit `0ab3c4e`)
