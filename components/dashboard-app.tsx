@@ -148,7 +148,7 @@ export function DashboardApp({
       <SidebarNav
         activeTab={activeTab}
         onSelectTab={(tab) => setActiveTab(tab)}
-        issuesCount={42}
+        issuesCount={(dashboardData?.anomalies?.length || 0) + (dashboardData?.dataQuality?.filter((q: any) => q.status !== 'ok').length || 0)}
       />
 
       {/* Main Content Area */}

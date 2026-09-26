@@ -1,89 +1,109 @@
 "use client";
 
 import React from "react";
-import { Target, TrendingUp, Filter, Sparkles } from "lucide-react";
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from "recharts";
-
-const eventTrendData = [
-  { date: "1 Mei", eventCount: 3200 },
-  { date: "5 Mei", eventCount: 3800 },
-  { date: "10 Mei", eventCount: 4100 },
-  { date: "15 Mei", eventCount: 3900 },
-  { date: "20 Mei", eventCount: 4600 },
-  { date: "25 Mei", eventCount: 5200 },
-  { date: "31 Mei", eventCount: 5800 },
-];
+import { Target, TrendingUp, CheckCircle2, Zap } from "lucide-react";
+import { formatNumber, formatPercent } from "@/lib/view-helpers";
 
 export function EventsConversionsView({ data }: { data: any }) {
+  const events = data?.events || [];
+  const totalEventCount = events.reduce((sum: number, e: any) => sum + (e.count || 0), 0);
+  const totalKeyEvents = events.reduce((sum: number, e: any) => sum + (e.keyCount || 0), 0);
+  const conversionRate = data?.metrics?.["ga.chat_conversion_rate"] || (totalEventCount > 0 ? (totalKeyEvents / totalEventCount) * 100 : 0);
+  const topEvent = events[0];
+
   return (
     <div className="space-y-6">
       {/* 4 KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-1 hover:shadow-md transition-all">
-          <p className="text-[11px] font-bold text-slate-400">Total Event</p>
-          <p className="text-2xl font-extrabold text-slate-900 tabular-nums">124.580</p>
-          <span className="text-[10px] font-bold text-emerald-600">▲ 31,2% vs 1 Apr - 30 Apr 2025</span>
+          <p className="text-[11px] font-bold text-slate-400">Total Event Terlacak</p>
+          <p className="text-2xl font-extrabold text-slate-900 tabular-nums">
+            {formatNumber(totalEventCount)}
+          </p>
+          <span className="text-[10px] font-bold text-indigo-600">{events.length} jenis interaksi GA4</span>
         </div>
+
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-1 hover:shadow-md transition-all">
-          <p className="text-[11px] font-bold text-slate-400">Key Event</p>
-          <p className="text-2xl font-extrabold text-slate-900 tabular-nums">8.765</p>
-          <span className="text-[10px] font-bold text-emerald-600">▲ 28,1% vs 1 Apr - 30 Apr 2025</span>
+          <p className="text-[11px] font-bold text-slate-400">Key Events (Konversi)</p>
+          <p className="text-2xl font-extrabold text-emerald-600 tabular-nums">
+            {formatNumber(totalKeyEvents)}
+          </p>
+          <span className="text-[10px] font-bold text-emerald-600">tindakan bernilai tinggi</span>
         </div>
-        <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-1 hover:shadow-md transition-all">
-          <p className="text-[11px] font-bold text-slate-400">Total Konversi</p>
-          <p className="text-2xl font-extrabold text-slate-900 tabular-nums">3.245</p>
-          <span className="text-[10px] font-bold text-emerald-600">▲ 22,7% vs 1 Apr - 30 Apr 2025</span>
-        </div>
+
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-1 hover:shadow-md transition-all">
           <p className="text-[11px] font-bold text-slate-400">Rasio Konversi</p>
-          <p className="text-2xl font-extrabold text-slate-900 tabular-nums">2,35%</p>
-          <span className="text-[10px] font-bold text-emerald-600">▲ 1,8 p.p. vs 1 Apr - 30 Apr 2025</span>
+          <p className="text-2xl font-extrabold text-purple-600 tabular-nums">
+            {formatPercent(conversionRate, 2)}
+          </p>
+          <span className="text-[10px] text-slate-400">dari aktivitas audiens</span>
+        </div>
+
+        <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-1 hover:shadow-md transition-all">
+          <p className="text-[11px] font-bold text-slate-400">Event Paling Sering Terjadi</p>
+          <p className="text-lg font-extrabold text-slate-900 truncate" title={topEvent?.name}>
+            {topEvent?.name || "-"}
+          </p>
+          <p className="text-[10px] text-slate-500">
+            {topEvent ? `${formatNumber(topEvent.count)} kali` : "Belum ada event"}
+          </p>
         </div>
       </div>
 
-      {/* Main Chart: Event Trend Recharts AreaChart */}
+      {/* Events Table */}
       <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
-        <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-purple-600" /> Tren Event dari Waktu ke Waktu
-        </h3>
-        <div className="h-56">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={eventTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <defs>
-                <linearGradient id="colorEvent" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.0} />
-                </linearGradient>
-              </defs>
-              <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ backgroundColor: "#ffffff", borderRadius: "12px", border: "1px solid #e2e8f0", fontSize: "12px" }} />
-              <Area type="monotone" dataKey="eventCount" stroke="#8b5cf6" strokeWidth={3} fillOpacity={1} fill="url(#colorEvent)" name="Jumlah Event" />
-            </AreaChart>
-          </ResponsiveContainer>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+              <Target className="w-4 h-4 text-purple-600" /> Daftar Event & Interaksi Pengguna (GA4)
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">Seluruh tindakan pengguna yang dicatat oleh Google Analytics 4</p>
+          </div>
+          <span className="text-xs text-slate-500 font-medium">Total: <strong>{events.length} event</strong></span>
         </div>
-      </div>
 
-      {/* 7-Step Conversion Funnel Visualizer */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
-        <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
-          <Target className="w-4 h-4 text-purple-600" /> Funnel Konversi 7-Langkah (E-Commerce / Lead Generation)
-        </h3>
-        <div className="funnel-container space-y-2">
-          {[
-            { step: "1. Sesi", val: "28.990", pct: "100%", width: "100%" },
-            { step: "2. Lihat Halaman Produk", val: "12.465", pct: "43,0%", width: "85%" },
-            { step: "3. Tambah ke Keranjang", val: "5.680", pct: "19,6%", width: "68%" },
-            { step: "4. Mulai Checkout", val: "3.920", pct: "13,5%", width: "52%" },
-            { step: "5. Isi Informasi", val: "3.330", pct: "11,5%", width: "42%" },
-            { step: "6. Pilih Metode Pembayaran", val: "2.900", pct: "10,0%", width: "34%" },
-            { step: "7. Pembelian / Submit Form", val: "3.245", pct: "11,2%", width: "28%" },
-          ].map((item, idx) => (
-            <div key={idx} className="funnel-step-bar hover:brightness-110 transition-all cursor-pointer" style={{ width: item.width }}>
-              <span>{item.step} ({item.val})</span>
-              <span className="bg-white/20 px-2 py-0.5 rounded text-[11px] font-bold">{item.pct}</span>
-            </div>
-          ))}
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs text-left data-table">
+            <thead>
+              <tr>
+                <th>Nama Event</th>
+                <th className="right">Jumlah Eksekusi</th>
+                <th className="right">Key Events (Konversi)</th>
+                <th className="right">Kontribusi Total</th>
+                <th className="center">Klasifikasi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {events.length > 0 ? (
+                events.map((ev: any, idx: number) => {
+                  const pct = totalEventCount > 0 ? Math.round(((ev.count || 0) / totalEventCount) * 100) : 0;
+                  const isKey = (ev.keyCount || 0) > 0;
+
+                  return (
+                    <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                      <td className="font-bold text-slate-900 font-mono">{ev.name}</td>
+                      <td className="right font-extrabold text-slate-900">{formatNumber(ev.count)}</td>
+                      <td className="right font-bold text-emerald-600">{formatNumber(ev.keyCount)}</td>
+                      <td className="right text-slate-600">{pct}%</td>
+                      <td className="text-center">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          isKey ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-700"
+                        }`}>
+                          {isKey ? "Key Event ★" : "Standar"}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={5} className="text-center py-8 text-slate-400">
+                    Belum ada data event GA4 yang tercatat untuk periode ini.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

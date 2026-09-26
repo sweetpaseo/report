@@ -1,160 +1,180 @@
 "use client";
 
-import React, { useState } from "react";
-import { FileText, TrendingUp, TrendingDown, ExternalLink, Sparkles, Filter, CheckCircle2 } from "lucide-react";
-import { Sparkline } from "@/components/sparkline";
+import React, { useState, useMemo } from "react";
+import { FileText, TrendingUp, ExternalLink, Globe, Search, CheckCircle2 } from "lucide-react";
+import {
+  formatNumber,
+  formatCompactNumber,
+  formatPercent,
+  formatPosition,
+} from "@/lib/view-helpers";
 
 export function PagesView({ data }: { data: any }) {
-  const [selectedPage, setSelectedPage] = useState<any>({
-    title: "Halaman utama",
-    url: "https://example.com/",
-    clicks: "3.245",
-    impressions: "18.629",
-    ctr: "17,4%",
-    pos: "1.8",
-    keywords: [
-      { name: "sepatu lari terbaik", pos: 1, clicks: 542 },
-      { name: "sepatu running pria", pos: 1, clicks: 421 },
-      { name: "sepatu lari ringan", pos: 2, clicks: 318 },
-      { name: "sepatu lari wanita terbaik", pos: 1, clicks: 287 },
-    ],
-  });
+  const rawPages = data?.topGscPages?.web || [];
+  const [searchPage, setSearchPage] = useState("");
+  const [selectedPageIndex, setSelectedPageIndex] = useState(0);
+
+  const filteredPages = useMemo(() => {
+    return rawPages.filter((p: any) => {
+      if (!searchPage) return true;
+      return p.page.toLowerCase().includes(searchPage.toLowerCase());
+    });
+  }, [rawPages, searchPage]);
+
+  const activePage = filteredPages[selectedPageIndex] || filteredPages[0] || rawPages[0] || null;
+
+  // KPI Calculations
+  const totalPages = rawPages.length;
+  const pagesWithClicks = rawPages.filter((p: any) => (p.clicks || 0) > 0).length;
+  const totalClicks = rawPages.reduce((sum: number, p: any) => sum + (p.clicks || 0), 0);
+  const topPage = rawPages[0];
 
   return (
     <div className="space-y-6">
       {/* 4 Top KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-1">
-          <p className="text-[11px] font-bold text-slate-400">Total Halaman Aktif</p>
-          <p className="text-2xl font-extrabold text-slate-900 tabular-nums">486</p>
-          <p className="text-[10px] text-slate-400">+8 vs 30 Apr 2025</p>
+          <p className="text-[11px] font-bold text-slate-400">Total Halaman Terindeks</p>
+          <p className="text-2xl font-extrabold text-slate-900 tabular-nums">
+            {formatNumber(totalPages)}
+          </p>
+          <p className="text-[10px] text-slate-400">tercatat di Google Search Console</p>
         </div>
+
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-1">
-          <p className="text-[11px] font-bold text-slate-400">Halaman Pertumbuhan Trafik</p>
-          <p className="text-2xl font-extrabold text-slate-900 tabular-nums text-emerald-600">132</p>
-          <p className="text-[10px] text-emerald-600 font-bold">+23,1% rerata kenaikan klik</p>
+          <p className="text-[11px] font-bold text-slate-400">Halaman Menghasilkan Klik</p>
+          <p className="text-2xl font-extrabold text-slate-900 tabular-nums text-emerald-600">
+            {formatNumber(pagesWithClicks)}
+          </p>
+          <p className="text-[10px] text-emerald-600 font-bold">
+            {totalPages > 0 ? formatPercent((pagesWithClicks / totalPages) * 100) : "0%"} dari total halaman
+          </p>
         </div>
+
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-1">
-          <p className="text-[11px] font-bold text-slate-400">Halaman Menurun</p>
-          <p className="text-2xl font-extrabold text-slate-900 tabular-nums text-rose-600">98</p>
-          <p className="text-[10px] text-rose-600 font-bold">-18,6% rerata penurunan klik</p>
+          <p className="text-[11px] font-bold text-slate-400">Total Klik Semua Halaman</p>
+          <p className="text-2xl font-extrabold text-slate-900 tabular-nums text-indigo-600">
+            {formatNumber(totalClicks)}
+          </p>
+          <p className="text-[10px] text-indigo-600 font-bold">periode laporan aktif</p>
         </div>
+
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-1">
-          <p className="text-[11px] font-bold text-slate-400">Halaman dengan Konversi</p>
-          <p className="text-2xl font-extrabold text-slate-900 tabular-nums text-indigo-600">76</p>
-          <p className="text-[10px] text-indigo-600 font-bold">2,35% rerata rasio konversi</p>
+          <p className="text-[11px] font-bold text-slate-400">Halaman Terpopuler</p>
+          <p className="text-sm font-extrabold text-slate-900 truncate" title={topPage?.page}>
+            {topPage?.page ? new URL(topPage.page).pathname : "-"}
+          </p>
+          <p className="text-[10px] text-purple-600 font-bold">
+            {formatNumber(topPage?.clicks || 0)} klik ({topPage && totalClicks > 0 ? formatPercent((topPage.clicks / totalClicks) * 100) : "0%"})
+          </p>
         </div>
       </div>
 
-      {/* Pages Data Table with Sparklines */}
+      {/* Pages Data Table */}
       <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
-        <h3 className="font-extrabold text-slate-900 text-sm">Analisis Performa Halaman</h3>
-        <div className="overflow-x-auto">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="font-extrabold text-slate-900 text-sm">Analisis Performa Halaman Organik (GSC)</h3>
+            <p className="text-[11px] text-slate-400">Klik baris mana saja untuk melihat detail kartu sorotan di bawah</p>
+          </div>
+
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Cari URL halaman..."
+              value={searchPage}
+              onChange={(e) => setSearchPage(e.target.value)}
+              className="text-xs bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-slate-800 placeholder-slate-400 outline-none focus:border-indigo-400 transition-colors w-48 md:w-64"
+            />
+          </div>
+        </div>
+
+        <div className="overflow-x-auto max-h-96 custom-scrollbar">
           <table className="w-full text-xs text-left data-table">
-            <thead>
+            <thead className="sticky top-0 bg-white">
               <tr>
-                <th>Halaman</th>
-                <th className="right">Tren</th>
+                <th>URL Halaman</th>
                 <th className="right">Klik</th>
                 <th className="right">Tayang</th>
                 <th className="right">CTR</th>
-                <th className="center">Posisi</th>
-                <th className="right">Pengguna</th>
-                <th className="right">Sesi</th>
-                <th className="right">Engagement</th>
-                <th className="right">Konversi</th>
               </tr>
             </thead>
             <tbody>
-              {[
-                { page: "/", clicks: "3.245", imp: "18.629", ctr: "17,4%", pos: "1,8", users: "4.120", sessions: "5.230", eng: "68,7%", conv: "120" },
-                { page: "/produk/sepatu-lari-terbaik", clicks: "2.160", imp: "10.850", ctr: "19,9%", pos: "2,3", users: "2.960", sessions: "3.760", eng: "71,2%", conv: "96" },
-                { page: "/blog/cara-memilih-sepatu-lari", clicks: "1.420", imp: "6.120", ctr: "23,2%", pos: "2,4", users: "1.890", sessions: "2.435", eng: "66,1%", conv: "58" },
-                { page: "/promo/diskon-sepatu", clicks: "1.205", imp: "5.320", ctr: "22,7%", pos: "2,1", users: "1.650", sessions: "2.010", eng: "63,4%", conv: "44" },
-              ].map((row, idx) => (
-                <tr key={idx} className="cursor-pointer hover:bg-purple-50/50" onClick={() => setSelectedPage({ ...selectedPage, title: row.page, url: `https://example.com${row.page}`, clicks: row.clicks, impressions: row.imp, ctr: row.ctr, pos: row.pos })}>
-                  <td className="font-mono font-semibold text-slate-900">{row.page}</td>
-                  <td className="right w-20">
-                    <div className="h-5">
-                      <Sparkline values={[12, 14, 18, 16, 22, 25]} strokeColor="#8b5cf6" />
-                    </div>
+              {filteredPages.length > 0 ? (
+                filteredPages.map((row: any, idx: number) => {
+                  let path = row.page;
+                  try {
+                    const u = new URL(row.page);
+                    path = u.pathname || "/";
+                  } catch {}
+
+                  const isSelected = activePage?.page === row.page;
+
+                  return (
+                    <tr
+                      key={idx}
+                      onClick={() => setSelectedPageIndex(idx)}
+                      className={`cursor-pointer transition-colors ${
+                        isSelected ? "bg-indigo-50/70 font-semibold" : "hover:bg-slate-50"
+                      }`}
+                    >
+                      <td className="font-mono text-slate-800 max-w-md truncate" title={row.page}>
+                        {path}
+                      </td>
+                      <td className="right font-bold text-slate-900">{formatNumber(row.clicks)}</td>
+                      <td className="right text-slate-600">{formatNumber(row.impressions)}</td>
+                      <td className="right font-medium text-slate-700">{formatPercent(row.ctr * 100)}</td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={4} className="text-center py-8 text-slate-400">
+                    Tidak ada halaman yang cocok dengan pencarian.
                   </td>
-                  <td className="right font-bold text-slate-900">{row.clicks}</td>
-                  <td className="right text-slate-600">{row.imp}</td>
-                  <td className="right text-slate-600">{row.ctr}</td>
-                  <td className="text-center"><span className="pos-badge pos-badge-green">{row.pos}</span></td>
-                  <td className="right text-slate-600">{row.users}</td>
-                  <td className="right text-slate-600">{row.sessions}</td>
-                  <td className="right text-slate-600">{row.eng}</td>
-                  <td className="right font-bold text-indigo-600">{row.conv}</td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Page Detail Drawer / Spotlight Card with Thumbnail Preview */}
-      <div className="page-spotlight-card space-y-4 border-2 border-indigo-100">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <div>
-            <h4 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
-              <FileText className="w-4 h-4 text-indigo-600" /> Spotlight Detail: {selectedPage.title}
-            </h4>
-            <a href={selectedPage.url} target="_blank" rel="noreferrer" className="text-xs text-indigo-600 hover:underline flex items-center gap-1 font-mono mt-0.5">
-              {selectedPage.url} <ExternalLink className="w-3 h-3" />
+      {/* Spotlight Detail Card */}
+      {activePage && (
+        <div className="page-spotlight-card space-y-4 border-2 border-indigo-100 bg-white rounded-2xl p-6 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+            <div>
+              <p className="text-[11px] font-bold text-indigo-600 uppercase tracking-wider">Detail Halaman Terpilih</p>
+              <h4 className="text-base font-extrabold text-slate-900 break-all">{activePage.page}</h4>
+            </div>
+            <a
+              href={activePage.page}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 text-xs font-bold hover:bg-indigo-100 transition-colors shadow-xs"
+            >
+              <span>Buka Halaman</span>
+              <ExternalLink className="w-3.5 h-3.5" />
             </a>
           </div>
-          <span className="px-3 py-1 bg-emerald-50 text-emerald-700 font-bold text-xs rounded-full border border-emerald-200">
-            Performa Sangat Baik ✨
-          </span>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Live Page Preview Screenshot Mockup */}
-          <div className="bg-slate-100 rounded-xl p-3 border border-slate-200 flex flex-col items-center justify-center text-center space-y-2">
-            <div className="w-full h-40 bg-gradient-to-tr from-slate-200 to-slate-300 rounded-lg flex items-center justify-center text-slate-500 font-bold text-xs shadow-inner">
-              [Pratinjau Halaman Website Webapp]
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-2">
+            <div className="bg-slate-50 p-4 rounded-xl space-y-1">
+              <p className="text-[11px] font-bold text-slate-400">Klik Organik</p>
+              <p className="text-2xl font-black text-slate-900">{formatNumber(activePage.clicks)}</p>
             </div>
-            <p className="text-[10px] text-slate-400">Snapshot pratinjau antarmuka halaman</p>
-          </div>
-
-          {/* Mini KPIs & Trend */}
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-2">
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                <p className="text-[10px] text-slate-400 font-bold">Klik</p>
-                <p className="text-base font-extrabold text-slate-900">{selectedPage.clicks}</p>
-              </div>
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                <p className="text-[10px] text-slate-400 font-bold">Tayang</p>
-                <p className="text-base font-extrabold text-slate-900">{selectedPage.impressions}</p>
-              </div>
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                <p className="text-[10px] text-slate-400 font-bold">CTR</p>
-                <p className="text-base font-extrabold text-slate-900">{selectedPage.ctr}</p>
-              </div>
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                <p className="text-[10px] text-slate-400 font-bold">Posisi</p>
-                <p className="text-base font-extrabold text-emerald-600">{selectedPage.pos}</p>
-              </div>
+            <div className="bg-slate-50 p-4 rounded-xl space-y-1">
+              <p className="text-[11px] font-bold text-slate-400">Tayangan di Google</p>
+              <p className="text-2xl font-black text-slate-900">{formatNumber(activePage.impressions)}</p>
             </div>
-          </div>
-
-          {/* Top Keywords for this page */}
-          <div className="space-y-2">
-            <p className="text-xs font-extrabold text-slate-900">Kata Kunci Teratas Halaman Ini:</p>
-            <div className="space-y-1.5 text-xs">
-              {selectedPage.keywords.map((kw: any, idx: number) => (
-                <div key={idx} className="flex justify-between items-center p-2 rounded-lg bg-slate-50">
-                  <span className="font-semibold text-slate-800">{kw.name}</span>
-                  <span className="pos-badge pos-badge-green">Pos {kw.pos}</span>
-                </div>
-              ))}
+            <div className="bg-slate-50 p-4 rounded-xl space-y-1">
+              <p className="text-[11px] font-bold text-slate-400">CTR (Rasio Klik)</p>
+              <p className="text-2xl font-black text-indigo-600">{formatPercent(activePage.ctr * 100)}</p>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

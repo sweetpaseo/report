@@ -2,6 +2,32 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-09-26 — Versi 0.1.4: Audit Menyeluruh & Dynamic Real-Data Binding pada 13 View, Filter & Grafik (commit `c48f281`)
+- **Pembersihan Data Tiruan / Dummy Mockup Menjadi 100% Real Data**:
+  - Mengaudit 15 screenshot live antarmuka dari direktori `C:\Users\Fanto\Desktop\antigravity\gr\pages`.
+  - Mengeliminasi seluruh array dan teks statis tiruan (seperti data pipa HDPE, sepatu lari, data tahun 2025 yang tidak relevan dengan Kurnia Printing / Erihome) di seluruh 13 komponen view.
+  - Membuat helper bersama `lib/view-helpers.ts` (`formatDateLabel`, `formatNumber`, `formatCompactNumber`, `formatPercent`, `formatPosition`, `formatDuration`, `getCountryDisplay` dengan bendera emoji).
+- **Perombakan 13 Modul Tampilan (Dynamic Binding)**:
+  1. `OverviewView`: KPI cards riil dengan komparasi % delta, dynamic robot mascot banner, grafik Recharts kurva GSC & GA4 dari database, top halaman, top kueri, dan chart donut perangkat riil.
+  2. `SearchPerformanceView`: Input filter kata kunci pencarian, filter tingkatan posisi (Halaman 1, Peluang Emas, Halaman 3+), grafik harian line chart klik/tayangan, donut pergerakan posisi, dan tabel kueri berperingkat riil.
+  3. `AnalyticsPerformanceView`: 6 kartu KPI GA4 riil, area chart pengguna aktif & sesi harian, serta visualisasi channel grouping GA4 dengan bilah progress interaktif.
+  4. `PagesView`: Tabel halaman terindeks riil, filter input pencarian URL, panel sorotan (spotlight) interaktif dengan tombol buka URL eksternal langsung.
+  5. `QueriesView`: Kueri pencarian riil, deteksi otomatis Branded vs Non-Branded, grafik kontribusi Top 10, dan tabel Peluang Emas (posisi 4-20) dengan rekomendasi optimasi SEO.
+  6. `DevicesView`: Metrik riil desktop, mobile, tablet beserta persentase kontribusi dan daftar model perangkat populer dari GA4.
+  7. `CountriesView`: Metrik negara GSC riil dengan bendera negara, visualisasi bar chart perolehan klik, daftar kota teratas GA4, dan tabel lengkap.
+  8. `TrafficChannelsView`: Diagram batang GA4 channel grouping riil, tabel performa sesi, serta tabel rincian Sumber/Media riil.
+  9. `EventsConversionsView`: Rincian event interaksi GA4 riil, jumlah eksekusi, serta klasifikasi key events/konversi.
+  10. `AiInsightView`: Kartu wawasan AI dinamis berdasarkan data performa riil, anomali, tren pertumbuhan, area evaluasi, dan catatan analis bisnis.
+  11. `RecommendationsView`: Rekomendasi aksi taktis otomatis berdasarkan top pages & opportunity queries untuk website yang aktif dipilih, dilengkapi checklist interaktif.
+  12. `NotificationsIssuesView`: Monitoring anomali sistem dan status kualitas koneksi API Google secara riil.
+  13. `ReportsView`: Pembangun laporan kustom interaktif (Pilihan Dimensi: Halaman, Kueri, Perangkat, Negara; Pilihan Visualisasi: Tabel, Diagram Batang, Diagram Lingkaran) yang terhubung langsung ke data database, serta tombol cetak PDF laporan.
+- **Dynamic Issues Count di Sidebar**:
+  - Memperbarui `SidebarNav` di `components/dashboard-app.tsx` agar menghitung badge isu secara dinamis dari jumlah anomali dan data quality warnings yang aktif, bukan angka statis 42.
+- **Verifikasi & Versi**:
+  - Menaikkan versi package ke `0.1.4`.
+  - Lulus `npm run typecheck` dan `npm run build` standalone 100% tanpa error.
+- **File Terdampak**: `lib/view-helpers.ts`, `components/dashboard-app.tsx`, `components/views/*.tsx` (13 file), `package.json`, `HISTORY.md`.
+
 ## 2026-09-26 — Versi 0.1.3: Endpoint Autonomous Cron Sync Google Search & Analytics (commit `9d367ee`)
 - **Fitur Sinkronisasi Otomatis / Autonomous Cron Sync**:
   - Membuat endpoint internal `app/api/cron/sync/route.ts` yang mendukung metode `GET` dan `POST`.

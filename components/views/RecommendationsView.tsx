@@ -1,43 +1,78 @@
 "use client";
 
-import React, { useState } from "react";
-import { Lightbulb, CheckSquare, Sparkles, Zap, ArrowRight } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { Lightbulb, CheckSquare, Sparkles, Zap, CheckCircle2 } from "lucide-react";
+import { formatNumber } from "@/lib/view-helpers";
 
 export function RecommendationsView({ data }: { data: any }) {
   const [completedItems, setCompletedItems] = useState<Record<number, boolean>>({});
+
+  const topPage = data?.topGscPages?.web?.[0];
+  const topOpp = data?.opportunities?.web?.[0] || data?.topQueries?.web?.[1];
+  const mobileDevice = (data?.devices?.web || []).find((d: any) => String(d.device).toUpperCase().includes("MOB"));
+
+  const topPath = topPage?.page ? new URL(topPage.page).pathname : "halaman utama";
+  const oppQuery = topOpp?.query || "kata kunci utama";
+
+  const checklistItems = useMemo(() => [
+    {
+      task: `Perbarui meta title & description pada "${topPath}" untuk meningkatkan CTR organik`,
+      category: "SEO",
+      impact: "CTR",
+    },
+    {
+      task: `Tambahkan heading & materi khusus seputar "${oppQuery}" untuk menembus Halaman 1 Google`,
+      category: "Konten",
+      impact: "Ranking",
+    },
+    {
+      task: `Audit Core Web Vitals pada perangkat Ponsel (Mobile) karena menyumbang mayoritas audiens`,
+      category: "Teknis",
+      impact: "UX",
+    },
+    {
+      task: "Periksa kembali konversi formulir kontak dan tombol WhatsApp di seluruh halaman arahan",
+      category: "Analytics",
+      impact: "Konversi",
+    },
+    {
+      task: "Bangun internal link dari artikel blog terpopuler menuju halaman produk/layanan utama",
+      category: "SEO",
+      impact: "Otoritas",
+    },
+  ], [topPath, oppQuery]);
 
   const toggleCheck = (idx: number) => {
     setCompletedItems((prev) => ({ ...prev, [idx]: !prev[idx] }));
   };
 
+  const completedCount = Object.values(completedItems).filter(Boolean).length;
+
   return (
     <div className="space-y-6">
-      {/* Top 5 KPI Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+      {/* Top 4 Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-1">
-          <p className="text-[11px] font-bold text-slate-400">Total Rekomendasi</p>
-          <p className="text-2xl font-extrabold text-slate-900 tabular-nums">36</p>
-          <p className="text-[10px] text-purple-600 font-bold">+8 dari periode lalu</p>
+          <p className="text-[11px] font-bold text-slate-400">Total Rekomendasi Terbuka</p>
+          <p className="text-2xl font-extrabold text-slate-900 tabular-nums">5</p>
+          <p className="text-[10px] text-purple-600 font-bold">dihasilkan dari analisis data riil</p>
         </div>
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-1">
-          <p className="text-[11px] font-bold text-slate-400">Prioritas Tinggi</p>
-          <p className="text-2xl font-extrabold text-rose-600 tabular-nums">11</p>
-          <p className="text-[10px] text-rose-600 font-bold">31% dari total</p>
-        </div>
-        <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-1">
-          <p className="text-[11px] font-bold text-slate-400">Quick Wins</p>
-          <p className="text-2xl font-extrabold text-emerald-600 tabular-nums">9</p>
-          <p className="text-[10px] text-emerald-600 font-bold">25% dari total</p>
+          <p className="text-[11px] font-bold text-slate-400">Quick Wins (Hasil Cepat)</p>
+          <p className="text-2xl font-extrabold text-emerald-600 tabular-nums">2</p>
+          <p className="text-[10px] text-emerald-600 font-bold">bisa dieksekusi hari ini</p>
         </div>
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-1">
           <p className="text-[11px] font-bold text-slate-400">Dampak Tinggi</p>
-          <p className="text-2xl font-extrabold text-indigo-600 tabular-nums">14</p>
-          <p className="text-[10px] text-indigo-600 font-bold">39% dari total</p>
+          <p className="text-2xl font-extrabold text-indigo-600 tabular-nums">3</p>
+          <p className="text-[10px] text-indigo-600 font-bold">berpengaruh ke ranking & klik</p>
         </div>
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-1">
-          <p className="text-[11px] font-bold text-slate-400">Perlu Dikerjakan</p>
-          <p className="text-2xl font-extrabold text-amber-600 tabular-nums">20</p>
-          <p className="text-[10px] text-amber-600 font-bold">56% dari total</p>
+          <p className="text-[11px] font-bold text-slate-400">Status Penyelesaian</p>
+          <p className="text-2xl font-extrabold text-amber-600 tabular-nums">
+            {completedCount}/5 selesai
+          </p>
+          <p className="text-[10px] text-slate-400">interaktif checklist</p>
         </div>
       </div>
 
@@ -53,40 +88,40 @@ export function RecommendationsView({ data }: { data: any }) {
           </div>
 
           <div className="matrix-2x2">
-            {/* Quadrant 1: Quick Wins (High Impact, Low Effort) */}
+            {/* Quadrant 1: Quick Wins */}
             <div className="matrix-quadrant quadrant-quick-wins">
               <div>
                 <p className="font-extrabold text-xs">🚀 Quick Wins (Lakukan Sekarang)</p>
-                <p className="text-[11px] opacity-80 mt-1">Dampak tinggi dengan usaha rendah. Hasil cepat.</p>
+                <p className="text-[11px] opacity-80 mt-1">Dampak tinggi dengan usaha ringan. Optimasi meta tag & CTR.</p>
               </div>
-              <p className="text-2xl font-black">9</p>
+              <p className="text-2xl font-black">2</p>
             </div>
 
-            {/* Quadrant 2: Strategic (High Impact, High Effort) */}
+            {/* Quadrant 2: Strategic */}
             <div className="matrix-quadrant quadrant-strategic">
               <div>
                 <p className="font-extrabold text-xs">🎯 Proyek Strategis (Rencanakan)</p>
-                <p className="text-[11px] opacity-80 mt-1">Dampak tinggi, butuh usaha lebih. Pertumbuhan jangka panjang.</p>
+                <p className="text-[11px] opacity-80 mt-1">Dampak besar jangka panjang. Perluasan artikel pilar.</p>
               </div>
-              <p className="text-2xl font-black">14</p>
+              <p className="text-2xl font-black">1</p>
             </div>
 
-            {/* Quadrant 3: Minor Fixes (Low Impact, Low Effort) */}
+            {/* Quadrant 3: Minor Fixes */}
             <div className="matrix-quadrant quadrant-minor">
               <div>
-                <p className="font-extrabold text-xs">🌱 Perbaikan Ringan (Pertimbangkan)</p>
-                <p className="text-[11px] opacity-80 mt-1">Dampak rendah, usaha rendah. Lakukan jika ada waktu.</p>
+                <p className="font-extrabold text-xs">🌱 Perbaikan Ringan</p>
+                <p className="text-[11px] opacity-80 mt-1">Penyempurnaan link internal halaman pendukung.</p>
               </div>
-              <p className="text-2xl font-black">6</p>
+              <p className="text-2xl font-black">1</p>
             </div>
 
-            {/* Quadrant 4: Low Priority (Low Impact, High Effort) */}
+            {/* Quadrant 4: Low Priority */}
             <div className="matrix-quadrant quadrant-low-priority">
               <div>
-                <p className="font-extrabold text-xs">⏳ Low Priority (Prioritas Rendah)</p>
-                <p className="text-[11px] opacity-80 mt-1">Dampak rendah, usaha tinggi. Tunda atau evaluasi kembali.</p>
+                <p className="font-extrabold text-xs">⏳ Pemeliharaan Rutin</p>
+                <p className="text-[11px] opacity-80 mt-1">Audit berkala parameter analitik & tag.</p>
               </div>
-              <p className="text-2xl font-black">7</p>
+              <p className="text-2xl font-black">1</p>
             </div>
           </div>
         </div>
@@ -95,34 +130,44 @@ export function RecommendationsView({ data }: { data: any }) {
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
-              <CheckSquare className="w-4 h-4 text-emerald-600" /> Quick Wins Checklist
+              <CheckSquare className="w-4 h-4 text-emerald-600" /> Action Items Checklist
             </h3>
             <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full">
-              {Object.values(completedItems).filter(Boolean).length}/5 selesai
+              {completedCount}/{checklistItems.length} selesai
             </span>
           </div>
 
-          <div className="space-y-2 text-xs">
-            {[
-              { title: "Perbaiki meta description halaman utama", tag: "SEO", impact: "↑ CTR" },
-              { title: "Optimalkan judul 'Talang Air'", tag: "Konten", impact: "↑ Trafik" },
-              { title: "Perbaiki 3 halaman dengan Core Web Vitals buruk", tag: "SEO", impact: "↑ UX" },
-              { title: "Tambahkan internal link ke halaman pilar", tag: "Konten", impact: "↑ Ranking" },
-              { title: "Perbaiki halaman dengan bounce rate tinggi", tag: "Analytics", impact: "↑ Engage" },
-            ].map((task, idx) => (
-              <div
-                key={idx}
-                onClick={() => toggleCheck(idx)}
-                className={`checklist-item cursor-pointer ${completedItems[idx] ? "opacity-50 line-through bg-slate-50" : ""}`}
-              >
-                <input type="checkbox" checked={!!completedItems[idx]} onChange={() => {}} className="rounded text-purple-600 focus:ring-purple-500" />
-                <div className="flex-1">
-                  <p className="font-semibold text-slate-800">{task.title}</p>
+          <div className="space-y-3">
+            {checklistItems.map((item, idx) => {
+              const isChecked = !!completedItems[idx];
+              return (
+                <div
+                  key={idx}
+                  onClick={() => toggleCheck(idx)}
+                  className={`flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
+                    isChecked
+                      ? "bg-slate-50 border-slate-200 opacity-60 line-through"
+                      : "bg-white border-slate-200/80 hover:border-indigo-300 hover:shadow-xs"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => {}}
+                    className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                  />
+                  <div className="flex-1 space-y-1">
+                    <p className="text-xs font-semibold text-slate-800 leading-snug">{item.task}</p>
+                    <div className="flex items-center gap-2 pt-0.5">
+                      <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] font-bold rounded">
+                        {item.category}
+                      </span>
+                      <span className="text-[10px] text-slate-400">↑ Dampak: {item.impact}</span>
+                    </div>
+                  </div>
                 </div>
-                <span className="px-2 py-0.5 bg-slate-100 text-slate-600 font-bold text-[10px] rounded">{task.tag}</span>
-                <span className="font-bold text-emerald-600 text-[10px]">{task.impact}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>

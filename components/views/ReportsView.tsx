@@ -1,202 +1,275 @@
 "use client";
 
-import React, { useState } from "react";
-import { FileSpreadsheet, Download, Share2, Plus, CheckCircle2 } from "lucide-react";
-import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip } from "recharts";
-
-const previewData = [
-  { name: "/pipa-hdpe", klik: 3245, tayang: 16200 },
-  { name: "/pipa-ppr", klik: 2180, tayang: 10850 },
-  { name: "/talang-air", klik: 1856, tayang: 8540 },
-  { name: "/pipa-pvc", klik: 1402, tayang: 6120 },
-];
+import React, { useState, useMemo } from "react";
+import { FileSpreadsheet, Download, Share2, Printer, CheckCircle2 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  Tooltip,
+} from "recharts";
+import { formatNumber, formatPercent, formatPosition, getCountryDisplay } from "@/lib/view-helpers";
 
 export function ReportsView({ data }: { data: any }) {
-  const [reportFormat, setReportFormat] = useState("Tabel");
+  const [dimension, setDimension] = useState<"pages" | "queries" | "devices" | "countries">("pages");
+  const [visualFormat, setVisualFormat] = useState<"table" | "bar" | "pie">("table");
+
+  const topPages = data?.topGscPages?.web || [];
+  const topQueries = data?.topQueries?.web || [];
+  const devices = data?.devices?.web || [];
+  const countries = data?.countries?.web || [];
+
+  const periodLabel = data?.selected?.period_label || "Periode Aktif";
+  const websiteName = data?.website?.name || "Website";
+
+  // Data for current selected dimension
+  const reportRows = useMemo(() => {
+    if (dimension === "pages") {
+      return topPages.slice(0, 10).map((p: any) => {
+        let label = p.page;
+        try { label = new URL(p.page).pathname || "/"; } catch {}
+        return { name: label, clicks: p.clicks || 0, impressions: p.impressions || 0, ctr: p.ctr || 0 };
+      });
+    }
+    if (dimension === "queries") {
+      return topQueries.slice(0, 10).map((q: any) => ({
+        name: q.query,
+        clicks: q.clicks || 0,
+        impressions: q.impressions || 0,
+        ctr: q.ctr || 0,
+        pos: q.averagePosition || 0,
+      }));
+    }
+    if (dimension === "devices") {
+      return devices.map((d: any) => ({
+        name: String(d.device),
+        clicks: d.clicks || 0,
+        impressions: d.impressions || 0,
+        ctr: d.ctr || 0,
+        pos: d.averagePosition || 0,
+      }));
+    }
+    if (dimension === "countries") {
+      return countries.slice(0, 10).map((c: any) => {
+        const info = getCountryDisplay(c.name);
+        return {
+          name: `${info.flag} ${info.name}`,
+          clicks: c.clicks || 0,
+          impressions: c.impressions || 0,
+          ctr: c.ctr || 0,
+          pos: c.averagePosition || 0,
+        };
+      });
+    }
+    return [];
+  }, [dimension, topPages, topQueries, devices, countries]);
+
+  const chartColors = ["#6366f1", "#3b82f6", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6", "#06b6d4"];
+
+  const handlePrint = () => {
+    window.print();
+  };
 
   return (
     <div className="space-y-6">
-      {/* Top 4 Saved Reports & Template Grid */}
+      {/* Top 4 Saved Reports Summary */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-2 hover:shadow-md transition-all">
-          <p className="text-xs font-extrabold text-slate-900">Laporan Tersimpan</p>
-          <div className="space-y-1.5 text-xs text-slate-600">
-            <p className="font-semibold text-slate-800">Performa Bulanan Website</p>
-            <p className="text-[10px] text-slate-400">Dibuat 28 Apr 2025 • Oleh Anda</p>
+          <p className="text-xs font-extrabold text-slate-900">Website Aktif</p>
+          <div className="space-y-1 text-xs text-slate-600">
+            <p className="font-bold text-slate-900 truncate">{websiteName}</p>
+            <p className="text-[10px] text-slate-400">{data?.website?.domain}</p>
           </div>
         </div>
 
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-2 hover:shadow-md transition-all">
-          <p className="text-xs font-extrabold text-slate-900">Jadwal Laporan</p>
+          <p className="text-xs font-extrabold text-slate-900">Periode Laporan</p>
           <div className="space-y-1 text-xs text-slate-600">
-            <p className="font-semibold text-slate-800">Laporan Mingguan (Senin 09:00)</p>
-            <p className="text-[10px] text-emerald-600 font-bold">Aktif Automasi Email</p>
+            <p className="font-bold text-slate-900">{periodLabel}</p>
+            <p className="text-[10px] text-emerald-600 font-bold">Sinkronisasi Otomatis Aktif</p>
           </div>
         </div>
 
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-2 hover:shadow-md transition-all">
-          <p className="text-xs font-extrabold text-slate-900">Template Laporan</p>
+          <p className="text-xs font-extrabold text-slate-900">Format Cetak / Ekspor</p>
           <div className="space-y-1 text-xs text-slate-600">
-            <p className="font-semibold text-slate-800">Ringkasan Kinerja Website</p>
-            <button className="text-[10px] font-bold text-indigo-600">Gunakan Template →</button>
+            <p className="font-semibold text-slate-800">Cetak PDF / Pratinjau Siap Pakai</p>
+            <button onClick={handlePrint} className="text-[10px] font-bold text-indigo-600 hover:underline">
+              Cetak Sekarang →
+            </button>
           </div>
         </div>
 
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-2 hover:shadow-md transition-all">
-          <p className="text-xs font-extrabold text-slate-900">Riwayat Ekspor</p>
+          <p className="text-xs font-extrabold text-slate-900">Status Database</p>
           <div className="space-y-1 text-xs text-slate-600">
-            <p className="font-semibold text-slate-800">Performa Bulanan (PDF)</p>
-            <p className="text-[10px] text-slate-400">30 Apr 2025 • 09:12</p>
+            <p className="font-semibold text-slate-800">Tersinkronisasi Penuh</p>
+            <p className="text-[10px] text-slate-400">Google Search & Analytics</p>
           </div>
         </div>
       </div>
 
-      {/* 5-Step Custom Report Builder Wizard Panel */}
+      {/* Custom Report Builder Wizard */}
       <div className="bg-white rounded-2xl p-6 border-2 border-indigo-100 shadow-sm space-y-6">
-        <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+        <div className="flex flex-wrap justify-between items-center gap-3 border-b border-slate-100 pb-4">
           <div>
-            <h3 className="font-extrabold text-slate-900 text-sm">Buat Laporan Khusus (Custom Report Builder)</h3>
-            <p className="text-xs text-slate-500">Bangun laporan sesuai kebutuhan Anda dalam 5 langkah mudah.</p>
+            <h3 className="font-extrabold text-slate-900 text-sm">Penyusun Laporan Interaktif (Custom Report Builder)</h3>
+            <p className="text-xs text-slate-500">Pilih dimensi dan format tampilan untuk melihat data riil secara instan.</p>
           </div>
-          <button className="px-4 py-2 bg-indigo-600 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-500/20 hover:bg-indigo-700 transition-colors">
-            Pratinjau Laporan
+          <button
+            onClick={handlePrint}
+            className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-500/20 hover:bg-indigo-700 transition-colors"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            <span>Cetak / Simpan PDF</span>
           </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Wizard Steps */}
+          {/* Controls */}
           <div className="space-y-5">
-            {/* Step 1 */}
+            {/* Step 1: Dimensi */}
             <div className="space-y-2">
               <p className="text-xs font-extrabold text-slate-900 flex items-center gap-2">
                 <span className="w-5 h-5 rounded-full bg-purple-600 text-white flex items-center justify-center text-[10px]">1</span>
-                Pilih Dimensi (Data Utama)
+                Pilih Dimensi Data
               </p>
               <div className="flex flex-wrap gap-2 text-xs">
-                <span className="px-3 py-1 bg-purple-100 text-purple-800 font-bold rounded-lg border border-purple-200">Halaman</span>
-                <span className="px-3 py-1 bg-slate-100 text-slate-700 font-medium rounded-lg">Perangkat</span>
-                <span className="px-3 py-1 bg-slate-100 text-slate-700 font-medium rounded-lg">Negara</span>
-                <button className="px-3 py-1 border border-dashed border-slate-300 text-slate-500 rounded-lg font-bold">+ Tambah Dimensi</button>
-              </div>
-            </div>
-
-            {/* Step 2 */}
-            <div className="space-y-2">
-              <p className="text-xs font-extrabold text-slate-900 flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-purple-600 text-white flex items-center justify-center text-[10px]">2</span>
-                Pilih Metrik (Data yang Diukur)
-              </p>
-              <div className="flex flex-wrap gap-2 text-xs">
-                <span className="px-3 py-1 bg-purple-100 text-purple-800 font-bold rounded-lg border border-purple-200">Klik</span>
-                <span className="px-3 py-1 bg-purple-100 text-purple-800 font-bold rounded-lg border border-purple-200">Tayang</span>
-                <span className="px-3 py-1 bg-purple-100 text-purple-800 font-bold rounded-lg border border-purple-200">CTR</span>
-                <span className="px-3 py-1 bg-slate-100 text-slate-700 font-medium rounded-lg">Posisi Rata-rata</span>
-              </div>
-            </div>
-
-            {/* Step 3 */}
-            <div className="space-y-2">
-              <p className="text-xs font-extrabold text-slate-900 flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-purple-600 text-white flex items-center justify-center text-[10px]">3</span>
-                Tambahkan Filter (Opsional)
-              </p>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <select className="bg-slate-50 border border-slate-200 rounded-xl p-2 font-medium">
-                  <option>Rentang: 1 Mei - 31 Mei 2025</option>
-                </select>
-                <select className="bg-slate-50 border border-slate-200 rounded-xl p-2 font-medium">
-                  <option>Negara: Semua</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Step 4 */}
-            <div className="space-y-2">
-              <p className="text-xs font-extrabold text-slate-900 flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-purple-600 text-white flex items-center justify-center text-[10px]">4</span>
-                Pilih Format Visual
-              </p>
-              <div className="flex gap-2 text-xs">
-                {["Tabel", "Line Chart", "Bar Chart", "Donut Chart"].map((fmt) => (
+                {[
+                  { id: "pages", label: "Halaman (Pages)" },
+                  { id: "queries", label: "Kata Kunci (Queries)" },
+                  { id: "devices", label: "Perangkat (Devices)" },
+                  { id: "countries", label: "Negara (Countries)" },
+                ].map((dim) => (
                   <button
-                    key={fmt}
-                    onClick={() => setReportFormat(fmt)}
-                    className={`px-3 py-1.5 rounded-xl font-bold border transition-colors ${
-                      reportFormat === fmt ? "bg-indigo-600 text-white border-indigo-600" : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                    key={dim.id}
+                    onClick={() => setDimension(dim.id as any)}
+                    className={`px-3 py-1.5 rounded-xl font-bold transition-all ${
+                      dimension === dim.id
+                        ? "bg-purple-600 text-white shadow-xs"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                     }`}
                   >
-                    {fmt}
+                    {dim.label}
                   </button>
                 ))}
               </div>
             </div>
+
+            {/* Step 2: Format Visual */}
+            <div className="space-y-2">
+              <p className="text-xs font-extrabold text-slate-900 flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-purple-600 text-white flex items-center justify-center text-[10px]">2</span>
+                Pilih Format Visual
+              </p>
+              <div className="flex flex-wrap gap-2 text-xs">
+                {[
+                  { id: "table", label: "Tabel Rinci" },
+                  { id: "bar", label: "Grafik Batang (Bar Chart)" },
+                  { id: "pie", label: "Grafik Donut (Pie)" },
+                ].map((fmt) => (
+                  <button
+                    key={fmt.id}
+                    onClick={() => setVisualFormat(fmt.id as any)}
+                    className={`px-3 py-1.5 rounded-xl font-bold transition-all ${
+                      visualFormat === fmt.id
+                        ? "bg-indigo-600 text-white shadow-xs"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    }`}
+                  >
+                    {fmt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-4 bg-slate-50 rounded-xl space-y-1 text-xs text-slate-600">
+              <p className="font-bold text-slate-800">Informasi Laporan:</p>
+              <p>Website: <strong>{websiteName}</strong></p>
+              <p>Periode: <strong>{periodLabel}</strong></p>
+              <p>Jumlah Entri Dimensi: <strong>{reportRows.length} baris</strong></p>
+            </div>
           </div>
 
-          {/* Report Live Interactive Recharts Preview */}
-          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3 flex flex-col justify-between">
-            <p className="text-xs font-extrabold text-slate-900">Ringkasan Laporan (Pratinjau Format: {reportFormat})</p>
+          {/* Live Preview Panel */}
+          <div className="bg-slate-50/70 p-5 rounded-2xl border border-slate-200/80 space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className="font-extrabold text-slate-900 text-xs">
+                Pratinjau Data Riil: {dimension.toUpperCase()}
+              </h4>
+              <span className="text-[10px] text-slate-400">Live preview</span>
+            </div>
 
-            {reportFormat === "Tabel" && (
-              <div className="overflow-x-auto bg-white rounded-lg border border-slate-200">
+            {visualFormat === "table" && (
+              <div className="overflow-x-auto max-h-72 custom-scrollbar bg-white rounded-xl border border-slate-200">
                 <table className="w-full text-xs text-left data-table">
-                  <thead>
+                  <thead className="sticky top-0 bg-slate-100">
                     <tr>
-                      <th>Halaman</th>
+                      <th>Nama / Label</th>
                       <th className="right">Klik</th>
-                      <th className="right">Tayang</th>
+                      <th className="right">Tayangan</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {previewData.map((row, i) => (
-                      <tr key={i}>
-                        <td className="font-mono text-slate-800">{row.name}</td>
-                        <td className="right font-bold text-slate-900">{row.klik}</td>
-                        <td className="right text-slate-600">{row.tayang}</td>
+                    {reportRows.length > 0 ? (
+                      reportRows.map((r: any, idx: number) => (
+                        <tr key={idx} className="hover:bg-slate-50">
+                          <td className="font-medium text-slate-800 max-w-xs truncate" title={r.name}>{r.name}</td>
+                          <td className="right font-bold text-slate-900">{formatNumber(r.clicks)}</td>
+                          <td className="right text-slate-600">{formatNumber(r.impressions)}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={3} className="text-center py-6 text-slate-400">Tidak ada data.</td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
             )}
 
-            {reportFormat === "Line Chart" && (
-              <div className="h-48 bg-white p-2 rounded-lg border border-slate-200">
+            {visualFormat === "bar" && (
+              <div className="h-64 bg-white p-3 rounded-xl border border-slate-200">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={previewData}>
-                    <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                    <YAxis tick={{ fontSize: 10 }} />
-                    <Tooltip />
-                    <Area type="monotone" dataKey="klik" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.3} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-
-            {reportFormat === "Bar Chart" && (
-              <div className="h-48 bg-white p-2 rounded-lg border border-slate-200">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={previewData}>
-                    <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                    <YAxis tick={{ fontSize: 10 }} />
-                    <Tooltip />
-                    <Bar dataKey="klik" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                  <BarChart data={reportRows.slice(0, 6)} layout="vertical" margin={{ top: 0, right: 10, left: 30, bottom: 0 }}>
+                    <XAxis type="number" hide />
+                    <YAxis dataKey="name" type="category" tick={{ fontSize: 10, fill: "#475569" }} axisLine={false} tickLine={false} />
+                    <Tooltip formatter={(val: any) => [`${formatNumber(val)} klik`, "Klik"]} />
+                    <Bar dataKey="clicks" radius={[0, 6, 6, 0]}>
+                      {reportRows.slice(0, 6).map((entry: any, index: number) => (
+                        <Cell key={`cell-${index}`} fill={chartColors[index % chartColors.length]} />
+                      ))}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             )}
 
-            {reportFormat === "Donut Chart" && (
-              <div className="h-48 bg-white p-2 rounded-lg border border-slate-200">
-                <ResponsiveContainer width="100%" height="100%">
+            {visualFormat === "pie" && (
+              <div className="h-64 bg-white p-3 rounded-xl border border-slate-200 flex flex-col items-center justify-center">
+                <ResponsiveContainer width="100%" height="80%">
                   <PieChart>
-                    <Pie data={previewData} dataKey="klik" cx="50%" cy="50%" innerRadius={30} outerRadius={50}>
-                      {previewData.map((_, i) => (
-                        <Cell key={i} fill={["#8b5cf6", "#6366f1", "#3b82f6", "#10b981"][i % 4]} />
+                    <Pie data={reportRows.slice(0, 5)} cx="50%" cy="50%" innerRadius={35} outerRadius={60} paddingAngle={4} dataKey="clicks">
+                      {reportRows.slice(0, 5).map((entry: any, index: number) => (
+                        <Cell key={`cell-${index}`} fill={chartColors[index % chartColors.length]} />
                       ))}
                     </Pie>
-                    <Tooltip />
+                    <Tooltip formatter={(val: any) => [`${formatNumber(val)} klik`, "Klik"]} />
                   </PieChart>
                 </ResponsiveContainer>
+                <div className="flex flex-wrap justify-center gap-2 text-[10px] font-bold text-slate-600">
+                  {reportRows.slice(0, 4).map((r: any, idx: number) => (
+                    <span key={idx} style={{ color: chartColors[idx % chartColors.length] }}>
+                      ● {r.name.length > 15 ? r.name.slice(0, 15) + "…" : r.name}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
           </div>
