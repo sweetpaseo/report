@@ -2,7 +2,7 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
-## 2026-09-26 — Versi 0.1.2: Penanda Versi di UI, Dynamic Rendering & Anti-Cache Cloudflare
+## 2026-09-26 — Versi 0.1.2: Penanda Versi di UI, Dynamic Rendering & Anti-Cache Cloudflare (commit `e287700`)
 - **Penanda Versi (Version Tag) di UI**:
   - Menampilkan lencana versi `v0.1.2` berpendar hijau di Sidebar Header (`AI Creative Studio`) dan badge versi di judul halaman (`Ringkasan v0.1.2`).
   - Menghubungkan nomor versi otomatis dari `package.json` (`0.1.2`).
