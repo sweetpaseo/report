@@ -2,7 +2,7 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
-## 2026-09-26 — Versi 0.1.8: Google PageSpeed & Core Web Vitals Audit, Database Cache, & Instant Date Range Presets (commit `pending`)
+## 2026-09-26 — Versi 0.1.8: Google PageSpeed & Core Web Vitals Audit, Database Cache, & Instant Date Range Presets (commit `baffbdb`)
 - **Audit Kecepatan & Core Web Vitals Google PageSpeed (`app/api/pagespeed/route.ts` & `components/views/CoreWebVitalsView.tsx`)**:
   - Integrasi API resmi Google PageSpeed Insights (PSI v5) langsung ke dalam dashboard tanpa ketergantungan tool pihak ketiga.
   - Skema tabel database `pagespeed_audits` di SQLite dengan mekanisme caching pintar (otomatis memakai cache jika usia audit < 24 jam kecuali tombol "Audit Ulang Sekarang" ditekan).
