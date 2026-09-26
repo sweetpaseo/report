@@ -35,6 +35,8 @@ import {
   formatPercent,
   formatPosition,
 } from "@/lib/view-helpers";
+import { HealthScoreCard } from "@/components/HealthScoreCard";
+import { InfoTooltip } from "@/components/InfoTooltip";
 
 export function OverviewView({
   data,
@@ -111,6 +113,9 @@ export function OverviewView({
 
   return (
     <div className="space-y-6">
+      {/* Executive Health Score Card */}
+      <HealthScoreCard data={data} isComparing={isComparing} />
+
       {/* Top 5 KPI Cards Grid with Sparklines */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         {/* KPI 1: Total Klik */}
@@ -119,7 +124,11 @@ export function OverviewView({
             <div className="w-8 h-8 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
               <MousePointer className="w-4 h-4" />
             </div>
-            <HelpCircle className="w-3.5 h-3.5 text-slate-300" />
+            <InfoTooltip
+              term="Total Klik (Google)"
+              explanation="Jumlah berapa kali pengunjung mengklik website Anda di hasil pencarian Google lalu masuk ke website Anda."
+              example="Makin banyak klik, makin banyak calon pelanggan yang datang."
+            />
           </div>
           <div>
             <p className="text-[11px] font-bold text-slate-400">Total Klik (Google)</p>
@@ -147,7 +156,11 @@ export function OverviewView({
             <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
               <Eye className="w-4 h-4" />
             </div>
-            <HelpCircle className="w-3.5 h-3.5 text-slate-300" />
+            <InfoTooltip
+              term="Total Tayang (Google)"
+              explanation="Berapa kali situs Anda terpampang di layar pengguna saat mereka mencari di Google."
+              example="Makin besar tayangan, makin luas jangkauan pengenalan merek Anda."
+            />
           </div>
           <div>
             <p className="text-[11px] font-bold text-slate-400">Total Tayang (Google)</p>
@@ -175,7 +188,11 @@ export function OverviewView({
             <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
               <Users className="w-4 h-4" />
             </div>
-            <HelpCircle className="w-3.5 h-3.5 text-slate-300" />
+            <InfoTooltip
+              term="Total Pengguna (Google Analytics)"
+              explanation="Jumlah individu unik yang mengunjungi website Anda dari seluruh saluran traffic (Google, medsos, langsung, dll)."
+              example="1 orang yang berkunjung 5 kali tetap dihitung sebagai 1 pengguna unik."
+            />
           </div>
           <div>
             <p className="text-[11px] font-bold text-slate-400">Total Pengguna (GA)</p>
@@ -203,7 +220,11 @@ export function OverviewView({
             <div className="w-8 h-8 rounded-xl bg-teal-50 flex items-center justify-center text-teal-600">
               <Clock className="w-4 h-4" />
             </div>
-            <HelpCircle className="w-3.5 h-3.5 text-slate-300" />
+            <InfoTooltip
+              term="Sesi Kunjungan (Google Analytics)"
+              explanation="Total sesi interaksi pengunjung di situs. Suatu sesi ditutup bila pengunjung tidak aktif selama 30 menit."
+              example="Jika 1 pengunjung datang di pagi hari lalu berkunjung lagi di malam hari, dihitung 2 sesi."
+            />
           </div>
           <div>
             <p className="text-[11px] font-bold text-slate-400">Sesi (GA)</p>
@@ -231,7 +252,11 @@ export function OverviewView({
             <div className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
               <TrendingUp className="w-4 h-4" />
             </div>
-            <HelpCircle className="w-3.5 h-3.5 text-slate-300" />
+            <InfoTooltip
+              term="Rasio Konversi Interaksi"
+              explanation="Persentase pengunjung yang melakukan tindakan penting bernilai bisnis (misal klik WhatsApp atau kontak)."
+              example="Rasio 3% artinya dari 100 pengunjung, ada 3 calon pembeli yang menghubungi Anda."
+            />
           </div>
           <div>
             <p className="text-[11px] font-bold text-slate-400">Rasio Konversi (GA)</p>

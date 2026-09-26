@@ -30,7 +30,10 @@ import {
   formatPercent,
   formatPosition,
   getCountryDisplay,
+  exportTableToCsv,
 } from "@/lib/view-helpers";
+import { TablePagination } from "@/components/TablePagination";
+import { InfoTooltip } from "@/components/InfoTooltip";
 
 export function SearchPerformanceView({
   data,
@@ -51,6 +54,10 @@ export function SearchPerformanceView({
   const [searchQuery, setSearchQuery] = useState("");
   const [deviceFilter, setDeviceFilter] = useState("all");
   const [positionFilter, setPositionFilter] = useState("all");
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const rawQueries = data?.topQueries?.web || [];
   const gscDaily = data?.trends?.gscWeb || [];
@@ -73,6 +80,33 @@ export function SearchPerformanceView({
       return true;
     });
   }, [rawQueries, searchQuery, positionFilter]);
+
+  // Paged queries for display
+  const pagedQueries = useMemo(() => {
+    if (pageSize === 0) return filteredQueries;
+    const start = (currentPage - 1) * pageSize;
+    return filteredQueries.slice(start, start + pageSize);
+  }, [filteredQueries, currentPage, pageSize]);
+
+  const handleExportCsv = () => {
+    const headers = [
+      "Kata Kunci (Query)",
+      `Klik (${periodLabel})`,
+      ...(isComparing && prevPeriodLabel ? [`Klik (${prevPeriodLabel})`, "Selisih"] : []),
+      "Tayang",
+      "CTR (%)",
+      "Posisi Rata-rata",
+    ];
+    const rows = filteredQueries.map((row: any) => [
+      row.query,
+      row.clicks || 0,
+      ...(isComparing && prevPeriodLabel ? [row.previousClicks || 0, row.clicksDiff || 0] : []),
+      row.impressions || 0,
+      (row.ctr * 100).toFixed(2),
+      (row.averagePosition || 0).toFixed(1),
+    ]);
+    exportTableToCsv(`analisis-query-${periodLabel.replace(/\s+/g, "_")}`, headers, rows);
+  };
 
   // Position Movement / Tier Distribution Donut
   const positionDistribution = useMemo(() => {
@@ -123,7 +157,10 @@ export function SearchPerformanceView({
               type="text"
               placeholder="Cari kata kunci..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
               className="text-xs bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-slate-800 placeholder-slate-400 outline-none focus:border-indigo-400 transition-colors w-44 md:w-56"
             />
           </div>
@@ -131,7 +168,10 @@ export function SearchPerformanceView({
           {/* Position tier filter */}
           <select
             value={positionFilter}
-            onChange={(e) => setPositionFilter(e.target.value)}
+            onChange={(e) => {
+              setPositionFilter(e.target.value);
+              setCurrentPage(1);
+            }}
             className="text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-slate-700 outline-none cursor-pointer"
           >
             <option value="all">Semua Peringkat</option>
@@ -151,7 +191,14 @@ export function SearchPerformanceView({
         {/* KPI 1: Klik */}
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-3 hover:shadow-md transition-all">
           <div>
-            <p className="text-[11px] font-bold text-slate-400">Total Klik</p>
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-bold text-slate-400">Total Klik</p>
+              <InfoTooltip
+                term="Total Klik Organik"
+                explanation="Berapa kali pengguna Google mengklik tautan website Anda dari hasil penelusuran gratis (bukan iklan)."
+                example="Makin tinggi klik, makin banyak pengunjung potensial yang datang."
+              />
+            </div>
             <div className="flex items-baseline gap-2 mt-0.5">
               <span className="text-2xl font-extrabold text-slate-900 tabular-nums">
                 {formatNumber(clicks.current)}
@@ -173,7 +220,14 @@ export function SearchPerformanceView({
         {/* KPI 2: Tayang */}
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-3 hover:shadow-md transition-all">
           <div>
-            <p className="text-[11px] font-bold text-slate-400">Total Tayang</p>
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-bold text-slate-400">Total Tayang</p>
+              <InfoTooltip
+                term="Total Tayang (Impresi)"
+                explanation="Berapa kali website Anda muncul di layar pengguna saat mereka mencari sesuatu di Google."
+                example="1.000 tayang artinya situs Anda sudah dilihat 1.000 kali di hasil pencarian."
+              />
+            </div>
             <div className="flex items-baseline gap-2 mt-0.5">
               <span className="text-2xl font-extrabold text-slate-900 tabular-nums">
                 {formatCompactNumber(impressions.current)}
@@ -195,7 +249,14 @@ export function SearchPerformanceView({
         {/* KPI 3: CTR */}
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-3 hover:shadow-md transition-all">
           <div>
-            <p className="text-[11px] font-bold text-slate-400">CTR (Rasio Klik-Tayang)</p>
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-bold text-slate-400">CTR (Rasio Klik-Tayang)</p>
+              <InfoTooltip
+                term="CTR (Click-Through Rate)"
+                explanation="Persentase pengguna yang memutuskan mengklik website Anda setelah melihatnya di Google (Klik ÷ Tayang × 100%)."
+                example="Jika tayang 100 kali dan diklik 5 kali, maka CTR adalah 5%."
+              />
+            </div>
             <div className="flex items-baseline gap-2 mt-0.5">
               <span className="text-2xl font-extrabold text-slate-900 tabular-nums">
                 {formatPercent((ctr.current || 0) * 100, 2)}
@@ -217,7 +278,14 @@ export function SearchPerformanceView({
         {/* KPI 4: Posisi Rata-rata */}
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-3 hover:shadow-md transition-all">
           <div>
-            <p className="text-[11px] font-bold text-slate-400">Posisi Rata-rata</p>
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-bold text-slate-400">Posisi Rata-rata</p>
+              <InfoTooltip
+                term="Posisi Rata-rata di Google"
+                explanation="Peringkat rata-rata kemunculan situs Anda di Google. Posisi 1–10 berada di Halaman Pertama Google."
+                example="Posisi makin kecil angkanya makin bagus (Posisi 1 adalah peringkat teratas)."
+              />
+            </div>
             <div className="flex items-baseline gap-2 mt-0.5">
               <span className="text-2xl font-extrabold text-slate-900 tabular-nums">
                 {formatPosition(avgPos.current)}
@@ -316,9 +384,9 @@ export function SearchPerformanceView({
             <span className="text-[11px] text-slate-400">Urut berdasarkan tayang terbanyak</span>
           </div>
 
-          <div className="overflow-x-auto max-h-96 custom-scrollbar">
+          <div className="overflow-x-auto max-h-[480px] custom-scrollbar">
             <table className="w-full text-xs text-left data-table">
-              <thead className="sticky top-0 bg-white">
+              <thead className="sticky top-0 bg-white shadow-xs">
                 <tr>
                   <th>Query</th>
                   <th className="right">Klik ({periodLabel})</th>
@@ -328,14 +396,38 @@ export function SearchPerformanceView({
                       <th className="center">Selisih</th>
                     </>
                   )}
-                  <th className="right">Tayang</th>
-                  <th className="right">CTR</th>
-                  <th className="center">Posisi</th>
+                  <th className="right">
+                    <div className="inline-flex items-center justify-end gap-1">
+                      <span>Tayang</span>
+                      <InfoTooltip
+                        term="Tayangan Query"
+                        explanation="Berapa kali kata kunci ini menampilkan tautan situs Anda saat dicari oleh pengguna Google."
+                      />
+                    </div>
+                  </th>
+                  <th className="right">
+                    <div className="inline-flex items-center justify-end gap-1">
+                      <span>CTR</span>
+                      <InfoTooltip
+                        term="CTR Query"
+                        explanation="Rasio klik dibanding tayangan khusus untuk kata kunci ini."
+                      />
+                    </div>
+                  </th>
+                  <th className="center">
+                    <div className="inline-flex items-center justify-center gap-1">
+                      <span>Posisi</span>
+                      <InfoTooltip
+                        term="Peringkat Rata-rata"
+                        explanation="Urutan rata-rata halaman Anda muncul di Google saat kata kunci ini diketikkan orang."
+                      />
+                    </div>
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {filteredQueries.length > 0 ? (
-                  filteredQueries.map((row: any, idx: number) => {
+                {pagedQueries.length > 0 ? (
+                  pagedQueries.map((row: any, idx: number) => {
                     const pos = row.averagePosition || 0;
                     const posBadgeClass =
                       pos <= 3
@@ -382,6 +474,19 @@ export function SearchPerformanceView({
               </tbody>
             </table>
           </div>
+
+          {/* Table Pagination with CSV Download */}
+          <TablePagination
+            totalItems={filteredQueries.length}
+            currentPage={currentPage}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(newSize) => {
+              setPageSize(newSize);
+              setCurrentPage(1);
+            }}
+            onExportCsv={handleExportCsv}
+          />
         </div>
       </div>
     </div>

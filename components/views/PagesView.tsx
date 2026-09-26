@@ -7,7 +7,11 @@ import {
   formatCompactNumber,
   formatPercent,
   formatPosition,
+  exportTableToCsv,
 } from "@/lib/view-helpers";
+import { PageDetailModal } from "@/components/PageDetailModal";
+import { TablePagination } from "@/components/TablePagination";
+import { InfoTooltip } from "@/components/InfoTooltip";
 
 export function PagesView({
   data,
@@ -17,10 +21,16 @@ export function PagesView({
   isComparing?: boolean;
 }) {
   const rawPages = data?.topGscPages?.web || [];
+  const allQueries = data?.topQueries?.web || [];
   const periodLabel = data?.selected?.period_label || "Periode Terpilih";
   const prevPeriodLabel = (data?.comparePeriod || data?.previous)?.period_label;
   const [searchPage, setSearchPage] = useState("");
   const [selectedPageIndex, setSelectedPageIndex] = useState(0);
+
+  // Modal and pagination states
+  const [selectedModalPage, setSelectedModalPage] = useState<any | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const filteredPages = useMemo(() => {
     return rawPages.filter((p: any) => {
@@ -29,7 +39,32 @@ export function PagesView({
     });
   }, [rawPages, searchPage]);
 
+  // Paged pages for display
+  const pagedPages = useMemo(() => {
+    if (pageSize === 0) return filteredPages;
+    const start = (currentPage - 1) * pageSize;
+    return filteredPages.slice(start, start + pageSize);
+  }, [filteredPages, currentPage, pageSize]);
+
   const activePage = filteredPages[selectedPageIndex] || filteredPages[0] || rawPages[0] || null;
+
+  const handleExportCsv = () => {
+    const headers = [
+      "URL Halaman",
+      `Klik (${periodLabel})`,
+      ...(isComparing && prevPeriodLabel ? [`Klik (${prevPeriodLabel})`, "Selisih"] : []),
+      "Tayang",
+      "CTR (%)",
+    ];
+    const rows = filteredPages.map((row: any) => [
+      row.page,
+      row.clicks || 0,
+      ...(isComparing && prevPeriodLabel ? [row.previousClicks || 0, row.clicksDiff || 0] : []),
+      row.impressions || 0,
+      (row.ctr * 100).toFixed(2),
+    ]);
+    exportTableToCsv(`analisis-halaman-${periodLabel.replace(/\s+/g, "_")}`, headers, rows);
+  };
 
   // KPI Calculations
   const totalPages = rawPages.length;
@@ -98,9 +133,9 @@ export function PagesView({
           </div>
         </div>
 
-        <div className="overflow-x-auto max-h-96 custom-scrollbar">
+        <div className="overflow-x-auto max-h-[480px] custom-scrollbar">
           <table className="w-full text-xs text-left data-table">
-            <thead className="sticky top-0 bg-white">
+            <thead className="sticky top-0 bg-white shadow-xs">
               <tr>
                 <th>URL Halaman</th>
                 <th className="right">Klik ({periodLabel})</th>
@@ -110,13 +145,31 @@ export function PagesView({
                     <th className="center">Selisih</th>
                   </>
                 )}
-                <th className="right">Tayang</th>
-                <th className="right">CTR</th>
+                <th className="right">
+                  <div className="inline-flex items-center justify-end gap-1">
+                    <span>Tayang</span>
+                    <InfoTooltip
+                      term="Tayangan Halaman"
+                      explanation="Berapa kali URL halaman ini muncul di hasil pencarian Google bagi para pencari."
+                    />
+                  </div>
+                </th>
+                <th className="right">
+                  <div className="inline-flex items-center justify-end gap-1">
+                    <span>CTR</span>
+                    <InfoTooltip
+                      term="CTR (Click-Through Rate)"
+                      explanation="Persentase pencari yang melihat halaman Anda lalu mengkliknya (Klik dibagi Tayang)."
+                      example="CTR 5% artinya dari 100 penayangan, ada 5 orang yang masuk ke website."
+                    />
+                  </div>
+                </th>
+                <th className="center w-28">Aksi</th>
               </tr>
             </thead>
             <tbody>
-              {filteredPages.length > 0 ? (
-                filteredPages.map((row: any, idx: number) => {
+              {pagedPages.length > 0 ? (
+                pagedPages.map((row: any, idx: number) => {
                   let path = row.page;
                   try {
                     const u = new URL(row.page);
@@ -133,7 +186,7 @@ export function PagesView({
                         isSelected ? "bg-indigo-50/70 font-semibold" : "hover:bg-slate-50"
                       }`}
                     >
-                      <td className="font-mono text-slate-800 max-w-md truncate" title={row.page}>
+                      <td className="font-mono text-slate-800 max-w-xs md:max-w-md truncate" title={row.page}>
                         {path}
                       </td>
                       <td className="right font-bold text-slate-900">{formatNumber(row.clicks)}</td>
@@ -153,12 +206,22 @@ export function PagesView({
                       )}
                       <td className="right text-slate-600">{formatNumber(row.impressions)}</td>
                       <td className="right font-medium text-slate-700">{formatPercent(row.ctr * 100)}</td>
+                      <td className="text-center" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedModalPage(row)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors shadow-xs"
+                          title="Buka analisis lengkap, diagnosis SEO, dan kata kunci halaman ini"
+                        >
+                          <span>🔍 Detail</span>
+                        </button>
+                      </td>
                     </tr>
                   );
                 })
               ) : (
                 <tr>
-                  <td colSpan={isComparing && prevPeriodLabel ? 6 : 4} className="text-center py-8 text-slate-400">
+                  <td colSpan={isComparing && prevPeriodLabel ? 7 : 5} className="text-center py-8 text-slate-400">
                     Tidak ada halaman yang cocok dengan pencarian.
                   </td>
                 </tr>
@@ -166,6 +229,19 @@ export function PagesView({
             </tbody>
           </table>
         </div>
+
+        {/* Table Pagination with CSV Download */}
+        <TablePagination
+          totalItems={filteredPages.length}
+          currentPage={currentPage}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(newSize) => {
+            setPageSize(newSize);
+            setCurrentPage(1);
+          }}
+          onExportCsv={handleExportCsv}
+        />
       </div>
 
       {/* Spotlight Detail Card */}
@@ -173,18 +249,27 @@ export function PagesView({
         <div className="page-spotlight-card space-y-4 border-2 border-indigo-100 bg-white rounded-2xl p-6 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
             <div>
-              <p className="text-[11px] font-bold text-indigo-600 uppercase tracking-wider">Detail Halaman Terpilih</p>
+              <p className="text-[11px] font-bold text-indigo-600 uppercase tracking-wider">Sorotan Halaman Terpilih</p>
               <h4 className="text-base font-extrabold text-slate-900 break-all">{activePage.page}</h4>
             </div>
-            <a
-              href={activePage.page}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 text-xs font-bold hover:bg-indigo-100 transition-colors shadow-xs"
-            >
-              <span>Buka Halaman</span>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </a>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedModalPage(activePage)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition-colors shadow-xs"
+              >
+                <span>🔍 Analisis Lengkap & Rekomendasi</span>
+              </button>
+              <a
+                href={activePage.page}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 text-xs font-bold hover:bg-indigo-100 transition-colors shadow-xs"
+              >
+                <span>Buka URL</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-2">
@@ -202,6 +287,19 @@ export function PagesView({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Page Detail Drill-Down Modal */}
+      {selectedModalPage && (
+        <PageDetailModal
+          page={selectedModalPage}
+          allQueries={allQueries}
+          devices={data?.devices?.web || []}
+          periodLabel={periodLabel}
+          prevPeriodLabel={prevPeriodLabel}
+          isComparing={isComparing}
+          onClose={() => setSelectedModalPage(null)}
+        />
       )}
     </div>
   );

@@ -208,7 +208,7 @@ function _getDashboard(db: DatabaseSync, websiteId: string, requestedPeriodId?: 
   const getTopQueries = (searchType: string, periodId: string) => db.prepare(`
     SELECT query, clicks, impressions, ctr, average_position AS averagePosition
     FROM gsc_queries WHERE website_id = ? AND report_period_id = ? AND search_type = ?
-    ORDER BY impressions DESC LIMIT 50
+    ORDER BY impressions DESC LIMIT 300
   `).all(websiteId, periodId, searchType) as QueryRow[];
 
   const rawTopQueriesWeb = getTopQueries("web", queryPeriodId);

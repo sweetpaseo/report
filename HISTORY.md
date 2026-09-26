@@ -2,6 +2,31 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-09-26 — Versi 0.1.6: Page Drill-Down Modal, Table Pagination, CSV Export, Layperson Tooltips, & Executive Health Score (commit `54b854b`)
+- **Page Drill-Down Modal (`components/PageDetailModal.tsx`)**:
+  - Modal interaktif inspeksi URL mendalam yang terbuka saat mengklik tombol "🔍 Detail" di tabel halaman atau tombol "🔍 Analisis Lengkap & Rekomendasi" di kartu sorotan halaman.
+  - Menampilkan:
+    - Path & status URL dengan tombol copy & link buka halaman langsung.
+    - 4 kartu metrik utama (Klik Organik, Tayangan di Google, Rasio Klik/CTR, Estimasi Traffic Pengguna).
+    - Kotak diagnosis kesehatan SEO terotomatisasi (Sehat & Berkembang, Peluang CTR Tinggi, Peluang Peringkat/Halaman 2, atau Belum Berkinerja).
+    - Tabel kueri pencarian pencocokan otomatis (kata kunci spesifik yang mendatangkan pengunjung ke halaman tersebut).
+    - Panduan rekomendasi aksi langkah konkret bagi pemilik bisnis/webmaster.
+- **Paginasi Tabel Interaktif & Ekspor CSV (`components/TablePagination.tsx` & `lib/view-helpers.ts`)**:
+  - Komponen paginasi universal yang mendukung pemilih jumlah baris (10, 25, 50, 100, atau Semua) dan navigasi Sebelumnya/Selanjutnya dengan indikator posisi data ("Menampilkan 1–10 dari 85 data").
+  - Fitur unduh CSV langsung dari peramban (`exportTableToCsv`) dengan UTF-8 BOM (`\uFEFF`) agar karakter Indonesia dan format angka terbuka rapi tanpa kerusakan encoding di Microsoft Excel Windows.
+  - Diimplementasikan pada tabel performa halaman (`PagesView`) dan tabel kueri pencarian (`SearchPerformanceView`).
+  - Meningkatkan batasan kueri database pada `lib/dashboard.ts` dari 50 menjadi 300 agar paginasi memiliki data mendalam untuk dijelajahi.
+- **Glosarium / Tooltip Ramah Pengguna Awam (`components/InfoTooltip.tsx`)**:
+  - Popover penjelasan istilah teknis yang interaktif dengan ikon tanda tanya halus dan bahasa bisnis yang bersahabat (dilengkapi contoh praktis sehari-hari).
+  - Dipasang pada metrik-metrik teknis utama di `OverviewView`, `PagesView`, dan `SearchPerformanceView`:
+    - Total Klik, Total Tayang (Impresi), CTR (Click-Through Rate), Posisi Rata-rata, Total Pengguna GA4, Sesi Kunjungan, dan Rasio Konversi.
+- **Executive Health Score Card (`components/HealthScoreCard.tsx`)**:
+  - Kartu skor kesehatan website komposit (skala 1–100) yang diletakkan di bagian paling atas `OverviewView`.
+  - Dilengkapi visualisasi cincin skor SVG melingkar dengan kode warna dinamis (Hijau prima, Oranye stabil, Merah perhatian).
+  - Dilengkapi 3 poin kesimpulan eksekutif berbahasa bisnis non-teknis mengenai efisiensi konversi, daya tarik konten, dan dominasi peringkat kata kunci.
+- **Verifikasi & Versi**:
+  - Versi dinaikkan ke `0.1.6`.
+
 ## 2026-09-26 — Versi 0.1.5: Fitur Bandingkan Antar Periode Bebas (Dual-Curve & Comparative Tables) (commit `ff93b5b`)
 - **Fitur Bandingkan Antar Periode Bebas (Setara Google Search Console & GA4)**:
   - **Backend (`lib/dashboard.ts`, `app/api/dashboard/route.ts`, `app/api/public/report/[token]/route.ts`)**:

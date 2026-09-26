@@ -96,3 +96,32 @@ export function getCountryDisplay(rawCode: string): { name: string; flag: string
   if (COUNTRY_FLAGS[lower]) return COUNTRY_FLAGS[lower];
   return { name: rawCode, flag: "🌐" };
 }
+
+export function exportTableToCsv(
+  filename: string,
+  headers: string[],
+  rows: (string | number | null | undefined)[][]
+): void {
+  if (typeof window === "undefined") return;
+
+  const escapeCell = (cell: string | number | null | undefined): string => {
+    if (cell === null || cell === undefined) return '""';
+    const str = String(cell);
+    return `"${str.replace(/"/g, '""')}"`;
+  };
+
+  const headerLine = headers.map(escapeCell).join(",");
+  const dataLines = rows.map((r) => r.map(escapeCell).join(",")).join("\r\n");
+  const csvContent = "\uFEFF" + headerLine + "\r\n" + dataLines;
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", filename.endsWith(".csv") ? filename : `${filename}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
