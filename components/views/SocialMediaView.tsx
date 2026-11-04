@@ -104,7 +104,7 @@ export function SocialMediaView({ website }: SocialMediaViewProps) {
         setIdeas(ideasRes.ideas || []);
       }
     } catch {
-      setError("Gagal menghubungi server Tebar.app. Periksa koneksi atau konfigurasi API.");
+      setError("Gagal menghubungi server social media. Periksa koneksi atau konfigurasi API.");
     } finally {
       setLoading(false);
     }
@@ -217,13 +217,12 @@ export function SocialMediaView({ website }: SocialMediaViewProps) {
             Pusat Optimasi Media Sosial Klien
           </h2>
           <p className="text-slate-300 text-xs mt-1 max-w-2xl">
-            Kelola perencanaan konten, jadwal publikasi multi-platform, dan pantau analitik media sosial langsung
-            terhubung dengan sistem Tebar.app.
+            Kelola perencanaan konten, jadwal publikasi multi-platform, dan pantau analitik media sosial dari satu tempat.
           </p>
           {tebarUser && (
             <div className="mt-3 flex items-center gap-2 text-[11px] text-emerald-400 bg-emerald-950/60 border border-emerald-800/40 px-2.5 py-1 rounded-full w-fit">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Tebar Terhubung: <strong className="text-white">{tebarUser.name}</strong> ({tebarUser.email})
+              Kanal Media Sosial: <strong className="text-white">Terhubung &amp; Aktif</strong>
             </div>
           )}
         </div>
@@ -481,7 +480,7 @@ export function SocialMediaView({ website }: SocialMediaViewProps) {
             <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm">
               <p className="text-[11px] text-slate-500 font-medium">Status Integrasi</p>
               <h4 className="text-2xl font-black text-emerald-600 mt-1">Normal</h4>
-              <p className="text-[10px] text-slate-400 mt-1">Tebar REST &amp; MCP Active</p>
+              <p className="text-[10px] text-slate-400 mt-1">Multi-Platform Cloud Sync Active</p>
             </div>
           </div>
 
@@ -491,7 +490,7 @@ export function SocialMediaView({ website }: SocialMediaViewProps) {
               <h4 className="font-extrabold text-slate-900 text-sm">Rekomendasi Waktu Terbaik untuk Posting (Best Time to Post)</h4>
             </div>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Tebar.app secara otomatis menganalisa waktu interaksi audiens tertinggi per platform agar jangkauan (*reach*) dan *engagement* konten klien maksimal. Begitu akun media sosial klien aktif memposting, rekomendasi jam tayang optimal per hari akan muncul di sini.
+              Sistem secara otomatis menganalisa waktu interaksi audiens tertinggi per platform agar jangkauan (*reach*) dan *engagement* konten klien maksimal. Begitu akun media sosial klien aktif memposting, rekomendasi jam tayang optimal per hari akan muncul di sini.
             </p>
           </div>
         </div>
@@ -542,7 +541,7 @@ export function SocialMediaView({ website }: SocialMediaViewProps) {
 
             <div className="text-[11px] text-slate-400 flex items-start gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-              <span>Tautan ini aman &bull; Klien tidak perlu login ke akun Tebar Anda, dan Anda tidak perlu meminta password akun medsos klien.</span>
+              <span>Tautan ini aman &bull; Klien menghubungkan akun dari perangkat mereka sendiri tanpa perlu membagikan password kepada staff.</span>
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-2">

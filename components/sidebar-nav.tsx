@@ -204,15 +204,6 @@ export function SidebarNav({ activeTab, onSelectTab, issuesCount = 42 }: Sidebar
                 <span className="truncate block font-extrabold text-xs">Social Media Hub</span>
               </div>
             </div>
-            <span
-              className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-                activeTab === "social_media"
-                  ? "bg-white/25 text-white"
-                  : "bg-emerald-50 text-emerald-700 border border-emerald-200"
-              }`}
-            >
-              Tebar
-            </span>
           </button>
         </div>
       </nav>

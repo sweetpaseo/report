@@ -2,6 +2,16 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit 363386f)`.
 
+## 2026-11-04 — White-labeling Social Media Hub & Penghapusan Identitas Brand Pihak Ketiga (commit <hash>)
+- **Penyempurnaan Tampilan & White-labeling Penuh**:
+  - Menghapus badge label 'TEBAR' pada tombol menu utama Social Media Hub di sidebar (components/sidebar-nav.tsx).
+  - Mengubah seluruh teks dan label yang menyebut nama platform pihak ketiga di components/views/SocialMediaView.tsx menjadi istilah profesional internal (Kanal Media Sosial Terhubung & Aktif, Multi-Platform Cloud Sync Active).
+  - Memastikan tampilan antarmuka 100% white-label dan konsisten dengan identitas aplikasi.
+- **File Terdampak**:
+  - components/sidebar-nav.tsx
+  - components/views/SocialMediaView.tsx
+  - HISTORY.md
+
 ## 2026-11-04 — Restrukturisasi Navigasi Sidebar: 2 Menu Utama (Website Hub & Social Media Hub) (commit 62a85f2)
 - **Penyatuan dan Hirarki 2 Menu Utama Sidebar (components/sidebar-nav.tsx)**:
   - Memasukkan seluruh 14 menu pelaporan website sebelumnya (Ringkasan, Search Performance, Analytics Performance, Pages, Queries, Devices, Countries, Traffic Channels, Events & Conversions, Kecepatan & Vitals, AI Insight, Rekomendasi, Notifikasi & Isu, Laporan) ke dalam menu induk 'Website Hub' di urutan pertama.
