@@ -2,6 +2,22 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
 
+## 2026-11-04 — Integrasi Dasar Tebar.app API Client & Verification (commit <hash>)
+- **Implementasi Service Client Tebar.app**:
+  - Menambahkan modul lib/tebar.ts lengkap dengan TypeScript type definitions untuk interaksi API Tebar v1 (getTebarMe, getTebarProfiles, getTebarAccounts, createTebarConnectLink, getTebarPosts, createTebarPost, getTebarIdeas, createTebarIdea, getTebarAccountInsights, getTebarBestTimes).
+  - Menambahkan variabel konfigurasi TEBAR_API_KEY ke .env.example dan .env.
+  - Membuat skrip verifikasi otomatis scripts/test-tebar.ts.
+- **Hasil Pengujian**:
+  - Berhasil terhubung ke akun Tebar live (Spectra Erihome, mode developer, scopes: read & write).
+  - Berhasil mendeteksi profil default dan menghasilkan client connect link secara dinamis.
+  - Typecheck TypeScript tsc --noEmit bersih tanpa error.
+- **File Terdampak**:
+  - .env.example
+  - lib/tebar.ts
+  - scripts/test-tebar.ts
+  - package-lock.json
+  - HISTORY.md
+
 ## 2026-09-26 — Versi 0.1.9: Default Descending Sorting (Highest to Zero/Lowest) & Interactive Multi-Column Sort (commit `c04525f`)
 - **Penetapan Pengurutan Default Angka Terbesar ke Nol (Descending) di Seluruh Tabel & Kartu**:
   - Menyempurnakan logika pengurutan data agar konsisten menampilkan angka performa terbanyak menuju ke paling kecil/nol:
