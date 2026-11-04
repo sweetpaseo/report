@@ -5,16 +5,16 @@ Dokumen ini adalah ringkasan status teknis, arsitektur, fitur aktif, dan riwayat
 ---
 
 ## 📌 Status Terkini Proyek
-- **Versi Aplikasi**: `v0.1.9`
-- **Tanggal Pembaruan Terakhir**: 26 September 2026
-- **Status Server Produksi**: **ONLINE & LIVE** (`HTTP 200 OK`)
-- **URL Publik**: [https://report.erihome.id](https://report.erihome.id)
+- **Versi Aplikasi**: `v0.2.0`
+- **Tanggal Pembaruan Terakhir**: 4 November 2026
+- **Status Server Lokal**: **ONLINE & READY** (`http://localhost:3000`)
+- **Status Server Produksi**: **ONLINE & LIVE** (`https://report.erihome.id`)
 - **Git Branch**: `main` (Up to date dengan `origin/main`)
-- **Commit Terakhir**: `c04525f` (*fix(sort): enforce default descending sort by primary metrics and add interactive multi-column sorting*)
+- **Fitur Utama Terkini**: **Social Media Hub (Tebar.app)**, **Restrukturisasi 2 Menu Utama Sidebar**, & **Manajemen Akses Staff per Klien**.
 
 ---
 
-## 🏗️ Arsitektur & Lingkungan Server
+## 🏗️ Arsitektur & Lingkungan Sistem
 
 | Parameter | Spesifikasi |
 | :--- | :--- |
@@ -23,98 +23,48 @@ Dokumen ini adalah ringkasan status teknis, arsitektur, fitur aktif, dan riwayat
 | **Web Server / Reverse Proxy** | Apache HTTPD (`.htaccess` Passenger / Reverse proxy to port 3000) |
 | **Service Manager** | Systemd (`report-app.service`) |
 | **Runtime Framework** | Next.js 16.2.10 (Turbopack, Standalone Node.js server) |
-| **Engine Database** | Node.js native `sqlite` (WAL Mode aktif, file `website_health.db`) |
-| **Direktori Aplikasi** | `/home/erihome-report/htdocs/report.erihome.id` |
+| **Engine Database** | Node.js native `sqlite` (WAL Mode aktif, file `website-health.db`) |
+| **Layanan Integrasi Eksternal** | Google Search Console API, Google Analytics 4 API, PageSpeed Insights API, Tebar.app API & MCP Server |
+| **Keamanan Autentikasi** | Enkripsi JWT HS256 (`whr_session`), Password hashing `scrypt` + `timingSafeEqual` |
 
 ---
 
-## 🚀 Fitur Unggulan Aktif (v0.1.9)
+## 🚀 Fitur Unggulan Aktif (v0.2.0)
 
-### 1. Urutan Default Terbanyak ke Terkecil/Nol (Default Descending Sort) & Multi-Kolom Interaktif
-- **File**: `lib/dashboard.ts`, `components/views/SearchPerformanceView.tsx`, `components/views/PagesView.tsx`, `components/views/QueriesView.tsx`, `components/views/OverviewView.tsx`
-- **Peningkatan**:
-  - Semua tabel (Kueri Organik, Halaman Organik, Top 5 Queries, Top 5 Pages) dipastikan menampilkan data dengan metrik terbesar (Klik terbanyak, misal: 8, 7, ..., lalu 0 dengan impresi terbesar) secara default.
-  - Setiap header kolom tabel pada menu *Search Performance* dan *Pages* kini interaktif: bisa diklik untuk mengubah urutan (Ascending/Descending) lengkap dengan panah indikator `▲`/`▼`/`↕`.
-  - Subtitle tabel secara otomatis menampilkan metrik dan arah pengurutan yang sedang aktif.
+### 1. Navigasi 2 Menu Utama Sidebar (Website Hub & Social Media Hub)
+- **Komponen**: `components/sidebar-nav.tsx` & `components/dashboard-app.tsx`
+- **Struktur**:
+  1. **Website Hub** (Urutan Pertama): Menu induk *collapsible/accordion* yang merangkum seluruh 14 sub-modul pelaporan performa website (Ringkasan, Search Performance, Analytics, Pages, Queries, Devices, Countries, Traffic Channels, Events & Conversions, Kecepatan & Vitals, AI Insight, Rekomendasi, Notifikasi & Isu, Laporan).
+  2. **Social Media Hub** (Urutan Kedua): Menu utama mandiri untuk perencanaan, penjadwalan konten, ideasi, dan analitik media sosial.
+- **Tampilan**: 100% *white-labeled*, bersih, elegan, dan tanpa badge identitas vendor pihak ketiga.
 
-### 2. Audit Kecepatan & Core Web Vitals Google PageSpeed
-- **Komponen**: `app/api/pagespeed/route.ts` & `components/views/CoreWebVitalsView.tsx`
-- **Akses**: Sidebar menu **⚡ Kecepatan & Vitals** (`core_web_vitals`).
-- **Fitur**:
-  - Pengujian langsung ke Google PageSpeed Insights API (PSI v5) untuk Mobile dan Desktop.
-  - Caching cerdas di tabel SQLite `pagespeed_audits` (retensi 24 jam dengan opsi paksa audit ulang).
-  - 4 Lingkaran Skor Indeks Berwarna: Performa, Aksesibilitas, Praktik Terbaik, dan SEO.
-  - Kartu Metrik Esensial Core Web Vitals: LCP (Largest Contentful Paint), TBT (Total Blocking Time), CLS (Cumulative Layout Shift), dan FCP (First Contentful Paint).
-  - Daftar Peluang Optimasi Konkret Google (*Opportunities & Diagnostics*) dengan perkiraan penghematan waktu muat.
+### 2. Social Media Hub Terintegrasi
+- **Komponen**: `components/views/SocialMediaView.tsx` & `lib/tebar.ts`
+- **Rute API**: `/api/social/status`, `/api/social/connect-link`, `/api/social/accounts`, `/api/social/posts`, `/api/social/ideas`, `/api/social/insights`
+- **Fitur Inti**:
+  - **Tautkan Akun Klien (Secure Connect Link)**: Menghasilkan link pairing dalam 1 klik. Klien dapat menghubungkan akun medsos (Instagram, TikTok, Threads, YouTube, Facebook, LinkedIn, X, dll.) langsung dari perangkat mereka **tanpa perlu membagikan password** kepada staff.
+  - **Kalender & Jadwal Rilis (Post Scheduler)**: Form pembuatan postingan multi-platform, pemilihan kanal rilis, opsi penerbitan instan atau terjadwal di masa depan.
+  - **Papan Ide Konten (Ideation Hub Kanban)**: Tempat staff media sosial mengumpulkan topik dan konsep konten per klien, lengkap dengan aksi konversi langsung menjadi draf postingan.
+  - **Analitik & Rekomendasi Waktu Posting (Best Time to Post)**: Menampilkan metrik performa serta rekomendasi jam dan hari tayang terbaik sesuai algoritma interaksi audiens.
 
-### 2. Filter Rentang Tanggal Cepat (Quick Date Range Presets)
-- **Komponen**: `components/dashboard-app.tsx`
-- **Akses**: Tombol pemilih rentang cepat di topbar (Bulan Penuh, 30 Hari, 14 Hari, 7 Hari).
-- **Fitur**:
-  - Pemotongan rentang waktu instan (0ms client-side re-aggregation) tanpa menunggu reload server.
-  - Rekalkulasi dinamis metrik total: Klik, Impresi, CTR, Posisi Rata-rata, Pengguna Aktif, dan Sesi.
-  - Sinkronisasi instan terhadap kurva tren harian di seluruh kartu dan grafik.
+### 3. Sistem Akses Staff Media Sosial per Klien (Multi-User Access Control)
+- **Model Database**:
+  - `staff_users`: Akun pengguna staff dengan nama, email, role (`staff_social_media`), dan hash password aman.
+  - `staff_client_assignments`: Pemetaan hak akses staff ke klien tertentu (isolasi data klien).
+  - `client_social_accounts`: Menghubungkan akun media sosial dengan profil klien di database.
+- **Keamanan & Autentikasi**:
+  - Hashing password menggunakan algoritma `scrypt` dengan salt acak dan timing-safe comparison (`lib/password.ts`).
+  - Dukungan peran `staff` pada verifikasi session cookie JWT (`lib/auth.ts`).
+  - Endpoint manajemen staff (`/api/staff`) khusus Administrator untuk menambah/menghapus staff dan menetapkan portofolio klien.
 
-### 3. Ekspor & Dokumen Resmi Eksekutif A4
-- **Komponen**: `components/ExecutiveReportModal.tsx`
-- **Akses**: Tombol *Laporan Eksekutif* di topbar dan halaman *Laporan*.
-- **Fitur**:
-  - Kop resmi entitas website dengan tanggal cetak dan label verifikasi resmi Google.
-  - Cincin Indeks Skor Kesehatan (*Health Score*) 1–100 dan evaluasi pimpinan.
-  - Tabel KPI komparatif dengan perbandingan periode pembanding dan tren persentase delta.
-  - Top 5 Halaman dan Top 5 Kata Kunci Organik.
-  - Rekomendasi langkah strategis periode selanjutnya.
-  - Blok pengesahan tanda tangan ganda resmi (*Webmaster/SEO* & *Pimpinan Bisnis*).
-  - Tombol **Cetak/Simpan PDF** (layout A4 bersih tanpa elemen UI web).
-  - Tombol **Salin Link Klien** untuk membagikan tautan publik (`/report/[token]`) tanpa login.
-
-### 2. Kalkulator Estimasi Nilai Bisnis & ROI Organik (Rupiah)
-- **Komponen**: `components/RoiCalculatorCard.tsx`
-- **Akses**: Halaman *Ringkasan (Overview)*.
-- **Kalkulasi**:
-  - **Penghematan Iklan Google Ads**: Biaya yang dihemat dari traffic organik (*Klik × CPC*).
-  - **Estimasi Potensi Omset Bisnis**: Proyeksi omset dari transaksi yang berpotensi dihasilkan (*Klik × Closing Rate WA × AOV*).
-  - **Efisiensi Investasi Website**: Pertumbuhan traffic gratis 24 jam non-stop.
-  - Formulir penyesuaian asumsi model bisnis (CPC Google Ads, Rata-rata Nilai Order / AOV, dan Rasio Closing WA) yang tersimpan di `localStorage` per website.
-
-### 3. Pantauan Kata Kunci Target (Keyword Watchlist)
-- **Komponen**: `components/PinnedQueriesWatchlist.tsx`
-- **Akses**: Halaman *Kueri Pencarian* dan *Performa Pencarian (GSC)*.
-- **Fitur**:
-  - Memisahkan kata kunci target utama bisnis dari ratusan kueri umum.
-  - Badge posisi: Juara (Pos 1–3), Halaman 1 (Pos 4–10), Peluang Emas (Pos 11–20), Halaman 3+ (Pos > 20).
-  - Tombol bintang ⭐ pin/unpin pada tabel kueri GSC.
-  - Filter cepat `⭐ Kata Kunci Dipantau` pada dropdown pemfilter peringkat.
-  - Penyimpanan preferensi kata kunci target secara persisten di `localStorage` per website.
-
-### 4. Inspeksi Halaman Mendalam (Page Drill-Down Modal)
-- **Komponen**: `components/PageDetailModal.tsx`
-- **Akses**: Klik tombol `🔍 Detail` pada baris tabel halaman di *Performa Halaman (Pages)*.
-- **Fitur**: 4 kartu metrik, status diagnosis SEO otomatis, tabel kueri pencarian pencocokan otomatis, dan panduan rekomendasi taktis.
-
-### 5. Paginasi Tabel Interaktif & Ekspor CSV
-- **Komponen**: `components/TablePagination.tsx` & `lib/view-helpers.ts`
-- **Fitur**:
-  - Pilihan jumlah baris (10, 25, 50, 100, atau Semua) dan navigasi Sebelumnya/Selanjutnya dengan indikator posisi data ("Menampilkan 1–10 dari 85 data").
-  - Fitur unduh CSV langsung dari peramban dengan UTF-8 BOM (`\uFEFF`) agar rapi di Microsoft Excel Windows tanpa masalah karakter rusak/berantakan.
-  - Diterapkan pada tabel halaman dan tabel kueri pencarian.
-
-### 6. Glosarium & Tooltip Ramah Pengguna Awam
-- **Komponen**: `components/InfoTooltip.tsx`
-- **Fitur**: Popover interaktif penjelasan istilah teknis dengan bahasa bisnis dan contoh praktis sehari-hari (Total Klik, Tayang/Impresi, CTR, Posisi Rata-rata, Pengguna GA4, Sesi, dan Rasio Konversi).
-
-### 7. Kartu Skor Kesehatan Eksekutif (Health Score Card)
-- **Komponen**: `components/HealthScoreCard.tsx`
-- **Fitur**: Visualisasi cincin melingkar skor kesehatan komposit (skala 1–100) dan 3 kesimpulan eksekutif berbahasa bisnis di posisi teratas halaman *Ringkasan (Overview)*.
-
-### 8. Mesin Pembanding Antar Periode Bebas (Dual-Curve & Comparative Tables)
-- **Fitur**: Mendukung pemilihan periode pembanding secara bebas melalui switch *Bandingkan* di topbar, menampilkan grafik garis ganda Recharts (solid vs dashed) dan indikator selisih (`+X ▲` / `-Y ▼`).
-
-### 9. Sinkronisasi Data Google Terintegrasi
-- **Fitur**:
-  - Penarikan manual data riil Google Search Console & Google Analytics 4 via modal interaktif (`GoogleApiModal.tsx`).
-  - Endpoint cron otonom (`/api/cron/sync?token=...`) untuk penarikan data berkala otomatis di server.
-  - Proteksi anti-duplikasi menggunakan skema `INSERT OR REPLACE` / `UPSERT` berbasis `(website_id, period_id)`.
+### 4. Pelaporan Performa Website Lengkap (Website Hub)
+- **Audit Kecepatan Google PageSpeed Insights**: Pengujian otomatis skor performa, aksesibilitas, SEO, dan Core Web Vitals (LCP, TBT, CLS, FCP) via `components/views/CoreWebVitalsView.tsx`.
+- **Urutan Default Descending Terbanyak ke Nol**: Seluruh tabel kueri dan halaman diurutkan dari metrik terbesar ke terkecil/nol dengan fitur pengurutan multi-kolom interaktif.
+- **Filter Rentang Tanggal Cepat**: Pilihan rentang instan (Bulan Penuh, 30 Hari, 14 Hari, 7 Hari) dengan agregasi client-side 0ms.
+- **Dokumen Resmi Eksekutif A4**: Cetak PDF dan salin link laporan klien dengan kop surat resmi, skor kesehatan 1–100, tabel KPI komparatif, dan blok pengesahan tanda tangan ganda.
+- **Kalkulator Nilai Bisnis & ROI Organik (Rupiah)**: Proyeksi penghematan biaya iklan Google Ads dan estimasi potensi omset bisnis dari traffic organik.
+- **Pantauan Kata Kunci Target (Keyword Watchlist ⭐)**: Pinning kueri prioritas bisnis dengan klasifikasi posisi (Juara, Halaman 1, Peluang Emas).
+- **Inspeksi Halaman Mendalam (Page Drill-Down Modal)**: Diagnosis halaman dan kata kunci penyumbang traffic per URL.
 
 ---
 
@@ -122,19 +72,20 @@ Dokumen ini adalah ringkasan status teknis, arsitektur, fitur aktif, dan riwayat
 
 | Versi | Commit | Tanggal | Sorotan Pembaruan |
 | :--- | :--- | :--- | :--- |
+| **v0.2.0** | `2f342af` | 2026-11-04 | Social Media Hub (Tebar.app), Navigasi 2 Menu Utama Sidebar, Akses Staff per Klien, & 100% White-Label UI |
+| **v0.1.9** | `c04525f` | 2026-09-26 | Default Descending Sorting (Highest to Zero/Lowest) & Interactive Multi-Column Sort |
 | **v0.1.7** | `2e6fecb` | 2026-09-26 | Dokumen Laporan Resmi Eksekutif A4, Kalkulator ROI Organik Rupiah, & Keyword Watchlist ⭐ |
-| **v0.1.6** | `117ead0` | 2026-09-26 | Page Drill-Down Modal, Paginasi Tabel Interaktif, Ekspor CSV UTF-8 BOM, Info Tooltip, & Health Score Card |
+| **v0.1.6** | `117ead0` | 2026-09-26 | Page Drill-Down Modal, Paginasi Tabel Interaktif, Ekspor CSV UTF-8 BOM, & Health Score Card |
 | **v0.1.5** | `2b31a19` | 2026-09-26 | Mesin Pembanding Periode Bebas, Grafik Garis Ganda Recharts, & Tabel Selisih Komparatif |
-| **v0.1.4** | `6b8a4af` | 2026-09-26 | Pembersihan Data Mockup/Dummy 100% Menjadi Data Database Riil pada Seluruh 13 View |
 | **v0.1.3** | `c21d8b9` | 2026-09-26 | Penarikan Data Otonom (Cron Sync) & Konfigurasi Google Service Account API |
 
 ---
 
 ## 🔮 Rencana Pengembangan Selanjutnya (Next Roadmap)
 
-1. **Sistem Peringatan Dini Penurunan Trafik (Alerting Bot)**:
-   - Integrasi webhook Telegram / WhatsApp yang otomatis mendeteksi drop traffic > 25% minggu-ke-minggu saat sinkronisasi cron harian.
-2. **Pemilih Rentang Tanggal Cepat (Quick Date Range Presets)**:
-   - Menambahkan opsi filter 7 Hari Terakhir, 28 Hari Terakhir, dan Custom Date Range yang langsung mengagregasi data harian dari tabel `gsc_daily_trends` dan `ga_daily_trends`.
-3. **Adaptive Mobile View**:
-   - Optimalisasi tampilan tabel di layar HP kecil (<640px) menjadi kartu geser vertikal ringkas.
+1. **Dashboard Manajemen Staff (Admin Settings View)**:
+   - Antarmuka visual di dashboard khusus Admin untuk menambah staff baru, mereset password, dan menetapkan portofolio klien via checkbox interaktif.
+2. **Koleksi Otomasi Komentar-ke-DM**:
+   - Integrasi fitur `create_automation` Tebar ke UI Social Media Hub untuk setup auto-reply DM Instagram/Threads berdasarkan kata kunci.
+3. **Peringatan Dini Drop Trafik (Alerting Webhook)**:
+   - Notifikasi berkala ke Telegram/WhatsApp jika terdeteksi anomali penurunan traffic > 25%.

@@ -2,6 +2,17 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit 363386f)`.
 
+## 2026-11-04 — Versi 0.2.0: Rilis Checkpoint Stabil Social Media Hub, 2 Menu Utama, & Multi-User Staff (commit <hash>)
+- **Pembaruan Dokumen & Titik Aman Checkpoint**:
+  - Memperbarui versi aplikasi ke 0.2.0 pada package.json dan badge header navigasi components/sidebar-nav.tsx.
+  - Memperbarui dokumen CHECKPOINT.md merangkum status online, arsitektur 2 menu utama (Website Hub & Social Media Hub), integrasi multi-platform, dan sistem manajemen akses staff per klien.
+  - Verifikasi menyeluruh: typecheck tsc --noEmit lolos 100%, dev server lokal aktif normal.
+- **File Terdampak**:
+  - package.json
+  - components/sidebar-nav.tsx
+  - CHECKPOINT.md
+  - HISTORY.md
+
 ## 2026-11-04 — White-labeling Social Media Hub & Penghapusan Identitas Brand Pihak Ketiga (commit 578a8a7)
 - **Penyempurnaan Tampilan & White-labeling Penuh**:
   - Menghapus badge label 'TEBAR' pada tombol menu utama Social Media Hub di sidebar (components/sidebar-nav.tsx).

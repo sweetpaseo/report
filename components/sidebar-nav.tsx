@@ -94,10 +94,10 @@ export function SidebarNav({ activeTab, onSelectTab, issuesCount = 42 }: Sidebar
         </div>
         <div
           className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-full shrink-0"
-          title={`Versi ${process.env.NEXT_PUBLIC_APP_VERSION || "0.1.9"}`}
+          title={`Versi ${process.env.NEXT_PUBLIC_APP_VERSION || "0.2.0"}`}
         >
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-[10px] font-extrabold text-emerald-700">v{process.env.NEXT_PUBLIC_APP_VERSION || "0.1.9"}</span>
+          <span className="text-[10px] font-extrabold text-emerald-700">v{process.env.NEXT_PUBLIC_APP_VERSION || "0.2.0"}</span>
         </div>
       </div>
 
