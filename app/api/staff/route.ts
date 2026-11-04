@@ -109,3 +109,4 @@ export async function DELETE(request: Request) {
   db.prepare("DELETE FROM staff_users WHERE id = ?").run(staffId);
   return NextResponse.json({ ok: true });
 }
+

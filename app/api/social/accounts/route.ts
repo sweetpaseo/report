@@ -99,3 +99,4 @@ export async function DELETE(request: Request) {
   db.prepare("DELETE FROM client_social_accounts WHERE id = ?").run(id);
   return NextResponse.json({ ok: true });
 }
+

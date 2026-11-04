@@ -173,3 +173,4 @@ export async function getTebarAccountInsights(accountId: string): Promise<Record
 export async function getTebarBestTimes(accountId: string): Promise<TebarBestTimes> {
   return tebarFetch<TebarBestTimes>(`/accounts/${accountId}/best-times`);
 }
+
