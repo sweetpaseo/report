@@ -2,7 +2,7 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit 363386f)`.
 
-## 2026-11-04 — Versi 0.2.0: Rilis Checkpoint Stabil Social Media Hub, 2 Menu Utama, & Multi-User Staff (commit <hash>)
+## 2026-11-04 — Versi 0.2.0: Rilis Checkpoint Stabil Social Media Hub, 2 Menu Utama, & Multi-User Staff (commit de756b1)
 - **Pembaruan Dokumen & Titik Aman Checkpoint**:
   - Memperbarui versi aplikasi ke 0.2.0 pada package.json dan badge header navigasi components/sidebar-nav.tsx.
   - Memperbarui dokumen CHECKPOINT.md merangkum status online, arsitektur 2 menu utama (Website Hub & Social Media Hub), integrasi multi-platform, dan sistem manajemen akses staff per klien.
