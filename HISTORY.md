@@ -2,6 +2,16 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit 363386f)`.
 
+## 2026-11-04 — Restrukturisasi Navigasi Sidebar: 2 Menu Utama (Website Hub & Social Media Hub) (commit <hash>)
+- **Penyatuan dan Hirarki 2 Menu Utama Sidebar (components/sidebar-nav.tsx)**:
+  - Memasukkan seluruh 14 menu pelaporan website sebelumnya (Ringkasan, Search Performance, Analytics Performance, Pages, Queries, Devices, Countries, Traffic Channels, Events & Conversions, Kecepatan & Vitals, AI Insight, Rekomendasi, Notifikasi & Isu, Laporan) ke dalam menu induk 'Website Hub' di urutan pertama.
+  - Menempatkan 'Social Media Hub' sebagai menu utama di urutan kedua tepat di bawah Website Hub.
+  - Menyediakan navigasi collapsible/accordion interaktif pada Website Hub dengan indikator chevron dan badge isu.
+  - Memastikan kompatibilitas penuh dengan sistem routing dashboard-app.tsx dan typecheck tsc --noEmit.
+- **File Terdampak**:
+  - components/sidebar-nav.tsx
+  - HISTORY.md
+
 ## 2026-11-04 — Fitur Social Media Hub (Tebar.app) & Manajemen Staff per Klien (commit 6274d7b)
 - **Pengembangan Modul Social Media Hub di Dashboard**:
   - Menambahkan tab baru 'Social Media Hub' pada sidebar navigasi (components/sidebar-nav.tsx) dan canvas view (components/dashboard-app.tsx).

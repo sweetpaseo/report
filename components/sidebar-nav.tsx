@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   LayoutDashboard,
   Search,
@@ -15,10 +15,11 @@ import {
   Lightbulb,
   Bell,
   FileSpreadsheet,
-
   HelpCircle,
   Zap,
   MessageCircle,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 
 export type NavTabId =
@@ -44,7 +45,11 @@ interface SidebarNavProps {
   issuesCount?: number;
 }
 
-export const NAV_ITEMS: { id: NavTabId; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+export const WEBSITE_SUB_ITEMS: {
+  id: NavTabId;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}[] = [
   { id: "ringkasan", label: "Ringkasan", icon: LayoutDashboard },
   { id: "search_performance", label: "Search Performance", icon: Search },
   { id: "analytics_performance", label: "Analytics Performance", icon: LineChart },
@@ -55,14 +60,25 @@ export const NAV_ITEMS: { id: NavTabId; label: string; icon: React.ComponentType
   { id: "traffic_channels", label: "Traffic Channels", icon: Share2 },
   { id: "events_conversions", label: "Events & Conversions", icon: Target },
   { id: "core_web_vitals", label: "Kecepatan & Vitals", icon: Zap },
-  { id: "social_media", label: "Social Media Hub", icon: MessageCircle },
   { id: "ai_insight", label: "AI Insight", icon: Sparkles },
   { id: "rekomendasi", label: "Rekomendasi", icon: Lightbulb },
   { id: "notifikasi_isu", label: "Notifikasi & Isu", icon: Bell },
   { id: "laporan", label: "Laporan", icon: FileSpreadsheet },
 ];
 
+export const NAV_ITEMS: {
+  id: NavTabId;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}[] = [
+  ...WEBSITE_SUB_ITEMS,
+  { id: "social_media", label: "Social Media Hub", icon: MessageCircle },
+];
+
 export function SidebarNav({ activeTab, onSelectTab, issuesCount = 42 }: SidebarNavProps) {
+  const isWebsiteActive = activeTab !== "social_media";
+  const [websiteHubOpen, setWebsiteHubOpen] = useState(true);
+
   return (
     <aside className="w-64 bg-white/90 backdrop-blur-xl border-r border-slate-200 flex flex-col shrink-0 h-screen sticky top-0 z-30 select-none">
       {/* Brand Header */}
@@ -78,44 +94,127 @@ export function SidebarNav({ activeTab, onSelectTab, issuesCount = 42 }: Sidebar
         </div>
         <div
           className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-full shrink-0"
-          title={`Versi ${process.env.NEXT_PUBLIC_APP_VERSION || "0.1.2"}`}
+          title={`Versi ${process.env.NEXT_PUBLIC_APP_VERSION || "0.1.9"}`}
         >
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-[10px] font-extrabold text-emerald-700">v{process.env.NEXT_PUBLIC_APP_VERSION || "0.1.2"}</span>
+          <span className="text-[10px] font-extrabold text-emerald-700">v{process.env.NEXT_PUBLIC_APP_VERSION || "0.1.9"}</span>
         </div>
       </div>
 
       {/* Navigation List */}
-      <nav className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
-        {NAV_ITEMS.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeTab === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => onSelectTab(item.id)}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
-                isActive
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/25"
-                  : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-900"
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-slate-400"}`} />
-                <span>{item.label}</span>
+      <nav className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
+        <p className="px-2 pt-1 text-[10px] font-black uppercase tracking-wider text-slate-400">
+          Menu Utama
+        </p>
+
+        {/* 1. MAIN MENU: Website Hub */}
+        <div className="space-y-1">
+          <button
+            onClick={() => {
+              if (!isWebsiteActive) {
+                onSelectTab("ringkasan");
+                setWebsiteHubOpen(true);
+              } else {
+                setWebsiteHubOpen((prev) => !prev);
+              }
+            }}
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 ${
+              isWebsiteActive
+                ? "bg-indigo-50/90 text-indigo-950 border border-indigo-200/80 shadow-sm"
+                : "text-slate-700 hover:bg-slate-100/80 border border-slate-200/60 bg-white"
+            }`}
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div
+                className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
+                  isWebsiteActive ? "bg-indigo-600 text-white shadow-sm shadow-indigo-500/30" : "bg-slate-100 text-slate-600"
+                }`}
+              >
+                <Globe className="w-3.5 h-3.5" />
               </div>
-              {item.id === "notifikasi_isu" && issuesCount > 0 && (
-                <span
-                  className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                    isActive ? "bg-white/20 text-white" : "bg-red-100 text-red-600"
-                  }`}
-                >
+              <div className="text-left min-w-0">
+                <span className="truncate block font-extrabold text-xs">Website Hub</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 text-slate-400 shrink-0">
+              {issuesCount > 0 && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-amber-100 text-amber-700">
                   {issuesCount}
                 </span>
               )}
-            </button>
-          );
-        })}
+              {websiteHubOpen ? <ChevronDown className="w-4 h-4 text-slate-500" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+            </div>
+          </button>
+
+          {/* Sub Menus of Website Hub */}
+          {websiteHubOpen && (
+            <div className="ml-3 pl-2.5 border-l-2 border-indigo-100 space-y-0.5 pt-1 pb-1">
+              {WEBSITE_SUB_ITEMS.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => onSelectTab(item.id)}
+                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-150 ${
+                      isActive
+                        ? "bg-indigo-600 text-white shadow-sm font-bold"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? "text-white" : "text-slate-400"}`} />
+                      <span className="truncate">{item.label}</span>
+                    </div>
+                    {item.id === "notifikasi_isu" && issuesCount > 0 && (
+                      <span
+                        className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold shrink-0 ${
+                          isActive ? "bg-white/20 text-white" : "bg-red-100 text-red-600"
+                        }`}
+                      >
+                        {issuesCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* 2. MAIN MENU: Social Media Hub */}
+        <div>
+          <button
+            onClick={() => onSelectTab("social_media")}
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 ${
+              activeTab === "social_media"
+                ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-600/25 border border-indigo-600"
+                : "text-slate-700 hover:bg-slate-100/80 border border-slate-200/60 bg-white"
+            }`}
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div
+                className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
+                  activeTab === "social_media" ? "bg-white/20 text-white" : "bg-purple-100 text-purple-700"
+                }`}
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+              </div>
+              <div className="text-left min-w-0">
+                <span className="truncate block font-extrabold text-xs">Social Media Hub</span>
+              </div>
+            </div>
+            <span
+              className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                activeTab === "social_media"
+                  ? "bg-white/25 text-white"
+                  : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+              }`}
+            >
+              Tebar
+            </span>
+          </button>
+        </div>
       </nav>
 
       {/* Sidebar Footer Widgets */}
