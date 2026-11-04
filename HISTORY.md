@@ -2,7 +2,7 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit 363386f)`.
 
-## 2026-11-04 — Fitur Social Media Hub (Tebar.app) & Manajemen Staff per Klien (commit <hash>)
+## 2026-11-04 — Fitur Social Media Hub (Tebar.app) & Manajemen Staff per Klien (commit 6274d7b)
 - **Pengembangan Modul Social Media Hub di Dashboard**:
   - Menambahkan tab baru 'Social Media Hub' pada sidebar navigasi (components/sidebar-nav.tsx) dan canvas view (components/dashboard-app.tsx).
   - Membangun antarmuka interaktif components/views/SocialMediaView.tsx yang mencakup 4 sub-fitur:
