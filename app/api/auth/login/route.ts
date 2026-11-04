@@ -2,6 +2,8 @@ import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { createSessionToken, SESSION_COOKIE, type SessionRole } from "@/lib/auth";
 import { checkRateLimit, resetRateLimit } from "@/lib/rate-limit";
+import { getDb } from "@/lib/db";
+import { verifyPassword } from "@/lib/password";
 
 function safeEqual(left: string, right: string) {
   const a = Buffer.from(left);
@@ -20,7 +22,7 @@ export async function POST(request: Request) {
       { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
     );
   }
-  const { password } = await request.json().catch(() => ({ password: "" }));
+  const { password, email } = await request.json().catch(() => ({ password: "", email: "" }));
   const adminExpected = process.env.ADMIN_PASSWORD?.trim();
   const clientExpected = process.env.CLIENT_PASSWORD?.trim();
 
@@ -30,18 +32,38 @@ export async function POST(request: Request) {
 
   const passwordStr = String(password || "").trim();
   let role: SessionRole | null = null;
-  if (adminExpected && adminExpected.length >= 10 && safeEqual(passwordStr, adminExpected)) role = "admin";
-  if (!role && clientExpected && clientExpected.length >= 6 && safeEqual(passwordStr, clientExpected)) role = "client";
-  if (!role) return NextResponse.json({ error: "Password salah." }, { status: 401 });
+  let extraPayload: { userId?: string; name?: string } | undefined;
+
+  if (adminExpected && adminExpected.length >= 10 && safeEqual(passwordStr, adminExpected)) {
+    role = "admin";
+  }
+  if (!role && clientExpected && clientExpected.length >= 6 && safeEqual(passwordStr, clientExpected)) {
+    role = "client";
+  }
+
+  // Check staff login if email is supplied or if regular login didn't match
+  if (!role && email) {
+    const emailStr = String(email).trim().toLowerCase();
+    const staff = getDb()
+      .prepare("SELECT id, name, password_hash, role FROM staff_users WHERE LOWER(email) = ?")
+      .get(emailStr) as { id: string; name: string; password_hash: string; role: string } | undefined;
+
+    if (staff && verifyPassword(passwordStr, staff.password_hash)) {
+      role = "staff";
+      extraPayload = { userId: staff.id, name: staff.name };
+    }
+  }
+
+  if (!role) return NextResponse.json({ error: "Password atau email salah." }, { status: 401 });
 
   resetRateLimit(`login:${clientIp}`);
 
-  const response = NextResponse.json({ ok: true, role });
+  const response = NextResponse.json({ ok: true, role, name: extraPayload?.name });
   const isProd = process.env.NODE_ENV === "production";
   const forwardedProto = request.headers.get("x-forwarded-proto") || "";
   const isHttps = forwardedProto.includes("https") || request.url.startsWith("https://");
 
-  response.cookies.set(SESSION_COOKIE, await createSessionToken(role), {
+  response.cookies.set(SESSION_COOKIE, await createSessionToken(role, extraPayload), {
     httpOnly: true,
     sameSite: "lax",
     secure: isProd && isHttps,

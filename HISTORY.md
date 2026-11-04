@@ -2,6 +2,51 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit 363386f)`.
 
+## 2026-11-04 — Fitur Social Media Hub (Tebar.app) & Manajemen Staff per Klien (commit <hash>)
+- **Pengembangan Modul Social Media Hub di Dashboard**:
+  - Menambahkan tab baru 'Social Media Hub' pada sidebar navigasi (components/sidebar-nav.tsx) dan canvas view (components/dashboard-app.tsx).
+  - Membangun antarmuka interaktif components/views/SocialMediaView.tsx yang mencakup 4 sub-fitur:
+    1. Akun Terhubung: Daftar kanal aktif dan generator link tautan akun (connect-link) untuk dikirim ke klien tanpa perlu berbagi password.
+    2. Kalender & Jadwal Rilis: Form pembuatan/penjadwalan postingan baru ke multi-platform dan riwayat postingan.
+    3. Papan Ide Konten (Ideation Hub): Papan Kanban ide konten untuk staff/klien lengkap dengan aksi konversi ide ke postingan.
+    4. Analitik & Waktu Terbaik: Ringkasan metrik media sosial dan rekomendasi waktu posting optimal (Best Time to Post).
+- **Ekstensi Skema Database SQLite (lib/db.ts)**:
+  - Menambahkan tabel client_social_accounts (pemetaan akun medsos Tebar ke klien).
+  - Menambahkan tabel staff_users (pengelolaan pengguna staff medsos per user).
+  - Menambahkan tabel staff_client_assignments (isolasi hak akses staff ke klien tertentu).
+- **Peningkatan Autentikasi & Keamanan (lib/auth.ts, lib/password.ts)**:
+  - Menambahkan hashing password aman menggunakan modul bawaan node:crypto (scrypt + timingSafeEqual).
+  - Memperluas SessionRole untuk mendukung peran 'staff' di samping 'admin' dan 'client'.
+  - Memperbarui app/api/auth/login/route.ts dan app/api/auth/me/route.ts agar mendukung login staff berbasis email & password dengan isolasi data klien.
+- **Penyediaan Rute API Backend**:
+  - /api/social/status: Pengecekan status koneksi live Tebar dan daftar akun/profil.
+  - /api/social/connect-link: Pembuatan tautan koneksi aman untuk klien.
+  - /api/social/accounts: Pengelolaan penautan akun medsos ke klien.
+  - /api/social/posts: Pengambilan dan pembuatan postingan (langsung atau terjadwal).
+  - /api/social/ideas: Pengelolaan ide konten kanban.
+  - /api/social/insights: Pengambilan analitik dan waktu terbaik posting.
+  - /api/staff: CRUD manajemen akun staff dan penetapan klien oleh admin.
+- **Verifikasi & Build**:
+  - Lolos typecheck tsc --noEmit 100% tanpa error.
+  - Berhasil di-build produksi (npm run build) mencakup seluruh 25 rute aplikasi.
+- **File Terdampak**:
+  - app/api/auth/login/route.ts
+  - app/api/auth/me/route.ts
+  - app/api/social/accounts/route.ts
+  - app/api/social/connect-link/route.ts
+  - app/api/social/ideas/route.ts
+  - app/api/social/insights/route.ts
+  - app/api/social/posts/route.ts
+  - app/api/social/status/route.ts
+  - app/api/staff/route.ts
+  - components/dashboard-app.tsx
+  - components/sidebar-nav.tsx
+  - components/views/SocialMediaView.tsx
+  - lib/auth.ts
+  - lib/db.ts
+  - lib/password.ts
+  - HISTORY.md
+
 ## 2026-11-04 — Integrasi Dasar Tebar.app API Client & Verification (commit <hash>)
 - **Implementasi Service Client Tebar.app**:
   - Menambahkan modul lib/tebar.ts lengkap dengan TypeScript type definitions untuk interaksi API Tebar v1 (getTebarMe, getTebarProfiles, getTebarAccounts, createTebarConnectLink, getTebarPosts, createTebarPost, getTebarIdeas, createTebarIdea, getTebarAccountInsights, getTebarBestTimes).

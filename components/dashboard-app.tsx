@@ -12,6 +12,7 @@ import { DevicesView } from "./views/DevicesView";
 import { CountriesView } from "./views/CountriesView";
 import { TrafficChannelsView } from "./views/TrafficChannelsView";
 import { EventsConversionsView } from "./views/EventsConversionsView";
+import { SocialMediaView } from "./views/SocialMediaView";
 import { AiInsightView } from "./views/AiInsightView";
 import { RecommendationsView } from "./views/RecommendationsView";
 import { NotificationsIssuesView } from "./views/NotificationsIssuesView";
@@ -47,6 +48,7 @@ export function DashboardApp({
   initialData = null,
   publicToken,
   clientToken,
+  userRole,
 }: DashboardAppProps) {
   const [activeTab, setActiveTab] = useState<NavTabId>("ringkasan");
   const [websites, setWebsites] = useState<any[]>(initialWebsites);
@@ -430,6 +432,9 @@ export function DashboardApp({
           {activeTab === "traffic_channels" && <TrafficChannelsView data={activeDashboardData} isComparing={isComparing} />}
           {activeTab === "events_conversions" && (
             <EventsConversionsView data={activeDashboardData} isComparing={isComparing} />
+          )}
+          {activeTab === "social_media" && (
+            <SocialMediaView website={selectedWebsite} userRole={userRole} />
           )}
           {activeTab === "ai_insight" && <AiInsightView data={activeDashboardData} isComparing={isComparing} />}
           {activeTab === "rekomendasi" && <RecommendationsView data={activeDashboardData} isComparing={isComparing} />}

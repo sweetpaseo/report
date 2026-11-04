@@ -372,6 +372,35 @@ function initialize(db: DatabaseSync) {
       updated_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS client_social_accounts (
+      id TEXT PRIMARY KEY,
+      client_id TEXT NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+      tebar_account_id TEXT NOT NULL,
+      platform TEXT NOT NULL,
+      account_name TEXT NOT NULL,
+      username TEXT,
+      profile_picture TEXT,
+      created_at TEXT NOT NULL,
+      UNIQUE(client_id, tebar_account_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_client_social_client ON client_social_accounts(client_id);
+
+    CREATE TABLE IF NOT EXISTS staff_users (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'staff_social_media',
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS staff_client_assignments (
+      staff_id TEXT NOT NULL REFERENCES staff_users(id) ON DELETE CASCADE,
+      client_id TEXT NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+      created_at TEXT NOT NULL,
+      PRIMARY KEY(staff_id, client_id)
+    );
+
     UPDATE monthly_metrics SET metric_key = 'impressions' WHERE metric_key = 'total_impressions';
     UPDATE monthly_metrics SET metric_key = 'clicks' WHERE metric_key = 'total_clicks';
     UPDATE monthly_metrics SET metric_key = 'ctr' WHERE metric_key = 'average_ctr';
