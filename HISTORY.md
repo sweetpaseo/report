@@ -1,6 +1,6 @@
 # History Log — website-health-report
 
-Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit <hash>)`.
+Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit 363386f)`.
 
 ## 2026-11-04 — Integrasi Dasar Tebar.app API Client & Verification (commit <hash>)
 - **Implementasi Service Client Tebar.app**:
