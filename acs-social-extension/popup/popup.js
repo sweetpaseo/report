@@ -25,7 +25,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Load existing session state
   chrome.storage.local.get(["serverUrl", "staffToken", "staffUser", "clientsList", "selectedClientId"], (res) => {
-    if (res.serverUrl) inputServerUrl.value = res.serverUrl;
+    if (res.serverUrl) {
+      inputServerUrl.value = res.serverUrl;
+    } else {
+      inputServerUrl.value = "https://report.erihome.id";
+    }
 
     if (res.staffToken && res.staffUser) {
       showActiveView(res);
@@ -34,10 +38,26 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
+  // Helper to normalize server URL
+  function normalizeUrl(url) {
+    let clean = (url || "https://report.erihome.id").trim().replace(/\/+$/, "");
+    if (clean.includes("report.erihome.id")) {
+      clean = clean.replace(/^http:\/\//i, "https://");
+      if (!clean.startsWith("https://")) clean = "https://" + clean;
+    } else if (!clean.startsWith("http://") && !clean.startsWith("https://")) {
+      clean = (clean.includes("localhost") || clean.includes("127.0.0.1"))
+        ? "http://" + clean
+        : "https://" + clean;
+    }
+    return clean;
+  }
+
   // Login handler
   btnLogin.addEventListener("click", async () => {
-    const serverUrl = inputServerUrl.value.trim() || "http://localhost:3000";
-    const email = inputEmail.value.trim();
+    let serverUrl = normalizeUrl(inputServerUrl.value);
+    inputServerUrl.value = serverUrl;
+
+    const email = inputEmail.value.trim().toLowerCase();
     const password = inputPassword.value;
 
     if (!email || !password) {
@@ -58,7 +78,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (response && response.ok) {
           chrome.storage.local.get(null, (res) => showActiveView(res));
         } else {
-          loginError.textContent = response?.error || "Koneksi gagal.";
+          loginError.textContent = response?.error || "Koneksi gagal. Pastikan URL dan kredensial benar.";
         }
       }
     );
@@ -71,174 +91,173 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // Change client handler
-  selectClient.addEventListener("change", () => {
-    const selectedId = selectClient.value;
-    chrome.storage.local.set({ selectedClientId: selectedId });
+  selectClient.addEventListener("change", async (e) => {
+    const clientId = e.target.value;
+    await chrome.storage.local.set({ selectedClientId: clientId });
+    validateDetectedProfileWithClient(clientId);
   });
 
-  // Open Dashboard handler
+  // Sync button handler
+  btnSyncNow.addEventListener("click", async () => {
+    btnSyncNow.disabled = true;
+    btnSyncNow.textContent = "Menyinkronkan data...";
+    setFeedback("Mengumpulkan data profil & postingan...", "info");
+
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const activeTab = tabs[0];
+      if (!activeTab || !activeTab.id) {
+        setFeedback("Tab aktif tidak ditemukan.", "error");
+        btnSyncNow.disabled = false;
+        btnSyncNow.textContent = "⚡ Sinkronkan ke ACS Sekarang";
+        return;
+      }
+
+      chrome.tabs.sendMessage(activeTab.id, { action: "COLLECT_PAGE_DATA" }, async (pageData) => {
+        if (chrome.runtime.lastError || !pageData || !pageData.ok) {
+          setFeedback("Buka halaman profil Instagram atau TikTok terlebih dahulu.", "error");
+          btnSyncNow.disabled = false;
+          btnSyncNow.textContent = "⚡ Sinkronkan ke ACS Sekarang";
+          return;
+        }
+
+        chrome.storage.local.get(["selectedClientId"], (res) => {
+          const clientId = res.selectedClientId;
+          if (!clientId) {
+            setFeedback("Pilih klien tujuan terlebih dahulu.", "error");
+            btnSyncNow.disabled = false;
+            btnSyncNow.textContent = "⚡ Sinkronkan ke ACS Sekarang";
+            return;
+          }
+
+          // Send Sync Profile
+          chrome.runtime.sendMessage(
+            { action: "SYNC_PROFILE", payload: { clientId, ...pageData.profile } },
+            (profileRes) => {
+              if (!profileRes || profileRes.error) {
+                setFeedback(`Gagal sinkronisasi profil: ${profileRes?.error || "Error"}`, "error");
+                btnSyncNow.disabled = false;
+                btnSyncNow.textContent = "⚡ Sinkronkan ke ACS Sekarang";
+                return;
+              }
+
+              // Send Sync Posts
+              chrome.runtime.sendMessage(
+                {
+                  action: "SYNC_POSTS",
+                  payload: {
+                    clientId,
+                    platform: pageData.profile.platform,
+                    posts: pageData.posts,
+                  },
+                },
+                (postsRes) => {
+                  btnSyncNow.disabled = false;
+                  btnSyncNow.textContent = "⚡ Sinkronkan ke ACS Sekarang";
+
+                  if (!postsRes || postsRes.error) {
+                    setFeedback("Profil tersimpan, tetapi postingan gagal diunggah.", "warning");
+                  } else {
+                    setFeedback(
+                      `Berhasil! Profil @${pageData.profile.username} dan ${postsRes.savedCount || pageData.posts.length} postingan tersinkronkan.`,
+                      "success"
+                    );
+                  }
+                }
+              );
+            }
+          );
+        });
+      });
+    });
+  });
+
+  // Open dashboard button
   btnOpenDashboard.addEventListener("click", () => {
     chrome.storage.local.get(["serverUrl"], (res) => {
-      const url = `${res.serverUrl || "http://localhost:3000"}/dashboard`;
+      const url = `${normalizeUrl(res.serverUrl)}/dashboard`;
       chrome.tabs.create({ url });
     });
   });
 
-  // Sync Now handler
-  btnSyncNow.addEventListener("click", async () => {
-    syncFeedback.className = "feedback-msg";
-    syncFeedback.style.display = "none";
-
-    const clientId = selectClient.value;
-    if (!clientId) {
-      showFeedback("Pilih target klien terlebih dahulu.", "error");
-      return;
-    }
-
-    btnSyncNow.disabled = true;
-    btnSyncNow.textContent = "Menyerap data dari halaman...";
-
-    // Ask active tab content script to extract data
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab || !tab.id) {
-      btnSyncNow.disabled = false;
-      btnSyncNow.textContent = "⚡ Sinkronkan ke ACS";
-      showFeedback("Tab aktif tidak ditemukan.", "error");
-      return;
-    }
-
-    chrome.tabs.sendMessage(tab.id, { action: "EXTRACT_PAGE_DATA" }, async (extractRes) => {
-      if (chrome.runtime.lastError || !extractRes) {
-        btnSyncNow.disabled = false;
-        btnSyncNow.textContent = "⚡ Sinkronkan ke ACS";
-        showFeedback("Buka halaman profil Instagram atau TikTok terlebih dahulu.", "error");
-        return;
-      }
-
-      try {
-        btnSyncNow.textContent = "Mengirim ke server ACS...";
-
-        // 1. Sync Profile Snapshot
-        await sendMessagePromise({
-          action: "SYNC_PROFILE",
-          payload: {
-            clientId,
-            platform: extractRes.platform || "instagram",
-            username: extractRes.username,
-            fullName: extractRes.fullName,
-            followersCount: extractRes.followersCount,
-            followingCount: extractRes.followingCount,
-            postsCount: extractRes.postsCount,
-            bio: extractRes.bio,
-            profilePicUrl: extractRes.profilePicUrl,
-          },
-        });
-
-        // 2. Sync Posts if available
-        let postsCount = 0;
-        if (extractRes.posts && extractRes.posts.length > 0) {
-          const postsRes = await sendMessagePromise({
-            action: "SYNC_POSTS",
-            payload: {
-              clientId,
-              platform: extractRes.platform || "instagram",
-              posts: extractRes.posts,
-            },
-          });
-          postsCount = postsRes.count || extractRes.posts.length;
-        }
-
-        btnSyncNow.disabled = false;
-        btnSyncNow.textContent = "⚡ Sinkronkan ke ACS";
-        showFeedback(`✓ Berhasil! Profil @${extractRes.username} & ${postsCount} postingan tersimpan.`, "success");
-      } catch (err) {
-        btnSyncNow.disabled = false;
-        btnSyncNow.textContent = "⚡ Sinkronkan ke ACS";
-        showFeedback(err.message || "Gagal sinkronisasi data.", "error");
-      }
-    });
-  });
-
+  // State switch helpers
   function showLoginView() {
     loginSection.classList.remove("hidden");
     activeSection.classList.add("hidden");
     statusIndicator.className = "indicator offline";
   }
 
-  function showActiveView(data) {
+  function showActiveView(state) {
     loginSection.classList.add("hidden");
     activeSection.classList.remove("hidden");
     statusIndicator.className = "indicator online";
 
-    if (data.staffUser) {
-      labelStaffName.textContent = data.staffUser.name;
-      labelStaffEmail.textContent = data.staffUser.email;
+    if (state.staffUser) {
+      labelStaffName.textContent = state.staffUser.name || "Staff";
+      labelStaffEmail.textContent = state.staffUser.email || "";
     }
 
     // Populate clients
     selectClient.innerHTML = "";
-    const clients = data.clientsList || [];
+    const clients = state.clientsList || [];
     if (clients.length === 0) {
-      selectClient.innerHTML = '<option value="">Belum ada klien ditugaskan</option>';
+      selectClient.innerHTML = '<option value="">Tidak ada klien ditugaskan</option>';
     } else {
       clients.forEach((c) => {
         const opt = document.createElement("option");
         opt.value = c.id;
         opt.textContent = c.name;
-        if (c.id === data.selectedClientId) opt.selected = true;
+        if (c.id === state.selectedClientId) opt.selected = true;
         selectClient.appendChild(opt);
       });
     }
 
-    // Inspect active tab
-    detectActiveTabInfo();
+    detectCurrentTab();
   }
 
-  async function detectActiveTabInfo() {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab || !tab.url) return;
+  function detectCurrentTab() {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const tab = tabs[0];
+      if (!tab || !tab.url) return;
 
-    if (tab.url.includes("instagram.com")) {
-      badgePlatform.textContent = "Instagram";
-      const match = tab.url.match(/instagram\.com\/([^/?#]+)/);
-      if (match && !["direct", "explore", "reels", "stories"].includes(match[1])) {
-        labelDetectedUsername.textContent = `@${match[1]}`;
-        labelDetectHint.textContent = "Halaman profil terdeteksi & siap disinkronkan.";
+      const url = tab.url;
+      if (url.includes("instagram.com")) {
+        badgePlatform.textContent = "Instagram";
+        badgePlatform.className = "badge instagram";
+      } else if (url.includes("tiktok.com")) {
+        badgePlatform.textContent = "TikTok";
+        badgePlatform.className = "badge tiktok";
       } else {
-        labelDetectedUsername.textContent = "Buka Profil Klien";
-        labelDetectHint.textContent = "Buka halaman profil (misal: instagram.com/nama_klien)";
+        badgePlatform.textContent = "Bukan Medsos";
+        badgePlatform.className = "badge";
+        labelDetectedUsername.textContent = "Halaman Tidak Didukung";
+        labelDetectHint.textContent = "Buka akun Instagram atau TikTok klien untuk memulai.";
+        return;
       }
-    } else if (tab.url.includes("tiktok.com")) {
-      badgePlatform.textContent = "TikTok";
-      const match = tab.url.match(/tiktok\.com\/@([^/?#]+)/);
-      if (match) {
-        labelDetectedUsername.textContent = `@${match[1]}`;
-        labelDetectHint.textContent = "Halaman profil TikTok terdeteksi.";
-      } else {
-        labelDetectedUsername.textContent = "Buka Profil TikTok";
-        labelDetectHint.textContent = "Buka halaman profil (misal: tiktok.com/@nama_klien)";
-      }
-    } else {
-      badgePlatform.textContent = "Lainnya";
-      labelDetectedUsername.textContent = "Buka Instagram / TikTok";
-      labelDetectHint.textContent = "Ekstensi aktif otomatis saat Anda membuka IG atau TikTok.";
-    }
-  }
 
-  function showFeedback(msg, type) {
-    syncFeedback.textContent = msg;
-    syncFeedback.className = `feedback-msg ${type}`;
-    syncFeedback.style.display = "block";
-  }
-
-  function sendMessagePromise(message) {
-    return new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage(message, (res) => {
-        if (chrome.runtime.lastError) return reject(new Error(chrome.runtime.lastError.message));
-        if (res && res.error) return reject(new Error(res.error));
-        resolve(res);
+      chrome.tabs.sendMessage(tab.id, { action: "DETECT_PROFILE" }, (response) => {
+        if (chrome.runtime.lastError || !response || !response.username) {
+          labelDetectedUsername.textContent = "Mencari profil di halaman...";
+          labelDetectHint.textContent = "Pastikan Anda berada di halaman profil utama akun.";
+        } else {
+          labelDetectedUsername.textContent = `@${response.username}`;
+          labelDetectHint.textContent = "Siap disinkronkan ke ACS.";
+        }
       });
     });
   }
-});
 
+  function validateDetectedProfileWithClient(clientId) {
+    chrome.storage.local.get(["clientsList"], (res) => {
+      const client = (res.clientsList || []).find((c) => c.id === clientId);
+      if (client && client.socialHandles) {
+        // Optional hint if handle differs
+      }
+    });
+  }
+
+  function setFeedback(msg, type) {
+    syncFeedback.textContent = msg;
+    syncFeedback.className = `feedback ${type}`;
+    syncFeedback.classList.remove("hidden");
+  }
+});

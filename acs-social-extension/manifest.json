@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ACS Social Media Assistant",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Asisten analitik dan optimasi konten media sosial terintegrasi AI Creative Studio (ACS).",
   "permissions": [
     "storage",
@@ -10,8 +10,12 @@
   "host_permissions": [
     "*://*.instagram.com/*",
     "*://*.tiktok.com/*",
-    "http://localhost:3000/*",
-    "https://report.erihome.id/*"
+    "*://localhost/*",
+    "*://localhost:*/*",
+    "*://127.0.0.1/*",
+    "*://127.0.0.1:*/*",
+    "*://report.erihome.id/*",
+    "*://*.erihome.id/*"
   ],
   "background": {
     "service_worker": "background/service-worker.js"
@@ -37,4 +41,3 @@
     }
   ]
 }
-

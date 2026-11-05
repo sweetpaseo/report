@@ -26,7 +26,7 @@
       
       <div class="field">
         <label>Server ACS URL</label>
-        <input type="text" id="inputServerUrl" value="http://localhost:3000" placeholder="https://report.erihome.id">
+        <input type="text" id="inputServerUrl" value="https://report.erihome.id" placeholder="https://report.erihome.id">
       </div>
 
       <div class="field">
@@ -48,41 +48,46 @@
       <!-- Staff Card -->
       <div class="user-card">
         <div>
-          <span class="user-name" id="labelStaffName">Staff Name</span>
-          <span class="user-email" id="labelStaffEmail">email@domain.com</span>
+          <strong id="labelStaffName">Staff Name</strong>
+          <span id="labelStaffEmail">email@domain.com</span>
         </div>
         <button id="btnLogout" class="btn-text">Keluar</button>
       </div>
 
-      <!-- Client Selection -->
+      <!-- Client Selector -->
       <div class="field">
-        <label>Target Klien yang Sedang Dikelola</label>
+        <label>Pilih Klien Aktif</label>
         <select id="selectClient">
           <option value="">Memuat daftar klien...</option>
         </select>
       </div>
 
-      <!-- Current Page Detection Card -->
-      <div class="context-card">
-        <span class="badge" id="badgePlatform">Instagram</span>
-        <strong id="labelDetectedUsername">Mendeteksi halaman...</strong>
-        <p id="labelDetectHint" class="hint">Buka profil Instagram klien di tab aktif.</p>
+      <!-- Detected Profile State -->
+      <div class="detect-box">
+        <div class="detect-header">
+          <span class="label-title">Halaman Terdeteksi</span>
+          <span id="badgePlatform" class="badge">Mendeteksi...</span>
+        </div>
+        <div class="detect-content">
+          <strong id="labelDetectedUsername">Buka profil Instagram/TikTok</strong>
+          <p id="labelDetectHint" class="detect-hint">Buka tab profil medsos klien di browser ini.</p>
+        </div>
       </div>
 
-      <!-- Action Buttons -->
-      <button id="btnSyncNow" class="btn primary">
-        <span>⚡ Sinkronkan ke ACS</span>
-      </button>
+      <!-- Actions -->
+      <div class="actions">
+        <button id="btnSyncNow" class="btn primary">
+          <span>⚡ Sinkronkan ke ACS Sekarang</span>
+        </button>
+        <button id="btnOpenDashboard" class="btn secondary">
+          <span>Buka ACS Dashboard</span>
+        </button>
+      </div>
 
-      <button id="btnOpenDashboard" class="btn secondary">
-        <span>📊 Buka Dashboard ACS</span>
-      </button>
-
-      <div id="syncFeedback" class="feedback-msg"></div>
+      <div id="syncFeedback" class="feedback hidden"></div>
     </section>
   </div>
 
   <script src="popup.js"></script>
 </body>
 </html>
-

@@ -2,10 +2,9 @@
 
 chrome.runtime.onInstalled.addListener(() => {
   console.log("[ACS Extension] Installed successfully.");
-  // Default server settings
   chrome.storage.local.get(["serverUrl"], (res) => {
     if (!res.serverUrl) {
-      chrome.storage.local.set({ serverUrl: "http://localhost:3000" });
+      chrome.storage.local.set({ serverUrl: "https://report.erihome.id" });
     }
   });
 });
@@ -33,11 +32,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
+function cleanServerUrl(rawUrl) {
+  let url = (rawUrl || "https://report.erihome.id").trim().replace(/\/+$/, "");
+  if (url.includes("report.erihome.id")) {
+    url = url.replace(/^http:\/\//i, "https://");
+    if (!url.startsWith("https://")) url = "https://" + url;
+  } else if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    url = (url.includes("localhost") || url.includes("127.0.0.1"))
+      ? "http://" + url
+      : "https://" + url;
+  }
+  return url;
+}
+
 async function getServerConfig() {
   return new Promise((resolve) => {
     chrome.storage.local.get(["serverUrl", "staffToken"], (res) => {
       resolve({
-        serverUrl: res.serverUrl || "http://localhost:3000",
+        serverUrl: cleanServerUrl(res.serverUrl),
         staffToken: res.staffToken || "",
       });
     });
@@ -45,21 +57,32 @@ async function getServerConfig() {
 }
 
 async function handleLogin({ email, password, serverUrl }) {
-  const url = `${serverUrl.replace(/\/+$/, "")}/api/extension/auth`;
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password, deviceName: "Chrome Extension" }),
-  });
+  const targetServer = cleanServerUrl(serverUrl);
+  const url = `${targetServer}/api/extension/auth`;
+
+  let response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: email.trim().toLowerCase(),
+        password,
+        deviceName: "Chrome Extension",
+      }),
+    });
+  } catch (err) {
+    throw new Error(`Koneksi gagal (${err.message}). Pastikan server ${targetServer} dapat diakses.`);
+  }
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(data.error || "Gagal masuk ke server ACS.");
+    throw new Error(data.error || "Gagal masuk ke server ACS. Periksa email atau password.");
   }
 
   // Save token and server URL
   await chrome.storage.local.set({
-    serverUrl,
+    serverUrl: targetServer,
     staffToken: data.token,
     staffUser: data.staff,
     clientsList: data.clients,
@@ -73,7 +96,7 @@ async function handleSyncProfile(payload) {
   const { serverUrl, staffToken } = await getServerConfig();
   if (!staffToken) throw new Error("Staff belum login ke ekstensi.");
 
-  const url = `${serverUrl.replace(/\/+$/, "")}/api/extension/sync-profile`;
+  const url = `${serverUrl}/api/extension/sync-profile`;
   const response = await fetch(url, {
     method: "POST",
     headers: {
@@ -92,7 +115,7 @@ async function handleSyncPosts(payload) {
   const { serverUrl, staffToken } = await getServerConfig();
   if (!staffToken) throw new Error("Staff belum login ke ekstensi.");
 
-  const url = `${serverUrl.replace(/\/+$/, "")}/api/extension/sync-posts`;
+  const url = `${serverUrl}/api/extension/sync-posts`;
   const response = await fetch(url, {
     method: "POST",
     headers: {
@@ -111,7 +134,7 @@ async function handleGetRecommendations({ clientId }) {
   const { serverUrl, staffToken } = await getServerConfig();
   if (!staffToken) throw new Error("Staff belum login.");
 
-  const url = `${serverUrl.replace(/\/+$/, "")}/api/extension/content-recommendations?clientId=${encodeURIComponent(clientId)}`;
+  const url = `${serverUrl}/api/extension/content-recommendations?clientId=${encodeURIComponent(clientId)}`;
   const response = await fetch(url, {
     headers: { Authorization: `Bearer ${staffToken}` },
   });
@@ -120,4 +143,3 @@ async function handleGetRecommendations({ clientId }) {
   if (!response.ok) throw new Error(data.error || "Gagal mengambil rekomendasi.");
   return data;
 }
-
