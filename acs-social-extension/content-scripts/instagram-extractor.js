@@ -3,27 +3,79 @@
 (function () {
   console.log("[ACS Extension] Extractor loaded on", window.location.hostname);
 
-  // Listen for extraction requests from popup or floating widget
+  // Listen for messages from popup or background
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === "EXTRACT_PAGE_DATA") {
+    if (request.action === "DETECT_PROFILE") {
       try {
-        const data = extractCurrentPageData();
-        sendResponse(data);
+        const info = detectCurrentProfile();
+        sendResponse(info);
       } catch (err) {
         sendResponse({ error: err.message });
       }
       return true;
     }
+
+    if (request.action === "COLLECT_PAGE_DATA" || request.action === "EXTRACT_PAGE_DATA") {
+      try {
+        const data = extractCurrentPageData();
+        sendResponse(data);
+      } catch (err) {
+        sendResponse({ ok: false, error: err.message });
+      }
+      return true;
+    }
   });
 
-  function extractCurrentPageData() {
+  function detectCurrentProfile() {
     const host = window.location.hostname;
     if (host.includes("instagram.com")) {
-      return extractInstagramData();
-    } else if (host.includes("tiktok.com")) {
-      return extractTikTokData();
+      const username = getInstagramUsername();
+      if (!username) {
+        return { ok: false, error: "Buka halaman profil Instagram akun klien." };
+      }
+      return { ok: true, platform: "instagram", username };
     }
-    throw new Error("Halaman ini bukan Instagram atau TikTok.");
+
+    if (host.includes("tiktok.com")) {
+      const match = window.location.pathname.match(/^\/@([^/?#]+)/);
+      const username = match ? match[1] : "";
+      if (!username) {
+        return { ok: false, error: "Buka halaman profil TikTok akun klien." };
+      }
+      return { ok: true, platform: "tiktok", username };
+    }
+
+    return { ok: false, error: "Halaman bukan Instagram atau TikTok." };
+  }
+
+  function getInstagramUsername() {
+    // 1. From Pathname
+    const pathname = window.location.pathname;
+    const match = pathname.match(/^\/([^/?#]+)/);
+    const candidate = match ? match[1].trim() : "";
+    const reserved = [
+      "direct", "explore", "reels", "stories", "p", "reel",
+      "accounts", "emails", "about", "legal", "terms", "privacy", ""
+    ];
+
+    if (candidate && !reserved.includes(candidate.toLowerCase())) {
+      return candidate;
+    }
+
+    // 2. From Document Title
+    const titleMatch = document.title.match(/@([a-zA-Z0-9._]+)/);
+    if (titleMatch) return titleMatch[1];
+
+    // 3. From header h2 / h1
+    const headerHeading = document.querySelector("header h2, header h1, section h2");
+    if (headerHeading && headerHeading.textContent) {
+      const clean = headerHeading.textContent.trim();
+      if (clean && !clean.includes(" ") && clean.length > 2) {
+        return clean;
+      }
+    }
+
+    return "";
   }
 
   function parseCount(text) {
@@ -39,30 +91,41 @@
     return isNaN(num) ? 0 : num;
   }
 
+  function extractCurrentPageData() {
+    const host = window.location.hostname;
+    if (host.includes("instagram.com")) {
+      return extractInstagramData();
+    } else if (host.includes("tiktok.com")) {
+      return extractTikTokData();
+    }
+    throw new Error("Halaman ini bukan Instagram atau TikTok.");
+  }
+
   function extractInstagramData() {
-    // 1. Get username from URL
-    const match = window.location.pathname.match(/^\/([^/?#]+)/);
-    const username = match ? match[1] : "";
-    if (!username || ["direct", "explore", "reels", "stories"].includes(username)) {
-      throw new Error("Silakan buka halaman profil Instagram klien (bukan feed beranda).");
+    const username = getInstagramUsername();
+    if (!username) {
+      throw new Error("Silakan buka halaman profil Instagram klien (misal: instagram.com/erihome.id/).");
     }
 
-    // 2. Parse profile header metrics
+    const headerEl = document.querySelector("header") || document.querySelector("main");
+    const headerText = headerEl ? headerEl.innerText : document.body.innerText;
+
+    // Parse counts using robust text matching
     let postsCount = 0;
     let followersCount = 0;
     let followingCount = 0;
-    let fullName = "";
-    let bio = "";
-    let profilePicUrl = "";
 
-    // Header stats usually appear in a list or span
-    const listItems = document.querySelectorAll("header section ul li, header ul li");
-    if (listItems.length >= 3) {
-      postsCount = parseCount(listItems[0].textContent);
-      followersCount = parseCount(listItems[1].textContent);
-      followingCount = parseCount(listItems[2].textContent);
-    } else {
-      // Fallback selector via title / aria-label
+    const postsMatch = headerText.match(/([\d.,kKmM]+)\s*(posts|kiriman|postingan)/i);
+    if (postsMatch) postsCount = parseCount(postsMatch[1]);
+
+    const followersMatch = headerText.match(/([\d.,kKmM]+)\s*(followers|pengikut)/i);
+    if (followersMatch) followersCount = parseCount(followersMatch[1]);
+
+    const followingMatch = headerText.match(/([\d.,kKmM]+)\s*(following|mengikuti)/i);
+    if (followingMatch) followingCount = parseCount(followingMatch[1]);
+
+    // Fallback: meta tags
+    if (!followersCount) {
       const metaDesc = document.querySelector('meta[name="description"]')?.getAttribute("content") || "";
       const metaMatch = metaDesc.match(/([0-9.,KkMm]+)\s+Followers,\s+([0-9.,KkMm]+)\s+Following,\s+([0-9.,KkMm]+)\s+Posts/i);
       if (metaMatch) {
@@ -72,21 +135,28 @@
       }
     }
 
-    // Full name and bio
-    const headerEl = document.querySelector("header");
-    if (headerEl) {
-      const bioEl = headerEl.querySelector("h1, h2");
-      if (bioEl) fullName = bioEl.textContent || "";
-      const bioTextEl = headerEl.querySelector("header section > div:last-child");
-      if (bioTextEl) bio = bioTextEl.textContent || "";
+    // Full name, Bio, Avatar
+    let fullName = "";
+    let bio = "";
+    let profilePicUrl = "";
 
-      const imgEl = headerEl.querySelector("img");
-      if (imgEl) profilePicUrl = imgEl.src || "";
+    if (headerEl) {
+      // Fullname usually in section next to h2 or first div with text
+      const nameEl = headerEl.querySelector("header section span, header section h1");
+      if (nameEl) fullName = nameEl.textContent?.trim() || "";
+
+      // Bio text
+      const bioEl = headerEl.querySelector("header section > div > span, header section > div:last-child");
+      if (bioEl) bio = bioEl.textContent?.trim() || "";
+
+      // Avatar
+      const img = headerEl.querySelector('img[alt*="profile"], img[alt*="profil"], header img');
+      if (img) profilePicUrl = img.src || "";
     }
 
-    // 3. Parse visible post cards on the grid
+    // Parse visible posts
     const posts = [];
-    const postLinks = document.querySelectorAll('a[href^="/p/"], a[href^="/reel/"]');
+    const postLinks = document.querySelectorAll('a[href*="/p/"], a[href*="/reel/"]');
     const seenIds = new Set();
 
     postLinks.forEach((a) => {
@@ -97,26 +167,24 @@
       if (seenIds.has(postId)) return;
       seenIds.add(postId);
 
+      const fullUrl = href.startsWith("http") ? href : `https://www.instagram.com${href}`;
       const img = a.querySelector("img");
       const caption = img ? img.getAttribute("alt") || "" : "";
-      const thumbnailUrl = img ? img.src || "" : "";
-      const mediaType = href.includes("/reel/") ? "reel" : "photo";
+      const thumb = img ? img.getAttribute("src") || "" : "";
 
-      // Check aria-labels for likes/comments if available
+      // Likes/comments in overlay if user hovered
       let likes = 0;
       let comments = 0;
-      const aria = a.getAttribute("aria-label") || "";
-      const likesMatch = aria.match(/([0-9.,KkMm]+)\s*(suka|likes)/i);
-      const commentsMatch = aria.match(/([0-9.,KkMm]+)\s*(komentar|comments)/i);
-      if (likesMatch) likes = parseCount(likesMatch[1]);
-      if (commentsMatch) comments = parseCount(commentsMatch[1]);
+      const overlayText = a.innerText || "";
+      const lMatch = overlayText.match(/([\d.,kKmM]+)/);
+      if (lMatch) likes = parseCount(lMatch[1]);
 
       posts.push({
         postId,
-        postUrl: `https://www.instagram.com${href}`,
-        caption: caption.slice(0, 300),
-        mediaType,
-        thumbnailUrl,
+        postUrl: fullUrl,
+        caption: caption.slice(0, 1000),
+        mediaType: pMatch[1] === "reel" ? "reel" : "image",
+        thumbnailUrl: thumb,
         likesCount: likes,
         commentsCount: comments,
         sharesCount: 0,
@@ -125,15 +193,18 @@
     });
 
     return {
-      platform: "instagram",
-      username,
-      fullName,
-      followersCount,
-      followingCount,
-      postsCount: postsCount || posts.length,
-      bio,
-      profilePicUrl,
-      posts: posts.slice(0, 24),
+      ok: true,
+      profile: {
+        platform: "instagram",
+        username,
+        fullName: fullName || username,
+        followersCount,
+        followingCount,
+        postsCount: postsCount || posts.length,
+        bio: bio.slice(0, 500),
+        profilePicUrl,
+      },
+      posts: posts.slice(0, 30),
     };
   }
 
@@ -154,16 +225,18 @@
     }
 
     return {
-      platform: "tiktok",
-      username,
-      fullName: username,
-      followersCount,
-      followingCount,
-      postsCount: 0,
-      bio: "",
-      profilePicUrl: "",
+      ok: true,
+      profile: {
+        platform: "tiktok",
+        username,
+        fullName: username,
+        followersCount,
+        followingCount,
+        postsCount: 0,
+        bio: "",
+        profilePicUrl: "",
+      },
       posts: [],
     };
   }
 })();
-

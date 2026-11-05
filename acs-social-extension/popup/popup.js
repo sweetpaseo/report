@@ -38,7 +38,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // Helper to normalize server URL
   function normalizeUrl(url) {
     let clean = (url || "https://report.erihome.id").trim().replace(/\/+$/, "");
     if (clean.includes("report.erihome.id")) {
@@ -50,6 +49,42 @@ document.addEventListener("DOMContentLoaded", async () => {
         : "https://" + clean;
     }
     return clean;
+  }
+
+  // Helper to send message to active tab with auto-injection fallback
+  function sendMessageToTab(tabId, message, callback) {
+    chrome.tabs.sendMessage(tabId, message, (response) => {
+      if (chrome.runtime.lastError) {
+        // Content script might not be injected yet in tabs opened before reload
+        if (chrome.scripting) {
+          chrome.scripting.executeScript(
+            {
+              target: { tabId },
+              files: ["content-scripts/instagram-extractor.js"],
+            },
+            () => {
+              if (chrome.runtime.lastError) {
+                callback({ error: "Refresh tab Instagram (tekan F5) lalu coba lagi." });
+              } else {
+                setTimeout(() => {
+                  chrome.tabs.sendMessage(tabId, message, (retryRes) => {
+                    if (chrome.runtime.lastError) {
+                      callback({ error: "Refresh tab Instagram (tekan F5) lalu coba lagi." });
+                    } else {
+                      callback(retryRes);
+                    }
+                  });
+                }, 200);
+              }
+            }
+          );
+        } else {
+          callback({ error: "Refresh tab Instagram (tekan F5) lalu buka kembali popup." });
+        }
+      } else {
+        callback(response);
+      }
+    });
   }
 
   // Login handler
@@ -94,7 +129,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   selectClient.addEventListener("change", async (e) => {
     const clientId = e.target.value;
     await chrome.storage.local.set({ selectedClientId: clientId });
-    validateDetectedProfileWithClient(clientId);
   });
 
   // Sync button handler
@@ -112,9 +146,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
-      chrome.tabs.sendMessage(activeTab.id, { action: "COLLECT_PAGE_DATA" }, async (pageData) => {
-        if (chrome.runtime.lastError || !pageData || !pageData.ok) {
-          setFeedback("Buka halaman profil Instagram atau TikTok terlebih dahulu.", "error");
+      sendMessageToTab(activeTab.id, { action: "COLLECT_PAGE_DATA" }, async (pageData) => {
+        if (!pageData || !pageData.ok || !pageData.profile) {
+          setFeedback(pageData?.error || "Gagal membaca halaman. Refresh tab Instagram (F5) lalu ulangi.", "error");
           btnSyncNow.disabled = false;
           btnSyncNow.textContent = "⚡ Sinkronkan ke ACS Sekarang";
           return;
@@ -123,7 +157,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         chrome.storage.local.get(["selectedClientId"], (res) => {
           const clientId = res.selectedClientId;
           if (!clientId) {
-            setFeedback("Pilih klien tujuan terlebih dahulu.", "error");
+            setFeedback("Pilih klien tujuan pada menu di atas.", "error");
             btnSyncNow.disabled = false;
             btnSyncNow.textContent = "⚡ Sinkronkan ke ACS Sekarang";
             return;
@@ -147,7 +181,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                   payload: {
                     clientId,
                     platform: pageData.profile.platform,
-                    posts: pageData.posts,
+                    posts: pageData.posts || [],
                   },
                 },
                 (postsRes) => {
@@ -158,7 +192,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     setFeedback("Profil tersimpan, tetapi postingan gagal diunggah.", "warning");
                   } else {
                     setFeedback(
-                      `Berhasil! Profil @${pageData.profile.username} dan ${postsRes.savedCount || pageData.posts.length} postingan tersinkronkan.`,
+                      `Berhasil! Profil @${pageData.profile.username} (${pageData.profile.followersCount.toLocaleString("id-ID")} followers) dan ${postsRes.savedCount || (pageData.posts || []).length} postingan tersinkronkan ke ACS.`,
                       "success"
                     );
                   }
@@ -234,24 +268,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
-      chrome.tabs.sendMessage(tab.id, { action: "DETECT_PROFILE" }, (response) => {
-        if (chrome.runtime.lastError || !response || !response.username) {
-          labelDetectedUsername.textContent = "Mencari profil di halaman...";
-          labelDetectHint.textContent = "Pastikan Anda berada di halaman profil utama akun.";
+      sendMessageToTab(tab.id, { action: "DETECT_PROFILE" }, (response) => {
+        if (!response || !response.username) {
+          // If message had error or no username
+          labelDetectedUsername.textContent = "Profil Belum Terbaca";
+          labelDetectHint.textContent = "Refresh tab Instagram (F5) jika baru memasang ekstensi.";
         } else {
           labelDetectedUsername.textContent = `@${response.username}`;
           labelDetectHint.textContent = "Siap disinkronkan ke ACS.";
         }
       });
-    });
-  }
-
-  function validateDetectedProfileWithClient(clientId) {
-    chrome.storage.local.get(["clientsList"], (res) => {
-      const client = (res.clientsList || []).find((c) => c.id === clientId);
-      if (client && client.socialHandles) {
-        // Optional hint if handle differs
-      }
     });
   }
 
