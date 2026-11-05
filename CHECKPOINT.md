@@ -5,12 +5,12 @@ Dokumen ini adalah ringkasan status teknis, arsitektur, fitur aktif, dan riwayat
 ---
 
 ## 📌 Status Terkini Proyek
-- **Versi Aplikasi**: `v0.2.0`
-- **Tanggal Pembaruan Terakhir**: 4 November 2026
+- **Versi Aplikasi**: `v0.2.1`
+- **Tanggal Pembaruan Terakhir**: 5 November 2026
 - **Status Server Lokal**: **ONLINE & READY** (`http://localhost:3000`)
 - **Status Server Produksi**: **ONLINE & LIVE** (`https://report.erihome.id`)
 - **Git Branch**: `main` (Up to date dengan `origin/main`)
-- **Fitur Utama Terkini**: **Social Media Hub (Tebar.app)**, **Restrukturisasi 2 Menu Utama Sidebar**, & **Manajemen Akses Staff per Klien**.
+- **Fitur Utama Terkini**: **ACS Social Sync & Copilot Browser Extension (Manifest V3)**, **Backend Extension API Sync**, **Social Media Hub (Tebar.app & Direct Web Sync)**, **Restrukturisasi 2 Menu Utama Sidebar**, & **Manajemen Akses Staff per Klien**.
 
 ---
 
@@ -57,7 +57,26 @@ Dokumen ini adalah ringkasan status teknis, arsitektur, fitur aktif, dan riwayat
   - Dukungan peran `staff` pada verifikasi session cookie JWT (`lib/auth.ts`).
   - Endpoint manajemen staff (`/api/staff`) khusus Administrator untuk menambah/menghapus staff dan menetapkan portofolio klien.
 
-### 4. Pelaporan Performa Website Lengkap (Website Hub)
+### 4. Ekstensi Browser Staf (ACS Social Sync & Copilot - Manifest V3)
+- **Paket Ekstensi**: Direktori `acs-social-extension/` (Chrome & Edge Manifest V3)
+- **Komponen Ekstensi**:
+  - `manifest.json`: Menggunakan Manifest V3, perizinan minimal (`storage`, `activeTab`), host permissions terbatas ke Instagram, TikTok, localhost, dan `report.erihome.id`.
+  - `background/service-worker.js`: Relay komunikasi HTTPS aman dan penyimpanan token sesi staf.
+  - `popup/`: UI popup untuk staf login, memilih klien, mendeteksi username aktif, dan 1-click sync profil + postingan ke ACS.
+  - `content-scripts/instagram-extractor.js`: Ekstraktor data DOM halaman profil dan grid postingan (followers, following, bio, post count, likes, comments).
+  - `content-scripts/floating-copilot.js` & `inpage-widget/widget.css`: Floating pill *"✨ ACS Copilot"* yang memunculkan rekomendasi konten tren Google Search Console website klien dan rekomendasi jam tayang optimal langsung di layar Instagram staf.
+- **Backend API Ekstensi**:
+  - `POST & GET /api/extension/auth`: Autentikasi staf dari popup dan penerbitan API bearer token.
+  - `POST /api/extension/sync-profile`: Menyimpan data snapshot followers, bio, dan total postingan ke `social_profile_snapshots`.
+  - `POST /api/extension/sync-posts`: Menerima batch performa postingan (likes, comments, caption, link) ke `social_posts_cache`.
+  - `GET /api/extension/content-recommendations`: Mengonversi kueri impresi tinggi Google Search Console klien menjadi ide konten viral dan hook media sosial.
+  - `GET /api/social/synced-data`: Endpoint dashboard untuk menampilkan profil dan postingan yang tersinkronkan.
+- **Integrasi Antarmuka Dashboard (`SocialMediaView.tsx`)**:
+  - Sub-tab baru: **Ekstensi Browser Staff (ACS Copilot)** lengkap dengan panduan instalasi 3 langkah (Developer Mode & Load Unpacked) serta log riwayat sinkronisasi.
+  - Tampilan feed postingan tersinkron langsung dari medsos dengan metrik like & komentar asli.
+  - Banner sinergi SEO-to-Social yang menghubungkan performa pencarian website dengan materi konten media sosial.
+
+### 5. Pelaporan Performa Website Lengkap (Website Hub)
 - **Audit Kecepatan Google PageSpeed Insights**: Pengujian otomatis skor performa, aksesibilitas, SEO, dan Core Web Vitals (LCP, TBT, CLS, FCP) via `components/views/CoreWebVitalsView.tsx`.
 - **Urutan Default Descending Terbanyak ke Nol**: Seluruh tabel kueri dan halaman diurutkan dari metrik terbesar ke terkecil/nol dengan fitur pengurutan multi-kolom interaktif.
 - **Filter Rentang Tanggal Cepat**: Pilihan rentang instan (Bulan Penuh, 30 Hari, 14 Hari, 7 Hari) dengan agregasi client-side 0ms.
@@ -72,6 +91,7 @@ Dokumen ini adalah ringkasan status teknis, arsitektur, fitur aktif, dan riwayat
 
 | Versi | Commit | Tanggal | Sorotan Pembaruan |
 | :--- | :--- | :--- | :--- |
+| **v0.2.1** | `c62aab8` | 2026-11-05 | Ekstensi Browser Staf (ACS Social Sync & Copilot), Backend API Sync, & Tab Ekstensi di Dashboard |
 | **v0.2.0** | `2f342af` | 2026-11-04 | Social Media Hub (Tebar.app), Navigasi 2 Menu Utama Sidebar, Akses Staff per Klien, & 100% White-Label UI |
 | **v0.1.9** | `c04525f` | 2026-09-26 | Default Descending Sorting (Highest to Zero/Lowest) & Interactive Multi-Column Sort |
 | **v0.1.7** | `2e6fecb` | 2026-09-26 | Dokumen Laporan Resmi Eksekutif A4, Kalkulator ROI Organik Rupiah, & Keyword Watchlist ⭐ |

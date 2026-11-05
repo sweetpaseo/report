@@ -346,6 +346,11 @@ function initialize(db: DatabaseSync) {
   } catch (e) {
     // Ignore if column already exists
   }
+  try {
+    db.exec("ALTER TABLE clients ADD COLUMN social_handles TEXT;");
+  } catch (e) {
+    // Ignore if column already exists
+  }
   
   // Google API Integration columns for websites
   try {
@@ -400,6 +405,50 @@ function initialize(db: DatabaseSync) {
       created_at TEXT NOT NULL,
       PRIMARY KEY(staff_id, client_id)
     );
+
+    CREATE TABLE IF NOT EXISTS staff_api_tokens (
+      token TEXT PRIMARY KEY,
+      staff_id TEXT NOT NULL REFERENCES staff_users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL DEFAULT 'Chrome Extension',
+      created_at TEXT NOT NULL,
+      last_used_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_staff_tokens_staff ON staff_api_tokens(staff_id);
+
+    CREATE TABLE IF NOT EXISTS social_profile_snapshots (
+      id TEXT PRIMARY KEY,
+      client_id TEXT NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+      platform TEXT NOT NULL,
+      username TEXT NOT NULL,
+      full_name TEXT,
+      followers_count INTEGER NOT NULL DEFAULT 0,
+      following_count INTEGER NOT NULL DEFAULT 0,
+      posts_count INTEGER NOT NULL DEFAULT 0,
+      bio TEXT,
+      profile_pic_url TEXT,
+      synced_by_staff_id TEXT REFERENCES staff_users(id) ON DELETE SET NULL,
+      synced_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_profile_snapshots_client ON social_profile_snapshots(client_id, platform, synced_at DESC);
+
+    CREATE TABLE IF NOT EXISTS social_posts_cache (
+      id TEXT PRIMARY KEY,
+      client_id TEXT NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+      platform TEXT NOT NULL,
+      post_id TEXT NOT NULL,
+      post_url TEXT,
+      caption TEXT,
+      media_type TEXT,
+      thumbnail_url TEXT,
+      likes_count INTEGER NOT NULL DEFAULT 0,
+      comments_count INTEGER NOT NULL DEFAULT 0,
+      shares_count INTEGER NOT NULL DEFAULT 0,
+      posted_at TEXT,
+      engagement_score REAL NOT NULL DEFAULT 0,
+      synced_at TEXT NOT NULL,
+      UNIQUE(client_id, platform, post_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_posts_cache_client ON social_posts_cache(client_id, platform, posted_at DESC);
 
     UPDATE monthly_metrics SET metric_key = 'impressions' WHERE metric_key = 'total_impressions';
     UPDATE monthly_metrics SET metric_key = 'clicks' WHERE metric_key = 'total_clicks';

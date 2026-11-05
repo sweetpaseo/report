@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ACS Social Assistant</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="brand">
+        <div class="logo">AcS</div>
+        <div>
+          <h1>ACS Assistant</h1>
+          <p class="subtitle">Social Media Optimization</p>
+        </div>
+      </div>
+      <div id="statusIndicator" class="indicator offline"></div>
+    </header>
+
+    <!-- State 1: Login Form -->
+    <section id="loginSection" class="section">
+      <p class="desc">Masuk dengan akun staff ACS Anda untuk menghubungkan browser ke dashboard.</p>
+      
+      <div class="field">
+        <label>Server ACS URL</label>
+        <input type="text" id="inputServerUrl" value="http://localhost:3000" placeholder="https://report.erihome.id">
+      </div>
+
+      <div class="field">
+        <label>Email Staff</label>
+        <input type="email" id="inputEmail" placeholder="staff.social@erihome.id">
+      </div>
+
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="inputPassword" placeholder="••••••••">
+      </div>
+
+      <button id="btnLogin" class="btn primary">Hubungkan ke ACS</button>
+      <p id="loginError" class="error-msg"></p>
+    </section>
+
+    <!-- State 2: Active Dashboard -->
+    <section id="activeSection" class="section hidden">
+      <!-- Staff Card -->
+      <div class="user-card">
+        <div>
+          <span class="user-name" id="labelStaffName">Staff Name</span>
+          <span class="user-email" id="labelStaffEmail">email@domain.com</span>
+        </div>
+        <button id="btnLogout" class="btn-text">Keluar</button>
+      </div>
+
+      <!-- Client Selection -->
+      <div class="field">
+        <label>Target Klien yang Sedang Dikelola</label>
+        <select id="selectClient">
+          <option value="">Memuat daftar klien...</option>
+        </select>
+      </div>
+
+      <!-- Current Page Detection Card -->
+      <div class="context-card">
+        <span class="badge" id="badgePlatform">Instagram</span>
+        <strong id="labelDetectedUsername">Mendeteksi halaman...</strong>
+        <p id="labelDetectHint" class="hint">Buka profil Instagram klien di tab aktif.</p>
+      </div>
+
+      <!-- Action Buttons -->
+      <button id="btnSyncNow" class="btn primary">
+        <span>⚡ Sinkronkan ke ACS</span>
+      </button>
+
+      <button id="btnOpenDashboard" class="btn secondary">
+        <span>📊 Buka Dashboard ACS</span>
+      </button>
+
+      <div id="syncFeedback" class="feedback-msg"></div>
+    </section>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
+

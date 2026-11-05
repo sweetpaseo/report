@@ -2,6 +2,43 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit 363386f)`.
 
+## 2026-11-05 — Versi 0.2.1: Ekstensi Browser Staf (ACS Social Sync & Copilot), Backend API Sync, & Integrasi Dashboard (commit c62aab8)
+- **Ekstensi Browser Manifest V3 (acs-social-extension/)**:
+  - Membangun paket ekstensi browser Chrome/Edge Manifest V3 untuk staf media sosial.
+  - Beroperasi aman dengan IP residensial staf (zero-risk banned), mendukung akun personal & bisnis tanpa membagikan kata sandi.
+  - Otomasi penarikan metrik profil (followers, following, bio, total posts) dan postingan (likes, comments, caption, link) dari Instagram & TikTok.
+  - Menyematkan Floating In-Page Copilot (*✨ ACS Copilot*) langsung di dalam web Instagram staf yang menampilkan ide konten tren berbasis data kueri Google Search Console website klien dan rekomendasi jam tayang terbaik.
+  - Memiliki fitur verifikasi anti-salah akun sebelum data disinkronkan ke klien.
+- **Backend Sync API (app/api/extension/* & lib/extension-auth.ts)**:
+  - POST & GET /api/extension/auth: Autentikasi staf, penerbitan token sesi, dan daftar klien yang ditugaskan.
+  - POST /api/extension/sync-profile: Menyimpan snapshot profil ke tabel social_profile_snapshots.
+  - POST /api/extension/sync-posts: Menyimpan batch performa postingan ke tabel social_posts_cache.
+  - GET /api/extension/content-recommendations: Mengubah kueri pencarian website klien menjadi formula hook konten viral.
+  - GET /api/social/synced-data: Endpoint dashboard untuk menyajikan snapshot dan feed postingan yang tersinkronkan.
+- **Peningkatan Dashboard (components/views/SocialMediaView.tsx)**:
+  - Menambahkan sub-tab baru: Ekstensi Browser Staff (ACS Copilot) dengan panduan instalasi 3 langkah (Load Unpacked di Chrome/Edge) dan log histori penarikan data.
+  - Menampilkan kartu profil aktif hasil sinkronisasi ekstensi staf lengkap dengan badge followers dan handler staf.
+  - Filter sumber postingan (Semua, Dari Medsos, Jadwal Cloud) serta grid feed postingan tersinkron.
+  - Banner sinergi SEO-to-Social yang menghubungkan performa pencarian website dengan materi konten media sosial.
+- **Skema Database SQLite (lib/db.ts)**:
+  - Tabel staff_api_tokens: Penyimpanan token sesi ekstensi per staf.
+  - Tabel social_profile_snapshots: Snapshot histori metrik profil media sosial.
+  - Tabel social_posts_cache: Cache performa postingan dan skor interaksi.
+  - Kolom social_handles pada tabel clients.
+- **File Terdampak**:
+  - package.json
+  - components/views/SocialMediaView.tsx
+  - lib/db.ts
+  - lib/extension-auth.ts
+  - app/api/extension/auth/route.ts
+  - app/api/extension/sync-profile/route.ts
+  - app/api/extension/sync-posts/route.ts
+  - app/api/extension/content-recommendations/route.ts
+  - app/api/social/synced-data/route.ts
+  - acs-social-extension/*
+  - CHECKPOINT.md
+  - HISTORY.md
+
 ## 2026-11-04 — Versi 0.2.0: Rilis Checkpoint Stabil Social Media Hub, 2 Menu Utama, & Multi-User Staff (commit de756b1)
 - **Pembaruan Dokumen & Titik Aman Checkpoint**:
   - Memperbarui versi aplikasi ke 0.2.0 pada package.json dan badge header navigasi components/sidebar-nav.tsx.

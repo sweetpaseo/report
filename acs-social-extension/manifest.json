@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "ACS Social Media Assistant",
+  "version": "1.0.0",
+  "description": "Asisten analitik dan optimasi konten media sosial terintegrasi AI Creative Studio (ACS).",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "*://*.instagram.com/*",
+    "*://*.tiktok.com/*",
+    "http://localhost:3000/*",
+    "https://report.erihome.id/*"
+  ],
+  "background": {
+    "service_worker": "background/service-worker.js"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "ACS Social Assistant"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.instagram.com/*",
+        "*://*.tiktok.com/*"
+      ],
+      "js": [
+        "content-scripts/instagram-extractor.js",
+        "content-scripts/floating-copilot.js"
+      ],
+      "css": [
+        "inpage-widget/widget.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
+
