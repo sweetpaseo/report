@@ -39,16 +39,26 @@ export async function POST(request: Request) {
       VALUES (?, ?, ?, ?, ?)
     `).run(token, staff.id, deviceName, now, now);
 
-    // Fetch assigned clients
+    // Fetch assigned clients with website domains attached
     const clients = db
       .prepare(`
-        SELECT c.id, c.name, c.social_handles
+        SELECT c.id, c.name, c.social_handles,
+               GROUP_CONCAT(w.domain, ', ') as domains,
+               GROUP_CONCAT(w.name, ', ') as website_names
         FROM staff_client_assignments sca
         JOIN clients c ON c.id = sca.client_id
+        LEFT JOIN websites w ON w.client_id = c.id
         WHERE sca.staff_id = ?
-        ORDER BY c.name ASC
+        GROUP BY c.id, c.name
+        ORDER BY (w.id IS NOT NULL) DESC, c.name ASC
       `)
-      .all(staff.id) as Array<{ id: string; name: string; social_handles: string | null }>;
+      .all(staff.id) as Array<{
+        id: string;
+        name: string;
+        social_handles: string | null;
+        domains: string | null;
+        website_names: string | null;
+      }>;
 
     return NextResponse.json({
       ok: true,
@@ -60,7 +70,9 @@ export async function POST(request: Request) {
       },
       clients: clients.map((c) => ({
         id: c.id,
-        name: c.name,
+        name: c.domains ? `${c.name} (${c.domains})` : c.name,
+        baseName: c.name,
+        domains: c.domains ? c.domains.split(", ") : [],
         socialHandles: c.social_handles ? JSON.parse(c.social_handles) : {},
       })),
     });

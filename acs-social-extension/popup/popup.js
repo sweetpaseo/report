@@ -276,6 +276,22 @@ document.addEventListener("DOMContentLoaded", async () => {
         } else {
           labelDetectedUsername.textContent = `@${response.username}`;
           labelDetectHint.textContent = "Siap disinkronkan ke ACS.";
+
+          // Auto-select matching client if domain / name matches
+          chrome.storage.local.get(["clientsList"], (res) => {
+            const list = res.clientsList || [];
+            const uname = response.username.toLowerCase();
+            const matched = list.find((c) => {
+              const nameMatch = c.name?.toLowerCase().includes(uname) || (c.baseName && uname.includes(c.baseName.toLowerCase()));
+              const domainMatch = c.domains?.some((d) => uname.includes(d.toLowerCase()) || d.toLowerCase().includes(uname));
+              return nameMatch || domainMatch;
+            });
+
+            if (matched && selectClient.value !== matched.id) {
+              selectClient.value = matched.id;
+              chrome.storage.local.set({ selectedClientId: matched.id });
+            }
+          });
         }
       });
     });

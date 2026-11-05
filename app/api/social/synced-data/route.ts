@@ -15,12 +15,13 @@ export async function GET(request: Request) {
   const websiteId = searchParams.get("websiteId");
   const db = getDb();
 
-  if (!clientId && websiteId) {
-    const site = db.prepare("SELECT client_id FROM websites WHERE id = ?").get(websiteId) as
-      | { client_id: string | null }
+  let targetWebsite: { id: string; name: string; domain: string; client_id: string | null } | undefined;
+  if (websiteId) {
+    targetWebsite = db.prepare("SELECT id, name, domain, client_id FROM websites WHERE id = ?").get(websiteId) as
+      | { id: string; name: string; domain: string; client_id: string | null }
       | undefined;
-    if (site?.client_id) {
-      clientId = site.client_id;
+    if (targetWebsite?.client_id && !clientId) {
+      clientId = targetWebsite.client_id;
     }
   }
 
@@ -33,7 +34,7 @@ export async function GET(request: Request) {
     }
   }
 
-  if (!clientId) {
+  if (!clientId && !targetWebsite) {
     return NextResponse.json({
       ok: true,
       snapshots: [],
@@ -42,28 +43,38 @@ export async function GET(request: Request) {
     });
   }
 
-  const client = db.prepare("SELECT id, name, social_handles FROM clients WHERE id = ?").get(clientId) as
-    | { id: string; name: string; social_handles?: string | null }
-    | undefined;
+  const client = clientId
+    ? (db.prepare("SELECT id, name, social_handles FROM clients WHERE id = ?").get(clientId) as
+        | { id: string; name: string; social_handles?: string | null }
+        | undefined)
+    : null;
 
-  // Latest snapshot per platform
+  const domainPattern = targetWebsite?.domain || "";
+  const namePattern = targetWebsite?.name || "";
+
+  // Latest snapshot per platform: match by client_id OR by website domain / name
   const snapshots = db.prepare(`
     SELECT s.*, st.name as synced_by_name
     FROM social_profile_snapshots s
     LEFT JOIN staff_users st ON s.synced_by_staff_id = st.id
-    WHERE s.client_id = ?
+    WHERE (? IS NOT NULL AND s.client_id = ?)
+       OR (? != '' AND (LOWER(s.username) = LOWER(?) OR LOWER(s.username) = LOWER(?)))
     ORDER BY s.synced_at DESC
-    LIMIT 10
-  `).all(clientId);
+    LIMIT 20
+  `).all(clientId, clientId, domainPattern, domainPattern, namePattern);
 
-  // Cached posts from extension
+  // Cached posts from extension: match by client_id OR associated snapshots
   const posts = db.prepare(`
     SELECT *
     FROM social_posts_cache
-    WHERE client_id = ?
+    WHERE (? IS NOT NULL AND client_id = ?)
+       OR client_id IN (
+         SELECT DISTINCT client_id FROM social_profile_snapshots
+         WHERE ? != '' AND (LOWER(username) = LOWER(?) OR LOWER(username) = LOWER(?))
+       )
     ORDER BY posted_at DESC, synced_at DESC
     LIMIT 60
-  `).all(clientId);
+  `).all(clientId, clientId, domainPattern, domainPattern, namePattern);
 
   return NextResponse.json({
     ok: true,
@@ -78,4 +89,3 @@ export async function GET(request: Request) {
     posts,
   });
 }
-
