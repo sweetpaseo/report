@@ -35,6 +35,13 @@ interface SocialMediaViewProps {
     domain: string;
     client_id?: string | null;
   };
+  websites?: Array<{
+    id: string;
+    name: string;
+    domain: string;
+    client_id?: string | null;
+  }>;
+  onSelectWebsite?: (id: string) => void;
   userRole?: string;
 }
 
@@ -96,7 +103,7 @@ interface SyncedPost {
   synced_at: string;
 }
 
-export function SocialMediaView({ website }: SocialMediaViewProps) {
+export function SocialMediaView({ website, websites, onSelectWebsite, userRole }: SocialMediaViewProps) {
   const [activeSubTab, setActiveSubTab] = useState<"accounts" | "posts" | "ideas" | "insights" | "extension">("accounts");
   const [postSourceFilter, setPostSourceFilter] = useState<"all" | "extension" | "cloud">("all");
   const [loading, setLoading] = useState(true);
@@ -270,9 +277,25 @@ export function SocialMediaView({ website }: SocialMediaViewProps) {
       {/* Header Banner */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-indigo-900/40">
         <div>
-          <div className="flex items-center gap-2 text-indigo-300 text-xs font-bold uppercase tracking-wider mb-1">
+          <div className="flex items-center gap-2 text-indigo-300 text-xs font-bold uppercase tracking-wider mb-1 flex-wrap">
             <Share2 className="w-4 h-4 text-indigo-400" />
-            Social Media Hub &bull; {website?.name || clientInfo?.name || "Klien Erihome"}
+            <span>Social Media Hub</span>
+            <span>&bull;</span>
+            {websites && websites.length > 1 && onSelectWebsite ? (
+              <select
+                value={website?.id || ""}
+                onChange={(e) => onSelectWebsite(e.target.value)}
+                className="bg-indigo-900/80 border border-indigo-700/80 text-white rounded-lg px-2 py-0.5 text-xs font-bold outline-none cursor-pointer hover:bg-indigo-800 transition-colors"
+              >
+                {websites.map((w) => (
+                  <option key={w.id} value={w.id} className="bg-slate-900 text-white">
+                    {w.name ? `${w.name} (${w.domain})` : w.domain}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <span>{website?.name || clientInfo?.name || "Klien Erihome"}</span>
+            )}
           </div>
           <h2 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
             Pusat Optimasi Media Sosial Klien

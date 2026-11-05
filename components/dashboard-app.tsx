@@ -233,8 +233,9 @@ export function DashboardApp({
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-w-0 overflow-y-auto custom-scrollbar">
-        {/* Sticky Header Topbar */}
-        <header className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-8 py-4 flex flex-wrap items-center justify-between gap-4">
+        {/* Sticky Header Topbar - Khusus Modul Website Hub */}
+        {activeTab !== "social_media" && (
+          <header className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-8 py-4 flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
               <span>{activeNavItem?.label || "Ringkasan"}</span>
@@ -410,6 +411,7 @@ export function DashboardApp({
             </button>
           </div>
         </header>
+        )}
 
         {/* Dynamic View Canvas */}
         <div className="p-8 max-w-[1440px] w-full mx-auto space-y-6 flex-1">
@@ -434,7 +436,12 @@ export function DashboardApp({
             <EventsConversionsView data={activeDashboardData} isComparing={isComparing} />
           )}
           {activeTab === "social_media" && (
-            <SocialMediaView website={selectedWebsite} userRole={userRole} />
+            <SocialMediaView
+              website={selectedWebsite}
+              websites={websites}
+              onSelectWebsite={(id) => handleSelectWebsite(id)}
+              userRole={userRole}
+            />
           )}
           {activeTab === "ai_insight" && <AiInsightView data={activeDashboardData} isComparing={isComparing} />}
           {activeTab === "rekomendasi" && <RecommendationsView data={activeDashboardData} isComparing={isComparing} />}
