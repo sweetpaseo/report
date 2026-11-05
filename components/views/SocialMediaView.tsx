@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Share2,
   Calendar,
@@ -26,6 +26,10 @@ import {
   TrendingUp,
   ShieldCheck,
   Download,
+  Table,
+  LayoutGrid,
+  Search,
+  FileSpreadsheet,
 } from "lucide-react";
 
 interface SocialMediaViewProps {
@@ -104,8 +108,14 @@ interface SyncedPost {
 }
 
 export function SocialMediaView({ website, websites, onSelectWebsite, userRole }: SocialMediaViewProps) {
-  const [activeSubTab, setActiveSubTab] = useState<"accounts" | "posts" | "ideas" | "insights" | "extension">("accounts");
-  const [postSourceFilter, setPostSourceFilter] = useState<"all" | "extension" | "cloud">("all");
+  const [activeSubTab, setActiveSubTab] = useState<"accounts" | "posts" | "ideas" | "insights" | "extension">("posts");
+  const [postSourceFilter, setPostSourceFilter] = useState<"all" | "extension" | "cloud">("extension");
+  const [postViewMode, setPostViewMode] = useState<"table" | "grid">("table");
+  const [postSearch, setPostSearch] = useState("");
+  const [postTypeFilter, setPostTypeFilter] = useState<"all" | "reel" | "image">("all");
+  const [postSortBy, setPostSortBy] = useState<"likes" | "comments" | "engagement" | "date">("likes");
+  const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -179,6 +189,68 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Copy Post URL
+  function handleCopyPostUrl(url: string) {
+    navigator.clipboard.writeText(url);
+    setCopiedUrl(url);
+    setTimeout(() => setCopiedUrl(null), 2000);
+  }
+
+  // Export Table to CSV
+  function handleExportCsv() {
+    if (syncedPosts.length === 0) return;
+    const headers = ["No", "Platform", "Tipe", "Likes", "Komentar", "Total Interaksi", "URL Postingan", "Caption", "Tanggal Sinkron"];
+    const rows = filteredSyncedPosts.map((p, idx) => [
+      idx + 1,
+      p.platform,
+      p.media_type || "post",
+      p.likes_count || 0,
+      p.comments_count || 0,
+      (p.likes_count || 0) + (p.comments_count || 0),
+      `"${p.post_url || ""}"`,
+      `"${(p.caption || "").replace(/"/g, '""').replace(/\n/g, ' ')}"`,
+      p.posted_at || p.synced_at
+    ]);
+
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `laporan-interaksi-medsos-${website?.name || "client"}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  // Filter & Sort Synced Posts
+  const filteredSyncedPosts = useMemo(() => {
+    return syncedPosts
+      .filter((p) => {
+        if (postTypeFilter !== "all" && p.media_type !== postTypeFilter) return false;
+        if (postSearch) {
+          const q = postSearch.toLowerCase();
+          const inCaption = p.caption?.toLowerCase().includes(q);
+          const inUrl = p.post_url?.toLowerCase().includes(q);
+          if (!inCaption && !inUrl) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        if (postSortBy === "likes") return (b.likes_count || 0) - (a.likes_count || 0);
+        if (postSortBy === "comments") return (b.comments_count || 0) - (a.comments_count || 0);
+        if (postSortBy === "engagement") return (b.engagement_score || 0) - (a.engagement_score || 0);
+        return new Date(b.posted_at || b.synced_at).getTime() - new Date(a.posted_at || a.synced_at).getTime();
+      });
+  }, [syncedPosts, postTypeFilter, postSearch, postSortBy]);
+
+  // Aggregate Metrics
+  const totalPostsCount = syncedPosts.length;
+  const totalLikes = syncedPosts.reduce((acc, p) => acc + (p.likes_count || 0), 0);
+  const totalComments = syncedPosts.reduce((acc, p) => acc + (p.comments_count || 0), 0);
+  const totalInteractions = totalLikes + totalComments;
+  const avgEngagementPerPost = totalPostsCount > 0 ? (totalInteractions / totalPostsCount).toFixed(1) : "0";
 
   // Generate Connect Link
   async function handleGenerateConnectLink() {
@@ -307,7 +379,7 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
             {latestSnapshot ? (
               <span className="flex items-center gap-1.5 text-emerald-300 bg-emerald-950/70 border border-emerald-800/50 px-2.5 py-1 rounded-full">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Ekstensi Browser: <strong>@{latestSnapshot.username} Terhubung ({latestSnapshot.followers_count.toLocaleString("id-ID")} followers)</strong>
+                Ekstensi Browser: <strong>@{latestSnapshot.username} Terhubung ({latestSnapshot.followers_count.toLocaleString("id-ID")} followers &bull; {totalPostsCount} konten terpantau)</strong>
               </span>
             ) : (
               <span className="flex items-center gap-1.5 text-amber-300 bg-amber-950/70 border border-amber-800/50 px-2.5 py-1 rounded-full">
@@ -361,6 +433,18 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
       {/* Sub Tabs */}
       <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
         <button
+          onClick={() => setActiveSubTab("posts")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+            activeSubTab === "posts"
+              ? "bg-indigo-600 text-white shadow-sm"
+              : "text-slate-600 hover:bg-slate-100"
+          }`}
+        >
+          <Calendar className="w-3.5 h-3.5" />
+          <span>Tabel Postingan &amp; Interaksi ({syncedPosts.length + posts.length})</span>
+        </button>
+
+        <button
           onClick={() => setActiveSubTab("accounts")}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
             activeSubTab === "accounts"
@@ -370,18 +454,6 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
         >
           <Share2 className="w-3.5 h-3.5" />
           <span>Akun Terhubung ({accounts.length + snapshots.length})</span>
-        </button>
-
-        <button
-          onClick={() => setActiveSubTab("posts")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-            activeSubTab === "posts"
-              ? "bg-indigo-600 text-white shadow-sm"
-              : "text-slate-600 hover:bg-slate-100"
-          }`}
-        >
-          <Calendar className="w-3.5 h-3.5" />
-          <span>Postingan & Performa ({posts.length + syncedPosts.length})</span>
         </button>
 
         <button
@@ -405,7 +477,7 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
           }`}
         >
           <BarChart3 className="w-3.5 h-3.5" />
-          <span>Analitik & Waktu Terbaik</span>
+          <span>Analitik &amp; Waktu Terbaik</span>
         </button>
 
         <button
@@ -420,6 +492,418 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
           <span>Ekstensi Browser Staff</span>
         </button>
       </div>
+
+      {/* SUB-TAB: POSTS & INTERACTION TABLE */}
+      {activeSubTab === "posts" && (
+        <div className="space-y-5">
+          {/* Summary KPI Cards for Interaction Stats */}
+          {syncedPosts.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Konten Terpantau</span>
+                <div className="text-2xl font-black text-slate-900 mt-1">{totalPostsCount}</div>
+                <div className="text-[11px] text-slate-400 mt-0.5">Feed Instagram/TikTok</div>
+              </div>
+
+              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm">
+                <span className="text-[11px] font-bold text-rose-600 uppercase tracking-wider flex items-center gap-1">
+                  <Heart className="w-3 h-3 fill-rose-500 text-rose-500" />
+                  Total Suka (Likes)
+                </span>
+                <div className="text-2xl font-black text-rose-700 mt-1">{totalLikes.toLocaleString("id-ID")}</div>
+                <div className="text-[11px] text-slate-400 mt-0.5">Akumulasi seluruh konten</div>
+              </div>
+
+              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm">
+                <span className="text-[11px] font-bold text-blue-600 uppercase tracking-wider flex items-center gap-1">
+                  <MessageCircle className="w-3 h-3 fill-blue-500 text-blue-500" />
+                  Total Komentar
+                </span>
+                <div className="text-2xl font-black text-blue-700 mt-1">{totalComments.toLocaleString("id-ID")}</div>
+                <div className="text-[11px] text-slate-400 mt-0.5">Interaksi percakapan audiens</div>
+              </div>
+
+              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm">
+                <span className="text-[11px] font-bold text-indigo-600 uppercase tracking-wider flex items-center gap-1">
+                  <TrendingUp className="w-3 h-3 text-indigo-600" />
+                  Rata-rata Interaksi
+                </span>
+                <div className="text-2xl font-black text-indigo-700 mt-1">{avgEngagementPerPost}</div>
+                <div className="text-[11px] text-slate-400 mt-0.5">Suka + komentar per konten</div>
+              </div>
+            </div>
+          )}
+
+          {/* Controls Bar: Search, Filter, Sort, View Toggle, Export */}
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2.5 flex-1">
+              {/* Search */}
+              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 flex-1 min-w-[200px] max-w-sm">
+                <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <input
+                  type="text"
+                  value={postSearch}
+                  onChange={(e) => setPostSearch(e.target.value)}
+                  placeholder="Cari kata di caption atau URL..."
+                  className="bg-transparent text-xs text-slate-800 outline-none w-full placeholder:text-slate-400"
+                />
+              </div>
+
+              {/* Source Filter */}
+              <div className="bg-slate-100 p-1 rounded-xl flex items-center text-xs font-semibold">
+                <button
+                  onClick={() => setPostSourceFilter("extension")}
+                  className={`px-2.5 py-1 rounded-lg transition-all ${postSourceFilter === "extension" ? "bg-white text-emerald-700 shadow-xs font-bold" : "text-slate-500"}`}
+                >
+                  Dari Medsos ({syncedPosts.length})
+                </button>
+                <button
+                  onClick={() => setPostSourceFilter("cloud")}
+                  className={`px-2.5 py-1 rounded-lg transition-all ${postSourceFilter === "cloud" ? "bg-white text-indigo-700 shadow-xs font-bold" : "text-slate-500"}`}
+                >
+                  Jadwal Cloud ({posts.length})
+                </button>
+                <button
+                  onClick={() => setPostSourceFilter("all")}
+                  className={`px-2.5 py-1 rounded-lg transition-all ${postSourceFilter === "all" ? "bg-white text-slate-900 shadow-xs font-bold" : "text-slate-500"}`}
+                >
+                  Semua
+                </button>
+              </div>
+
+              {/* Media Type Filter */}
+              {postSourceFilter !== "cloud" && (
+                <select
+                  value={postTypeFilter}
+                  onChange={(e) => setPostTypeFilter(e.target.value as any)}
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 outline-none cursor-pointer"
+                >
+                  <option value="all">Semua Tipe Format</option>
+                  <option value="reel">Reels / Video</option>
+                  <option value="image">Gambar / Carousel</option>
+                </select>
+              )}
+
+              {/* Sort By */}
+              {postSourceFilter !== "cloud" && (
+                <select
+                  value={postSortBy}
+                  onChange={(e) => setPostSortBy(e.target.value as any)}
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 outline-none cursor-pointer"
+                >
+                  <option value="likes">Urutkan: Likes Terbanyak</option>
+                  <option value="comments">Urutkan: Komentar Terbanyak</option>
+                  <option value="engagement">Urutkan: Interaksi Tertinggi</option>
+                  <option value="date">Urutkan: Tanggal Terbaru</option>
+                </select>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {/* View Mode Toggle */}
+              {postSourceFilter !== "cloud" && (
+                <div className="bg-slate-100 p-1 rounded-xl flex items-center text-xs">
+                  <button
+                    onClick={() => setPostViewMode("table")}
+                    title="Tampilan Tabel Data"
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-all ${postViewMode === "table" ? "bg-white text-indigo-700 shadow-xs font-bold" : "text-slate-500"}`}
+                  >
+                    <Table className="w-3.5 h-3.5" />
+                    <span>Tabel</span>
+                  </button>
+                  <button
+                    onClick={() => setPostViewMode("grid")}
+                    title="Tampilan Grid Visual"
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-all ${postViewMode === "grid" ? "bg-white text-indigo-700 shadow-xs font-bold" : "text-slate-500"}`}
+                  >
+                    <LayoutGrid className="w-3.5 h-3.5" />
+                    <span>Grid</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Export CSV Button */}
+              {syncedPosts.length > 0 && postSourceFilter !== "cloud" && (
+                <button
+                  onClick={handleExportCsv}
+                  title="Ekspor seluruh daftar postingan & metrik ke file CSV Excel"
+                  className="flex items-center gap-1.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold px-3 py-1.5 rounded-xl transition-all shadow-xs"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Ekspor CSV</span>
+                </button>
+              )}
+
+              <button
+                onClick={() => setShowPostModal(true)}
+                className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl shadow-sm transition-all shrink-0"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Buat Post</span>
+              </button>
+            </div>
+          </div>
+
+          {/* TABLE VIEW OF SOCIAL MEDIA POSTS & INTERACTIONS */}
+          {(postSourceFilter === "all" || postSourceFilter === "extension") && postViewMode === "table" && (
+            <div className="space-y-3">
+              {filteredSyncedPosts.length === 0 ? (
+                <div className="bg-white rounded-3xl border border-slate-200/80 p-8 text-center text-slate-500 text-xs">
+                  Tidak ada postingan yang sesuai dengan filter pencarian.
+                </div>
+              ) : (
+                <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-sm">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr className="bg-slate-50/90 border-b border-slate-200 text-slate-600 font-extrabold uppercase text-[10px] tracking-wider">
+                          <th className="py-3 px-3 w-10 text-center">#</th>
+                          <th className="py-3 px-3 w-28">Format</th>
+                          <th className="py-3 px-4 min-w-[280px]">Caption &amp; Konten</th>
+                          <th className="py-3 px-4 min-w-[220px]">URL Postingan Medsos</th>
+                          <th className="py-3 px-3 text-right cursor-pointer" onClick={() => setPostSortBy("likes")}>
+                            <span className="flex items-center justify-end gap-1 text-rose-600 font-extrabold">
+                              <Heart className="w-3 h-3 fill-rose-500 text-rose-500" />
+                              Likes {postSortBy === "likes" && "↓"}
+                            </span>
+                          </th>
+                          <th className="py-3 px-3 text-right cursor-pointer" onClick={() => setPostSortBy("comments")}>
+                            <span className="flex items-center justify-end gap-1 text-blue-600 font-extrabold">
+                              <MessageCircle className="w-3 h-3 fill-blue-500 text-blue-500" />
+                              Komen {postSortBy === "comments" && "↓"}
+                            </span>
+                          </th>
+                          <th className="py-3 px-3 text-right cursor-pointer" onClick={() => setPostSortBy("engagement")}>
+                            <span className="flex items-center justify-end gap-1 text-indigo-600 font-extrabold">
+                              <TrendingUp className="w-3 h-3" />
+                              Interaksi {postSortBy === "engagement" && "↓"}
+                            </span>
+                          </th>
+                          <th className="py-3 px-3 text-center">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {filteredSyncedPosts.map((p, idx) => {
+                          const isCopied = copiedUrl === p.post_url;
+                          const totalInt = (p.likes_count || 0) + (p.comments_count || 0);
+
+                          return (
+                            <tr key={p.id} className="hover:bg-slate-50/60 transition-colors">
+                              <td className="py-3.5 px-3 text-center font-bold text-slate-400 text-[11px]">
+                                {idx + 1}
+                              </td>
+
+                              {/* Format / Media */}
+                              <td className="py-3.5 px-3">
+                                <div className="flex items-center gap-2">
+                                  {p.thumbnail_url ? (
+                                    <img
+                                      src={p.thumbnail_url}
+                                      alt="Thumbnail"
+                                      className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0"
+                                      onError={(e) => {
+                                        (e.target as HTMLElement).style.display = "none";
+                                      }}
+                                    />
+                                  ) : (
+                                    <div className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
+                                      <Laptop className="w-4 h-4" />
+                                    </div>
+                                  )}
+                                  <span
+                                    className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${
+                                      p.media_type === "reel"
+                                        ? "bg-purple-50 text-purple-700 border-purple-200"
+                                        : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                    }`}
+                                  >
+                                    {p.media_type || "Post"}
+                                  </span>
+                                </div>
+                              </td>
+
+                              {/* Caption */}
+                              <td className="py-3.5 px-4">
+                                <p className="text-slate-800 line-clamp-2 leading-relaxed text-xs">
+                                  {p.caption || <span className="text-slate-400 italic">(Tanpa caption teks)</span>}
+                                </p>
+                                {p.posted_at && (
+                                  <span className="text-[10px] text-slate-400 block mt-1">
+                                    {new Date(p.posted_at).toLocaleDateString("id-ID", {
+                                      year: "numeric",
+                                      month: "short",
+                                      day: "numeric",
+                                    })}
+                                  </span>
+                                )}
+                              </td>
+
+                              {/* Post URL */}
+                              <td className="py-3.5 px-4">
+                                {p.post_url ? (
+                                  <div className="flex items-center gap-1.5 max-w-[260px]">
+                                    <a
+                                      href={p.post_url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="font-mono text-[11px] text-indigo-600 hover:text-indigo-800 hover:underline truncate bg-indigo-50/70 border border-indigo-100 px-2 py-1 rounded-lg"
+                                      title={p.post_url}
+                                    >
+                                      {p.post_url.replace(/^https?:\/\/(www\.)?/, "")}
+                                    </a>
+                                    <button
+                                      onClick={() => handleCopyPostUrl(p.post_url || "")}
+                                      className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600 transition-colors shrink-0"
+                                      title="Salin Link"
+                                    >
+                                      {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <span className="text-slate-400 text-xs">-</span>
+                                )}
+                              </td>
+
+                              {/* Likes */}
+                              <td className="py-3.5 px-3 text-right">
+                                <span className="inline-flex items-center gap-1 font-black text-rose-700 bg-rose-50 border border-rose-200/80 px-2.5 py-1 rounded-full text-xs">
+                                  <Heart className="w-3 h-3 fill-rose-500 text-rose-500" />
+                                  {p.likes_count.toLocaleString("id-ID")}
+                                </span>
+                              </td>
+
+                              {/* Comments */}
+                              <td className="py-3.5 px-3 text-right">
+                                <span className="inline-flex items-center gap-1 font-black text-blue-700 bg-blue-50 border border-blue-200/80 px-2.5 py-1 rounded-full text-xs">
+                                  <MessageCircle className="w-3 h-3 fill-blue-500 text-blue-500" />
+                                  {p.comments_count.toLocaleString("id-ID")}
+                                </span>
+                              </td>
+
+                              {/* Total Engagement */}
+                              <td className="py-3.5 px-3 text-right">
+                                <div className="font-extrabold text-slate-900 text-xs">
+                                  {totalInt.toLocaleString("id-ID")}
+                                </div>
+                                <span className="text-[10px] text-indigo-600 font-semibold">
+                                  Skor: {p.engagement_score || totalInt}
+                                </span>
+                              </td>
+
+                              {/* Action */}
+                              <td className="py-3.5 px-3 text-center">
+                                {p.post_url && (
+                                  <a
+                                    href={p.post_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-700 font-bold px-2.5 py-1 rounded-lg text-[11px] transition-all"
+                                  >
+                                    <span>Buka</span>
+                                    <ArrowUpRight className="w-3 h-3" />
+                                  </a>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* GRID VIEW (ALTERNATIVE VIEW) */}
+          {(postSourceFilter === "all" || postSourceFilter === "extension") && postViewMode === "grid" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredSyncedPosts.map((p) => (
+                <div key={p.id} className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm flex flex-col justify-between space-y-3 hover:shadow-md transition-all">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-bold text-indigo-600 capitalize flex items-center gap-1">
+                        {p.platform} &bull; {p.media_type || "Post"}
+                      </span>
+                      <span className="text-slate-400">
+                        {p.posted_at ? new Date(p.posted_at).toLocaleDateString("id-ID") : "Baru saja"}
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-slate-800 line-clamp-3 leading-relaxed">
+                      {p.caption || "(Tanpa caption)"}
+                    </p>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center gap-3 text-xs text-slate-600">
+                      <span className="flex items-center gap-1 font-semibold text-rose-600">
+                        <Heart className="w-3.5 h-3.5 fill-rose-500" />
+                        {p.likes_count.toLocaleString("id-ID")}
+                      </span>
+                      <span className="flex items-center gap-1 font-semibold text-blue-600">
+                        <MessageCircle className="w-3.5 h-3.5 fill-blue-500" />
+                        {p.comments_count.toLocaleString("id-ID")}
+                      </span>
+                    </div>
+
+                    {p.post_url && (
+                      <a
+                        href={p.post_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[11px] text-indigo-600 font-bold hover:underline flex items-center gap-1"
+                      >
+                        <span>Buka Post</span>
+                        <ArrowUpRight className="w-3 h-3" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Cloud Scheduled Posts */}
+          {(postSourceFilter === "all" || postSourceFilter === "cloud") && (
+            <div className="space-y-2 pt-2">
+              <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-indigo-600" />
+                Daftar Jadwal Publikasi Terencana Cloud ({posts.length})
+              </span>
+
+              {posts.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-slate-200/80 p-6 text-center text-slate-500 text-xs">
+                  Belum ada postingan dalam antrean jadwal publikasi cloud.
+                </div>
+              ) : (
+                <div className="bg-white border border-slate-200/80 rounded-2xl divide-y divide-slate-100 overflow-hidden shadow-sm">
+                  {posts.map((p) => (
+                    <div key={p.id} className="p-4 flex items-start justify-between gap-4 hover:bg-slate-50/50 transition-colors">
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-slate-800 line-clamp-2">{p.content}</p>
+                        <div className="flex items-center gap-3 text-[11px] text-slate-400">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {p.scheduled_at ? `Jadwal: ${new Date(p.scheduled_at).toLocaleString("id-ID")}` : `Dibuat: ${new Date(p.created_at).toLocaleDateString("id-ID")}`}
+                          </span>
+                        </div>
+                      </div>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                        p.status === "published" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" :
+                        p.status === "scheduled" ? "bg-blue-50 text-blue-700 border border-blue-200" :
+                        "bg-slate-100 text-slate-600"
+                      }`}>
+                        {p.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* SUB-TAB: ACCOUNTS */}
       {activeSubTab === "accounts" && (
@@ -556,154 +1040,13 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
         </div>
       )}
 
-      {/* SUB-TAB: POSTS */}
-      {activeSubTab === "posts" && (
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <h3 className="font-extrabold text-slate-900 text-sm">Postingan & Riwayat Interaksi Medsos</h3>
-              <p className="text-xs text-slate-500">Pantau performa konten Instagram/TikTok yang disinkronkan dan jadwal postingan terencana.</p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <div className="bg-slate-100 p-1 rounded-xl flex items-center text-xs font-semibold">
-                <button
-                  onClick={() => setPostSourceFilter("all")}
-                  className={`px-3 py-1 rounded-lg transition-all ${postSourceFilter === "all" ? "bg-white text-slate-900 shadow-xs font-bold" : "text-slate-500"}`}
-                >
-                  Semua ({posts.length + syncedPosts.length})
-                </button>
-                <button
-                  onClick={() => setPostSourceFilter("extension")}
-                  className={`px-3 py-1 rounded-lg transition-all ${postSourceFilter === "extension" ? "bg-white text-emerald-700 shadow-xs font-bold" : "text-slate-500"}`}
-                >
-                  Dari Medsos ({syncedPosts.length})
-                </button>
-                <button
-                  onClick={() => setPostSourceFilter("cloud")}
-                  className={`px-3 py-1 rounded-lg transition-all ${postSourceFilter === "cloud" ? "bg-white text-indigo-700 shadow-xs font-bold" : "text-slate-500"}`}
-                >
-                  Jadwal Cloud ({posts.length})
-                </button>
-              </div>
-
-              <button
-                onClick={() => setShowPostModal(true)}
-                className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl shadow-sm transition-all shrink-0"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Buat Postingan Baru</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Synced Posts Grid */}
-          {(postSourceFilter === "all" || postSourceFilter === "extension") && syncedPosts.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                  <Laptop className="w-3.5 h-3.5 text-emerald-600" />
-                  Postingan Terbaru dari Feed Medsos Klien
-                </span>
-                <span className="text-[11px] text-slate-400">Diambil otomatis oleh ekstensi staf</span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {syncedPosts.map((p) => (
-                  <div key={p.id} className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm flex flex-col justify-between space-y-3 hover:shadow-md transition-all">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-[11px]">
-                        <span className="font-bold text-indigo-600 capitalize flex items-center gap-1">
-                          {p.platform} &bull; {p.media_type || "Post"}
-                        </span>
-                        <span className="text-slate-400">
-                          {p.posted_at ? new Date(p.posted_at).toLocaleDateString("id-ID") : "Baru saja"}
-                        </span>
-                      </div>
-
-                      <p className="text-xs text-slate-800 line-clamp-3 leading-relaxed">
-                        {p.caption || "(Tanpa caption)"}
-                      </p>
-                    </div>
-
-                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                      <div className="flex items-center gap-3 text-xs text-slate-600">
-                        <span className="flex items-center gap-1 font-semibold text-rose-600">
-                          <Heart className="w-3.5 h-3.5" />
-                          {p.likes_count.toLocaleString("id-ID")}
-                        </span>
-                        <span className="flex items-center gap-1 font-semibold text-blue-600">
-                          <MessageCircle className="w-3.5 h-3.5" />
-                          {p.comments_count.toLocaleString("id-ID")}
-                        </span>
-                      </div>
-
-                      {p.post_url && (
-                        <a
-                          href={p.post_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-[11px] text-indigo-600 font-bold hover:underline flex items-center gap-1"
-                        >
-                          <span>Buka Post</span>
-                          <ArrowUpRight className="w-3 h-3" />
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Cloud Scheduled Posts */}
-          {(postSourceFilter === "all" || postSourceFilter === "cloud") && (
-            <div className="space-y-2 pt-2">
-              <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-indigo-600" />
-                Daftar Jadwal Publikasi Terencana ({posts.length})
-              </span>
-
-              {posts.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-slate-200/80 p-6 text-center text-slate-500 text-xs">
-                  Belum ada postingan dalam antrean jadwal publikasi cloud.
-                </div>
-              ) : (
-                <div className="bg-white border border-slate-200/80 rounded-2xl divide-y divide-slate-100 overflow-hidden shadow-sm">
-                  {posts.map((p) => (
-                    <div key={p.id} className="p-4 flex items-start justify-between gap-4 hover:bg-slate-50/50 transition-colors">
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium text-slate-800 line-clamp-2">{p.content}</p>
-                        <div className="flex items-center gap-3 text-[11px] text-slate-400">
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {p.scheduled_at ? `Jadwal: ${new Date(p.scheduled_at).toLocaleString("id-ID")}` : `Dibuat: ${new Date(p.created_at).toLocaleDateString("id-ID")}`}
-                          </span>
-                        </div>
-                      </div>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
-                        p.status === "published" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" :
-                        p.status === "scheduled" ? "bg-blue-50 text-blue-700 border border-blue-200" :
-                        "bg-slate-100 text-slate-600"
-                      }`}>
-                        {p.status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* SUB-TAB: IDEAS */}
       {activeSubTab === "ideas" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-extrabold text-slate-900 text-sm">Papan Ide Konten (Ideation Hub)</h3>
-              <p className="text-[11px] text-slate-500">Riset konsep ide konten dan rekomendasi topik SEO-to-Social sebelum diproduksi menjadi materi desain & video.</p>
+              <p className="text-[11px] text-slate-500">Riset konsep ide konten dan rekomendasi topik SEO-to-Social sebelum diproduksi menjadi materi desain &amp; video.</p>
             </div>
             <button
               onClick={() => setShowIdeaModal(true)}

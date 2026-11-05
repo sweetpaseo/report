@@ -2,6 +2,20 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit 363386f)`.
 
+## 2026-11-05 — Tabel Analisis Konten & Interaksi Medsos (Likes, Komentar, Direct URL, Ekspor CSV)
+- **Tabel Analisis Konten & Interaksi**:
+  - Menyajikan data statistik performa konten dalam format tabel profesional: No, Format (Reel/Image) & Thumbnail, Caption lengkap dengan expander, URL Postingan (format monospace dengan tombol salin & tautan langsung ↗), Likes (❤️), Komentar (💬), Total Interaksi & Engagement Score, serta Tanggal Publish / Sinkronisasi.
+  - Kartu Rekapitulasi Metrik: Total Konten Terpantau, Total Suka (Likes), Total Komentar, dan Rata-rata Interaksi per Postingan.
+  - Kontrol Tampilan Fleksibel: Pilihan beralih antara format `[ 📋 Tabel ]` dan `[ 🎴 Grid Card ]`.
+  - Filter & Urutkan: Filter Format (Semua, Reels/Video, Gambar), Pencarian teks caption/URL, dan pengurutan cerdas (Interaksi Tertinggi, Likes Terbanyak, Komentar Terbanyak, Terbaru).
+  - Fitur Ekspor Data: Tombol "Ekspor CSV" untuk mengunduh seluruh data tabel postingan dan interaksinya ke file spreadsheet Excel/CSV.
+- **Penyempurnaan Ekstraktor Instagram (acs-social-extension)**:
+  - Meningkatkan algoritma penangkapan angka suka dan komentar pada grid & overlay Instagram.
+  - Dukungan auto-select klien yang cocok berdasarkan domain website.
+- **File Terdampak**:
+  - `components/views/SocialMediaView.tsx`
+  - `acs-social-extension/content-scripts/instagram-extractor.js`
+
 ## 2026-11-05 — Versi 0.2.1: Ekstensi Browser Staf (ACS Social Sync & Copilot), Backend API Sync, & Integrasi Dashboard (commit c62aab8)
 - **Ekstensi Browser Manifest V3 (acs-social-extension/)**:
   - Membangun paket ekstensi browser Chrome/Edge Manifest V3 untuk staf media sosial.

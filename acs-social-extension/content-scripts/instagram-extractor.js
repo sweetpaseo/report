@@ -172,12 +172,55 @@
       const caption = img ? img.getAttribute("alt") || "" : "";
       const thumb = img ? img.getAttribute("src") || "" : "";
 
-      // Likes/comments in overlay if user hovered
+      // Likes/comments/views in overlay or grid card
       let likes = 0;
       let comments = 0;
-      const overlayText = a.innerText || "";
-      const lMatch = overlayText.match(/([\d.,kKmM]+)/);
-      if (lMatch) likes = parseCount(lMatch[1]);
+
+      // 1. Check Instagram overlay items (ul > li: first is like, second is comment)
+      const statItems = a.querySelectorAll("ul > li, div > ul > li, li");
+      if (statItems && statItems.length >= 1) {
+        statItems.forEach((li, idx) => {
+          const rawText = (li.innerText || li.getAttribute("aria-label") || "").trim();
+          const count = parseCount(rawText);
+          if (idx === 0) likes = count;
+          if (idx === 1) comments = count;
+        });
+      }
+
+      // 2. Check inner text tokens (e.g. "4\n2" or "4 2")
+      if (likes === 0 && comments === 0) {
+        const rawInner = (a.innerText || "").trim();
+        const tokens = rawInner.split(/[\s\n\r]+/).filter(Boolean);
+        const numbersFound = [];
+        for (const t of tokens) {
+          const cleanToken = t.replace(/[^0-9.,kKmM]/g, "");
+          if (cleanToken && /\d/.test(cleanToken)) {
+            const val = parseCount(cleanToken);
+            if (val > 0) numbersFound.push(val);
+          }
+        }
+        if (numbersFound.length >= 2) {
+          likes = numbersFound[0];
+          comments = numbersFound[1];
+        } else if (numbersFound.length === 1) {
+          likes = numbersFound[0];
+        }
+      }
+
+      // 3. Fallback: Check aria-labels or title attributes
+      if (likes === 0) {
+        const ariaEls = a.querySelectorAll("[aria-label]");
+        ariaEls.forEach((el) => {
+          const aria = el.getAttribute("aria-label") || "";
+          if (/suka|like/i.test(aria)) {
+            const m = aria.match(/([\d.,kKmM]+)/);
+            if (m) likes = parseCount(m[1]);
+          } else if (/komentar|comment/i.test(aria)) {
+            const m = aria.match(/([\d.,kKmM]+)/);
+            if (m) comments = parseCount(m[1]);
+          }
+        });
+      }
 
       posts.push({
         postId,
