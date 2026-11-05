@@ -722,19 +722,29 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
                                 </div>
                               </td>
 
-                              {/* Caption */}
+                              {/* Caption & Post Date */}
                               <td className="py-3.5 px-4">
-                                <p className="text-slate-800 line-clamp-2 leading-relaxed text-xs">
+                                <p className="text-slate-800 line-clamp-2 leading-relaxed text-xs font-medium">
                                   {p.caption || <span className="text-slate-400 italic">(Tanpa caption teks)</span>}
                                 </p>
                                 {p.posted_at && (
-                                  <span className="text-[10px] text-slate-400 block mt-1">
-                                    {new Date(p.posted_at).toLocaleDateString("id-ID", {
-                                      year: "numeric",
-                                      month: "short",
-                                      day: "numeric",
-                                    })}
-                                  </span>
+                                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-700 bg-slate-100/90 border border-slate-200/80 px-2 py-0.5 rounded-md shadow-2xs">
+                                      <Calendar className="w-3 h-3 text-indigo-500" />
+                                      {new Date(p.posted_at).toLocaleDateString("id-ID", {
+                                        day: "numeric",
+                                        month: "short",
+                                        year: "numeric",
+                                      })}
+                                    </span>
+                                    <span className="text-[10px] text-slate-400">
+                                      {new Date(p.posted_at).toLocaleTimeString("id-ID", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })}{" "}
+                                      WIB
+                                    </span>
+                                  </div>
                                 )}
                               </td>
 
@@ -825,8 +835,15 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
                       <span className="font-bold text-indigo-600 capitalize flex items-center gap-1">
                         {p.platform} &bull; {p.media_type || "Post"}
                       </span>
-                      <span className="text-slate-400">
-                        {p.posted_at ? new Date(p.posted_at).toLocaleDateString("id-ID") : "Baru saja"}
+                      <span className="text-slate-500 font-semibold text-[10px] bg-slate-100 px-2 py-0.5 rounded flex items-center gap-1">
+                        <Calendar className="w-2.5 h-2.5 text-indigo-500" />
+                        {p.posted_at
+                          ? new Date(p.posted_at).toLocaleDateString("id-ID", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })
+                          : "Baru saja"}
                       </span>
                     </div>
 

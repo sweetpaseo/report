@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import { resolvePostDate } from "@/lib/social-utils";
 
 export async function GET(request: Request) {
   const sessionToken = (await cookies()).get(SESSION_COOKIE)?.value;
@@ -64,7 +65,7 @@ export async function GET(request: Request) {
   `).all(clientId, clientId, domainPattern, domainPattern, namePattern);
 
   // Cached posts from extension: match by client_id OR associated snapshots
-  const posts = db.prepare(`
+  const rawPosts = db.prepare(`
     SELECT *
     FROM social_posts_cache
     WHERE (? IS NOT NULL AND client_id = ?)
@@ -73,8 +74,20 @@ export async function GET(request: Request) {
          WHERE ? != '' AND (LOWER(username) = LOWER(?) OR LOWER(username) = LOWER(?))
        )
     ORDER BY posted_at DESC, synced_at DESC
-    LIMIT 60
-  `).all(clientId, clientId, domainPattern, domainPattern, namePattern);
+    LIMIT 100
+  `).all(clientId, clientId, domainPattern, domainPattern, namePattern) as Array<Record<string, unknown>>;
+
+  const posts = rawPosts.map((p) => {
+    const platform = String(p.platform || "");
+    const postId = String(p.post_id || "");
+    const origPostedAt = p.posted_at ? String(p.posted_at) : null;
+    const resolvedPostedAt = resolvePostDate(platform, postId, origPostedAt);
+
+    return {
+      ...p,
+      posted_at: resolvedPostedAt,
+    };
+  }).sort((a, b) => new Date(b.posted_at).getTime() - new Date(a.posted_at).getTime());
 
   return NextResponse.json({
     ok: true,

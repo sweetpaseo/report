@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { verifyExtensionToken } from "@/lib/extension-auth";
+import { resolvePostDate } from "@/lib/social-utils";
 
 const postItemSchema = z.object({
   postId: z.string().min(1),
@@ -60,6 +61,7 @@ export async function POST(request: Request) {
         comments_count = excluded.comments_count,
         shares_count = excluded.shares_count,
         engagement_score = excluded.engagement_score,
+        posted_at = excluded.posted_at,
         synced_at = excluded.synced_at
     `);
 
@@ -68,6 +70,7 @@ export async function POST(request: Request) {
       const id = crypto.randomUUID();
       // Calculate engagement score: 1 point per like, 2 per comment, 3 per share
       const engagementScore = post.likesCount + post.commentsCount * 2 + post.sharesCount * 3;
+      const realPostedAt = resolvePostDate(platform, post.postId, post.postedAt);
 
       upsertStmt.run(
         id,
@@ -81,7 +84,7 @@ export async function POST(request: Request) {
         post.likesCount,
         post.commentsCount,
         post.sharesCount,
-        post.postedAt || now,
+        realPostedAt,
         engagementScore,
         now
       );

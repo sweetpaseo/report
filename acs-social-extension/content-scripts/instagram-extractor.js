@@ -222,6 +222,9 @@
         });
       }
 
+      // 4. Calculate exact real publication date from shortcode (Instagram Snowflake ID)
+      const realPostedDate = decodeInstagramShortcode(postId);
+
       posts.push({
         postId,
         postUrl: fullUrl,
@@ -231,7 +234,7 @@
         likesCount: likes,
         commentsCount: comments,
         sharesCount: 0,
-        postedAt: new Date().toISOString(),
+        postedAt: realPostedDate ? realPostedDate.toISOString() : new Date().toISOString(),
       });
     });
 
@@ -281,5 +284,26 @@
       },
       posts: [],
     };
+  }
+
+  function decodeInstagramShortcode(shortcode) {
+    if (!shortcode || typeof shortcode !== "string") return null;
+    const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+    try {
+      let id = 0n;
+      for (let i = 0; i < shortcode.length; i++) {
+        const idx = ALPHABET.indexOf(shortcode[i]);
+        if (idx === -1) return null;
+        id = id * 64n + BigInt(idx);
+      }
+      const timestamp = (id >> 23n) + 1314220021721n;
+      const date = new Date(Number(timestamp));
+      if (isNaN(date.getTime()) || date.getFullYear() < 2011 || date.getFullYear() > 2035) {
+        return null;
+      }
+      return date;
+    } catch (e) {
+      return null;
+    }
   }
 })();

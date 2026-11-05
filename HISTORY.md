@@ -2,6 +2,23 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit 363386f)`.
 
+## 2026-11-05 — Fix Tanggal Postingan: Algoritma Decoding Instagram Snowflake ID (Waktu Asli Publikasi)
+- **Decoding Tanggal Asli Instagram (`lib/social-utils.ts`)**:
+  - Mengimplementasikan decoder 64-bit BigInt Snowflake dari shortcode Instagram (`/p/{code}/` dan `/reel/{code}/`) berbasis epoch Instagram (`1314220021721ms`).
+  - Menghilangkan bug tanggal seragam (tanggal hari ini/sync) menjadi tanggal publikasi asli postingan di Instagram (misal: 4 Nov, 3 Nov, 17 Okt 2026) hingga presisi jam & menit.
+- **Sinkronisasi Ekstensi & API**:
+  - `acs-social-extension/content-scripts/instagram-extractor.js`: Menghitung tanggal publikasi postingan secara otomatis saat proses ekstraksi di browser staf.
+  - `app/api/extension/sync-posts/route.ts` & `app/api/social/synced-data/route.ts`: Menyimpan dan meresolusi `posted_at` asli ke database server.
+  - Pembaruan database VPS: Meng-update seluruh data riwayat postingan di SQLite server dengan timestamp aslinya.
+- **Penyempurnaan Tampilan Dashboard (`SocialMediaView.tsx`)**:
+  - Menampilkan badge kalender tanggal publikasi asli dan jam WIB yang informatif di bawah caption konten serta pada Grid Card.
+- **File Terdampak**:
+  - `lib/social-utils.ts`
+  - `app/api/extension/sync-posts/route.ts`
+  - `app/api/social/synced-data/route.ts`
+  - `components/views/SocialMediaView.tsx`
+  - `acs-social-extension/content-scripts/instagram-extractor.js`
+
 ## 2026-11-05 — Tabel Analisis Konten & Interaksi Medsos (Likes, Komentar, Direct URL, Ekspor CSV)
 - **Tabel Analisis Konten & Interaksi**:
   - Menyajikan data statistik performa konten dalam format tabel profesional: No, Format (Reel/Image) & Thumbnail, Caption lengkap dengan expander, URL Postingan (format monospace dengan tombol salin & tautan langsung ↗), Likes (❤️), Komentar (💬), Total Interaksi & Engagement Score, serta Tanggal Publish / Sinkronisasi.
