@@ -18,7 +18,8 @@ export async function PUT(
   try {
     const body = await request.json();
     const name = String(body.name || "").trim();
-    const email = String(body.email || "").trim().toLowerCase();
+    let username = String(body.username || "").trim().toLowerCase().replace(/[^a-z0-9._-]/g, "");
+    let email = String(body.email || "").trim().toLowerCase();
     const password = String(body.password || "").trim();
     const role = body.role === "admin" ? "admin" : "staff_social_media";
     const status = body.status === "inactive" ? "inactive" : "active";
@@ -33,8 +34,21 @@ export async function PUT(
     if (!name || name.length < 2) {
       return NextResponse.json({ error: "Nama lengkap minimal 2 karakter." }, { status: 400 });
     }
-    if (!email || !email.includes("@")) {
-      return NextResponse.json({ error: "Alamat email tidak valid." }, { status: 400 });
+
+    if (!username) {
+      if (email && email.includes("@")) {
+        username = email.split("@")[0].toLowerCase().replace(/[^a-z0-9._-]/g, "");
+      } else {
+        username = name.toLowerCase().replace(/\s+/g, ".").replace(/[^a-z0-9._-]/g, "");
+      }
+    }
+
+    if (username.length < 3) {
+      return NextResponse.json({ error: "Username minimal 3 karakter (huruf, angka, titik, atau garis bawah)." }, { status: 400 });
+    }
+
+    if (!email) {
+      email = `${username}@erihome.id`;
     }
 
     const db = getDb();
@@ -43,6 +57,12 @@ export async function PUT(
     const user = db.prepare("SELECT id FROM staff_users WHERE id = ?").get(id);
     if (!user) {
       return NextResponse.json({ error: "Pengguna tidak ditemukan." }, { status: 404 });
+    }
+
+    // Check username uniqueness if changed
+    const usernameConflict = db.prepare("SELECT id FROM staff_users WHERE LOWER(username) = ? AND id != ?").get(username, id);
+    if (usernameConflict) {
+      return NextResponse.json({ error: "Username sudah digunakan oleh akun lain." }, { status: 400 });
     }
 
     // Check email uniqueness if email changed
@@ -57,15 +77,15 @@ export async function PUT(
       const passwordHash = hashPassword(password);
       db.prepare(`
         UPDATE staff_users
-        SET name = ?, email = ?, password_hash = ?, role = ?, status = ?, permissions = ?, updated_at = ?
+        SET username = ?, name = ?, email = ?, password_hash = ?, role = ?, status = ?, permissions = ?, updated_at = ?
         WHERE id = ?
-      `).run(name, email, passwordHash, role, status, JSON.stringify(permissions), now, id);
+      `).run(username, name, email, passwordHash, role, status, JSON.stringify(permissions), now, id);
     } else {
       db.prepare(`
         UPDATE staff_users
-        SET name = ?, email = ?, role = ?, status = ?, permissions = ?, updated_at = ?
+        SET username = ?, name = ?, email = ?, role = ?, status = ?, permissions = ?, updated_at = ?
         WHERE id = ?
-      `).run(name, email, role, status, JSON.stringify(permissions), now, id);
+      `).run(username, name, email, role, status, JSON.stringify(permissions), now, id);
     }
 
     // Update client assignments: delete existing then insert new

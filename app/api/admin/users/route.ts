@@ -16,9 +16,10 @@ export async function GET() {
 
   // 1. Get all staff users
   const rawUsers = db
-    .prepare("SELECT id, name, email, role, status, permissions, created_at, updated_at FROM staff_users ORDER BY created_at DESC")
+    .prepare("SELECT id, username, name, email, role, status, permissions, created_at, updated_at FROM staff_users ORDER BY created_at DESC")
     .all() as Array<{
       id: string;
+      username: string | null;
       name: string;
       email: string;
       role: string;
@@ -83,7 +84,8 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const name = String(body.name || "").trim();
-    const email = String(body.email || "").trim().toLowerCase();
+    let username = String(body.username || "").trim().toLowerCase().replace(/[^a-z0-9._-]/g, "");
+    let email = String(body.email || "").trim().toLowerCase();
     const password = String(body.password || "").trim();
     const role = body.role === "admin" ? "admin" : "staff_social_media";
     const status = body.status === "inactive" ? "inactive" : "active";
@@ -98,14 +100,34 @@ export async function POST(request: Request) {
     if (!name || name.length < 2) {
       return NextResponse.json({ error: "Nama lengkap minimal 2 karakter." }, { status: 400 });
     }
-    if (!email || !email.includes("@")) {
-      return NextResponse.json({ error: "Alamat email tidak valid." }, { status: 400 });
+
+    if (!username) {
+      if (email && email.includes("@")) {
+        username = email.split("@")[0].toLowerCase().replace(/[^a-z0-9._-]/g, "");
+      } else {
+        username = name.toLowerCase().replace(/\s+/g, ".").replace(/[^a-z0-9._-]/g, "");
+      }
     }
+
+    if (username.length < 3) {
+      return NextResponse.json({ error: "Username minimal 3 karakter (huruf, angka, titik, atau garis bawah)." }, { status: 400 });
+    }
+
+    if (!email) {
+      email = `${username}@erihome.id`;
+    }
+
     if (!password || password.length < 6) {
       return NextResponse.json({ error: "Password minimal 6 karakter." }, { status: 400 });
     }
 
     const db = getDb();
+
+    // Check if username already used
+    const existingUsername = db.prepare("SELECT id FROM staff_users WHERE LOWER(username) = ?").get(username);
+    if (existingUsername) {
+      return NextResponse.json({ error: "Username sudah digunakan oleh pengguna lain." }, { status: 400 });
+    }
 
     // Check if email already used
     const existing = db.prepare("SELECT id FROM staff_users WHERE LOWER(email) = ?").get(email);
@@ -118,10 +140,11 @@ export async function POST(request: Request) {
     const now = new Date().toISOString();
 
     db.prepare(`
-      INSERT INTO staff_users (id, name, email, password_hash, role, status, permissions, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO staff_users (id, username, name, email, password_hash, role, status, permissions, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       userId,
+      username,
       name,
       email,
       passwordHash,

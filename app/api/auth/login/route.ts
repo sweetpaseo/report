@@ -22,42 +22,82 @@ export async function POST(request: Request) {
       { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
     );
   }
-  const { password, email } = await request.json().catch(() => ({ password: "", email: "" }));
+  const body = await request.json().catch(() => ({}));
+  const username = String(body.username || body.email || "").trim().toLowerCase();
+  const password = String(body.password || "").trim();
+
+  if (!password) {
+    return NextResponse.json({ error: "Password wajib diisi." }, { status: 400 });
+  }
+
   const adminExpected = process.env.ADMIN_PASSWORD?.trim();
   const clientExpected = process.env.CLIENT_PASSWORD?.trim();
 
   if ((!adminExpected || adminExpected.length < 10) && (!clientExpected || clientExpected.length < 6)) {
-    return NextResponse.json({ error: "ADMIN_PASSWORD belum dikonfigurasi dengan aman." }, { status: 500 });
+    return NextResponse.json({ error: "Kredensial sistem belum dikonfigurasi dengan aman." }, { status: 500 });
   }
 
-  const passwordStr = String(password || "").trim();
   let role: SessionRole | null = null;
   let extraPayload: { userId?: string; name?: string } | undefined;
 
-  if (adminExpected && adminExpected.length >= 10 && safeEqual(passwordStr, adminExpected)) {
-    role = "admin";
-  }
-  if (!role && clientExpected && clientExpected.length >= 6 && safeEqual(passwordStr, clientExpected)) {
-    role = "client";
+  // 1. Cek login Administrator utama via ADMIN_PASSWORD
+  if (adminExpected && adminExpected.length >= 10 && safeEqual(password, adminExpected)) {
+    if (!username || username === "admin" || username === "administrator") {
+      role = "admin";
+      extraPayload = { name: "Administrator" };
+    }
   }
 
-  // Check staff login if email is supplied or if regular login didn't match
-  if (!role && email) {
-    const emailStr = String(email).trim().toLowerCase();
-    const staff = getDb()
-      .prepare("SELECT id, name, password_hash, role, status FROM staff_users WHERE LOWER(email) = ?")
-      .get(emailStr) as { id: string; name: string; password_hash: string; role: string; status?: string } | undefined;
+  // 2. Cek login Client via CLIENT_PASSWORD
+  if (!role && clientExpected && clientExpected.length >= 6 && safeEqual(password, clientExpected)) {
+    if (!username || username === "client" || username === "han") {
+      role = "client";
+      extraPayload = { name: "Client" };
+    }
+  }
 
-    if (staff && verifyPassword(passwordStr, staff.password_hash)) {
+  // 3. Cek database user (staf/admin) berdasarkan Username atau Email
+  if (!role && username) {
+    const db = getDb();
+    const staff = db
+      .prepare(`
+        SELECT id, username, name, email, password_hash, role, status
+        FROM staff_users
+        WHERE LOWER(username) = ? OR LOWER(email) = ?
+      `)
+      .get(username, username) as {
+        id: string;
+        username?: string;
+        name: string;
+        email: string;
+        password_hash: string;
+        role: string;
+        status?: string;
+      } | undefined;
+
+    if (staff && verifyPassword(password, staff.password_hash)) {
       if (staff.status === "inactive") {
         return NextResponse.json({ error: "Akun Anda dinonaktifkan oleh Administrator." }, { status: 403 });
       }
-      role = "staff";
+      role = staff.role === "admin" ? "admin" : "staff";
       extraPayload = { userId: staff.id, name: staff.name };
     }
   }
 
-  if (!role) return NextResponse.json({ error: "Password atau email salah." }, { status: 401 });
+  // 4. Fallback jika username kosong tetapi password cocok dengan admin/client
+  if (!role && !username) {
+    if (adminExpected && safeEqual(password, adminExpected)) {
+      role = "admin";
+      extraPayload = { name: "Administrator" };
+    } else if (clientExpected && safeEqual(password, clientExpected)) {
+      role = "client";
+      extraPayload = { name: "Client" };
+    }
+  }
+
+  if (!role) {
+    return NextResponse.json({ error: "Username atau password salah." }, { status: 401 });
+  }
 
   resetRateLimit(`login:${clientIp}`);
 

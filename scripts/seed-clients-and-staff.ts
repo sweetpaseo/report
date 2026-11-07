@@ -47,28 +47,37 @@ async function main() {
   db.prepare("UPDATE websites SET client_id = ? WHERE domain LIKE '%kurnia%'").run(kurniaClient.id);
   console.log("Updated website client associations.");
 
-  // 4. Staff 1: staff.kurnia@erihome.id (Kurnia Printing)
+  // Ensure username column exists
+  try {
+    db.exec("ALTER TABLE staff_users ADD COLUMN username TEXT;");
+  } catch (e) {}
+  try {
+    db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_staff_users_username ON staff_users(username);");
+  } catch (e) {}
+
+  // 4. Staff 1: username 'kurnia' (Kurnia Printing)
+  const staffKurniaUsername = "kurnia";
   const staffKurniaEmail = "staff.kurnia@erihome.id";
   const staffKurniaPass = hashPassword("staff1234");
   const staffKurniaPermissions = JSON.stringify(DEFAULT_STAFF_PERMISSIONS);
 
-  let staffKurnia = db.prepare("SELECT id FROM staff_users WHERE LOWER(email) = ?").get(staffKurniaEmail) as { id: string } | undefined;
+  let staffKurnia = db.prepare("SELECT id FROM staff_users WHERE LOWER(username) = ? OR LOWER(email) = ?").get(staffKurniaUsername, staffKurniaEmail) as { id: string } | undefined;
   let staffKurniaId = staffKurnia?.id;
 
   if (staffKurniaId) {
     db.prepare(`
       UPDATE staff_users 
-      SET name = 'Staff Kurnia Printing', password_hash = ?, role = 'staff_social_media', status = 'active', permissions = ?, updated_at = ?
+      SET username = ?, name = 'Staff Kurnia Printing', password_hash = ?, role = 'staff_social_media', status = 'active', permissions = ?, updated_at = ?
       WHERE id = ?
-    `).run(staffKurniaPass, staffKurniaPermissions, new Date().toISOString(), staffKurniaId);
-    console.log(`Updated existing user ${staffKurniaEmail}`);
+    `).run(staffKurniaUsername, staffKurniaPass, staffKurniaPermissions, new Date().toISOString(), staffKurniaId);
+    console.log(`Updated existing user ${staffKurniaUsername} (${staffKurniaEmail})`);
   } else {
     staffKurniaId = crypto.randomUUID();
     db.prepare(`
-      INSERT INTO staff_users (id, name, email, password_hash, role, status, permissions, created_at)
-      VALUES (?, ?, ?, ?, 'staff_social_media', 'active', ?, ?)
-    `).run(staffKurniaId, "Staff Kurnia Printing", staffKurniaEmail, staffKurniaPass, staffKurniaPermissions, new Date().toISOString());
-    console.log(`Created new staff user ${staffKurniaEmail} with id ${staffKurniaId}`);
+      INSERT INTO staff_users (id, username, name, email, password_hash, role, status, permissions, created_at)
+      VALUES (?, ?, ?, ?, ?, 'staff_social_media', 'active', ?, ?)
+    `).run(staffKurniaId, staffKurniaUsername, "Staff Kurnia Printing", staffKurniaEmail, staffKurniaPass, staffKurniaPermissions, new Date().toISOString());
+    console.log(`Created new staff user @${staffKurniaUsername} with id ${staffKurniaId}`);
   }
 
   // Re-assign staff Kurnia ONLY to Kurnia Printing
@@ -78,30 +87,31 @@ async function main() {
     kurniaClient.id,
     new Date().toISOString()
   );
-  console.log(`Assigned ${staffKurniaEmail} -> Kurnia Printing (${kurniaClient.id})`);
+  console.log(`Assigned @${staffKurniaUsername} -> Kurnia Printing (${kurniaClient.id})`);
 
-  // 5. Staff 2: staff.social@erihome.id (Erihome)
+  // 5. Staff 2: username 'erihome' (Erihome)
+  const staffErihomeUsername = "erihome";
   const staffErihomeEmail = "staff.social@erihome.id";
   const staffErihomePass = hashPassword("staff1234");
   const staffErihomePermissions = JSON.stringify(DEFAULT_STAFF_PERMISSIONS);
 
-  let staffErihome = db.prepare("SELECT id FROM staff_users WHERE LOWER(email) = ?").get(staffErihomeEmail) as { id: string } | undefined;
+  let staffErihome = db.prepare("SELECT id FROM staff_users WHERE LOWER(username) = ? OR LOWER(email) = ?").get(staffErihomeUsername, staffErihomeEmail) as { id: string } | undefined;
   let staffErihomeId = staffErihome?.id;
 
   if (staffErihomeId) {
     db.prepare(`
       UPDATE staff_users 
-      SET name = 'Budi Santoso (Erihome)', password_hash = ?, role = 'staff_social_media', status = 'active', permissions = ?, updated_at = ?
+      SET username = ?, name = 'Budi Santoso (Erihome)', password_hash = ?, role = 'staff_social_media', status = 'active', permissions = ?, updated_at = ?
       WHERE id = ?
-    `).run(staffErihomePass, staffErihomePermissions, new Date().toISOString(), staffErihomeId);
-    console.log(`Updated existing user ${staffErihomeEmail}`);
+    `).run(staffErihomeUsername, staffErihomePass, staffErihomePermissions, new Date().toISOString(), staffErihomeId);
+    console.log(`Updated existing user ${staffErihomeUsername} (${staffErihomeEmail})`);
   } else {
     staffErihomeId = crypto.randomUUID();
     db.prepare(`
-      INSERT INTO staff_users (id, name, email, password_hash, role, status, permissions, created_at)
-      VALUES (?, ?, ?, ?, 'staff_social_media', 'active', ?, ?)
-    `).run(staffErihomeId, "Budi Santoso (Erihome)", staffErihomeEmail, staffErihomePass, staffErihomePermissions, new Date().toISOString());
-    console.log(`Created new staff user ${staffErihomeEmail} with id ${staffErihomeId}`);
+      INSERT INTO staff_users (id, username, name, email, password_hash, role, status, permissions, created_at)
+      VALUES (?, ?, ?, ?, ?, 'staff_social_media', 'active', ?, ?)
+    `).run(staffErihomeId, staffErihomeUsername, "Budi Santoso (Erihome)", staffErihomeEmail, staffErihomePass, staffErihomePermissions, new Date().toISOString());
+    console.log(`Created new staff user @${staffErihomeUsername} with id ${staffErihomeId}`);
   }
 
   // Re-assign staff Erihome ONLY to Erihome
@@ -111,7 +121,7 @@ async function main() {
     erihomeClient.id,
     new Date().toISOString()
   );
-  console.log(`Assigned ${staffErihomeEmail} -> Erihome (${erihomeClient.id})`);
+  console.log(`Assigned @${staffErihomeUsername} -> Erihome (${erihomeClient.id})`);
 
   console.log("Seeding completed successfully!");
 }

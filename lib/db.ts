@@ -392,8 +392,9 @@ function initialize(db: DatabaseSync) {
 
     CREATE TABLE IF NOT EXISTS staff_users (
       id TEXT PRIMARY KEY,
+      username TEXT UNIQUE,
       name TEXT NOT NULL,
-      email TEXT NOT NULL UNIQUE,
+      email TEXT,
       password_hash TEXT NOT NULL,
       role TEXT NOT NULL DEFAULT 'staff_social_media',
       created_at TEXT NOT NULL
@@ -463,7 +464,13 @@ function initialize(db: DatabaseSync) {
     } catch (e) {}
   }
 
-  // staff_users migrations for RBAC permissions & status
+  // staff_users migrations for RBAC permissions & status & username
+  try {
+    db.exec(`ALTER TABLE staff_users ADD COLUMN username TEXT;`);
+  } catch (e) {}
+  try {
+    db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_staff_users_username ON staff_users(username);`);
+  } catch (e) {}
   try {
     db.exec(`ALTER TABLE staff_users ADD COLUMN permissions TEXT DEFAULT '{"can_view_website_hub":false,"can_view_social_hub":true,"can_edit_social":true,"can_manage_clients":false}';`);
   } catch (e) {}

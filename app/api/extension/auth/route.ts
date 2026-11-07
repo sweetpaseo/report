@@ -6,8 +6,9 @@ import { verifyPassword } from "@/lib/password";
 import { verifyExtensionToken } from "@/lib/extension-auth";
 
 const loginSchema = z.object({
-  email: z.string().trim().email(),
-  password: z.string().min(1),
+  username: z.string().trim().optional(),
+  email: z.string().trim().optional(),
+  password: z.string().min(1, "Password wajib diisi."),
   deviceName: z.string().optional(),
 });
 
@@ -16,18 +17,34 @@ export async function POST(request: Request) {
     const json = await request.json().catch(() => ({}));
     const parsed = loginSchema.safeParse(json);
     if (!parsed.success) {
-      return NextResponse.json({ error: "Email dan password wajib diisi." }, { status: 400 });
+      return NextResponse.json({ error: "Username dan password wajib diisi." }, { status: 400 });
     }
 
-    const { email, password, deviceName = "Chrome Extension" } = parsed.data;
+    const { username, email, password, deviceName = "Chrome Extension" } = parsed.data;
+    const userIdentifier = (username || email || "").trim().toLowerCase();
+    if (!userIdentifier) {
+      return NextResponse.json({ error: "Username wajib diisi." }, { status: 400 });
+    }
+
     const db = getDb();
 
     const staff = db
-      .prepare("SELECT id, name, email, password_hash, status FROM staff_users WHERE LOWER(email) = ?")
-      .get(email.toLowerCase()) as { id: string; name: string; email: string; password_hash: string; status?: string } | undefined;
+      .prepare(`
+        SELECT id, username, name, email, password_hash, status
+        FROM staff_users
+        WHERE LOWER(username) = ? OR LOWER(email) = ?
+      `)
+      .get(userIdentifier, userIdentifier) as {
+        id: string;
+        username?: string;
+        name: string;
+        email: string;
+        password_hash: string;
+        status?: string;
+      } | undefined;
 
     if (!staff || !verifyPassword(password, staff.password_hash)) {
-      return NextResponse.json({ error: "Email atau password salah." }, { status: 401 });
+      return NextResponse.json({ error: "Username atau password salah." }, { status: 401 });
     }
 
     if (staff.status === "inactive") {
@@ -69,6 +86,7 @@ export async function POST(request: Request) {
       token,
       staff: {
         id: staff.id,
+        username: staff.username || userIdentifier,
         name: staff.name,
         email: staff.email,
       },

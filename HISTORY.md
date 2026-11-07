@@ -2,6 +2,37 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit 363386f)`.
 
+## 2026-11-07 — Autentikasi Berbasis Username & Perbaikan Sistem Password (Web & Ekstensi)
+- **Login Berbasis Username (Bukan Email)**:
+  - Mengubah antarmuka halaman login (`components/login-form.tsx`) dengan dua field utama: **Username** dan **Password**, menggantikan form password tunggal sebelumnya.
+  - Menambahkan toggle lihat/sembunyikan password (👁️ / 🙈) di halaman login web, modal tambah/edit pengguna, dan pop-up ekstensi Chrome.
+  - Menghilangkan keharusan mengetik alamat email panjang (misal `staff.social@erihome.id`). Staf dan admin kini dapat masuk hanya dengan mengetikkan username singkat: `admin`, `kurnia`, atau `erihome`.
+- **Database & Manajemen Pengguna**:
+  - Menambahkan kolom `username TEXT UNIQUE` pada tabel `staff_users` di SQLite (`lib/db.ts`).
+  - Menambahkan input Username pada Modal Tambah/Edit Pengguna di `UserManagementView.tsx` serta menampilkan badge `@username` di kartu mobile maupun tabel desktop.
+  - Memperbarui endpoint CRUD user (`app/api/admin/users`) untuk validasi format username unik (alfanumerik, titik, garis bawah) dan email opsional.
+- **Backend Auth & Ekstensi Browser**:
+  - `app/api/auth/login`: Mendukung autentikasi multi-peran via username (`admin` via ADMIN_PASSWORD, staf via pencarian username/email di tabel `staff_users`, dan klien via CLIENT_PASSWORD).
+  - `app/api/extension/auth`: Mendukung login ekstensi browser menggunakan username staf, memvalidasi status akun aktif, dan mengembalikan penugasan klien yang terisolasi.
+  - Pembaruan UI Ekstensi (`acs-social-extension/popup/`): Mengubah label dan input menjadi "Username Staff" serta sinkronisasi background service worker.
+- **Sinkronisasi Database Produksi (VPS)**:
+  - Memperbaiki target database SQLite produksi ke `website-health.db` (database aktif aplikasi), memigrasi kolom username, dan men-seed akun:
+    - `admin` (Administrator)
+    - `kurnia` (Staff Kurnia Printing — password `staff1234`)
+    - `erihome` (Staff Erihome — password `staff1234`)
+- **File Terdampak**:
+  - `app/api/admin/users/route.ts`
+  - `app/api/admin/users/[id]/route.ts`
+  - `app/api/auth/login/route.ts`
+  - `app/api/extension/auth/route.ts`
+  - `components/login-form.tsx`
+  - `components/views/UserManagementView.tsx`
+  - `lib/db.ts`
+  - `scripts/seed-clients-and-staff.ts`
+  - `acs-social-extension/popup/popup.html`
+  - `acs-social-extension/popup/popup.js`
+  - `acs-social-extension/background/service-worker.js`
+
 ## 2026-11-07 — Manajemen Pengguna, Hak Akses Granular & Multi-Tenancy Client Scoping (commit 343525e)
 - **Manajemen Pengguna & Role Based Access Control (RBAC)**:
   - Antarmuka baru UserManagementView.tsx khusus Administrator untuk menambah, mengubah, mengaktifkan/menonaktifkan, dan menghapus akun staf/admin.

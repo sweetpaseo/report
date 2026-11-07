@@ -20,11 +20,14 @@ import {
   Shield,
   Layers,
   CheckCircle2,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { UserPermissions, DEFAULT_STAFF_PERMISSIONS } from "@/lib/auth";
 
 interface StaffUser {
   id: string;
+  username?: string | null;
   name: string;
   email: string;
   role: string;
@@ -54,8 +57,10 @@ export function UserManagementView() {
 
   // Form Fields
   const [formName, setFormName] = useState("");
+  const [formUsername, setFormUsername] = useState("");
   const [formEmail, setFormEmail] = useState("");
   const [formPassword, setFormPassword] = useState("");
+  const [showFormPassword, setShowFormPassword] = useState(false);
   const [formRole, setFormRole] = useState<"staff_social_media" | "admin">("staff_social_media");
   const [formStatus, setFormStatus] = useState<"active" | "inactive">("active");
   const [formPermissions, setFormPermissions] = useState<UserPermissions>(DEFAULT_STAFF_PERMISSIONS);
@@ -93,8 +98,10 @@ export function UserManagementView() {
   const handleOpenCreate = () => {
     setEditingUser(null);
     setFormName("");
+    setFormUsername("");
     setFormEmail("");
     setFormPassword("");
+    setShowFormPassword(false);
     setFormRole("staff_social_media");
     setFormStatus("active");
     setFormPermissions({
@@ -111,8 +118,10 @@ export function UserManagementView() {
   const handleOpenEdit = (user: StaffUser) => {
     setEditingUser(user);
     setFormName(user.name);
+    setFormUsername(user.username || user.email.split("@")[0] || "");
     setFormEmail(user.email);
     setFormPassword(""); // Leave empty unless changing
+    setShowFormPassword(false);
     setFormRole(user.role === "admin" ? "admin" : "staff_social_media");
     setFormStatus(user.status === "inactive" ? "inactive" : "active");
     setFormPermissions({ ...DEFAULT_STAFF_PERMISSIONS, ...user.permissions });
@@ -134,6 +143,7 @@ export function UserManagementView() {
     try {
       const payload = {
         name: formName,
+        username: formUsername,
         email: formEmail,
         password: formPassword,
         role: formRole,
@@ -322,7 +332,12 @@ export function UserManagementView() {
                         {user.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0">
-                        <h3 className="font-extrabold text-xs text-slate-900 truncate">{user.name}</h3>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h3 className="font-extrabold text-xs text-slate-900 truncate">{user.name}</h3>
+                          <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-1.5 py-0.2 rounded font-mono">
+                            @{user.username || user.email.split("@")[0]}
+                          </span>
+                        </div>
                         <p className="text-[10px] text-slate-400 font-mono truncate">{user.email}</p>
                       </div>
                     </div>
@@ -430,7 +445,12 @@ export function UserManagementView() {
                               {user.name.charAt(0).toUpperCase()}
                             </div>
                             <div>
-                              <p className="font-extrabold text-slate-900 leading-tight">{user.name}</p>
+                              <div className="flex items-center gap-1.5">
+                                <p className="font-extrabold text-slate-900 leading-tight">{user.name}</p>
+                                <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/60 px-1.5 py-0.2 rounded font-mono">
+                                  @{user.username || user.email.split("@")[0]}
+                                </span>
+                              </div>
                               <p className="text-[11px] font-mono text-slate-400 mt-0.5">{user.email}</p>
                             </div>
                           </div>
@@ -557,7 +577,7 @@ export function UserManagementView() {
 
             {/* Modal Form */}
             <form onSubmit={handleSubmitUser} className="p-4 sm:p-5 space-y-4 max-h-[75vh] overflow-y-auto custom-scrollbar">
-              {/* Name & Email */}
+              {/* Account Credentials */}
               <div className="space-y-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">Nama Lengkap Staf *</label>
@@ -575,12 +595,27 @@ export function UserManagementView() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Alamat Email Login *</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Username Login *</label>
+                  <div className="flex items-center gap-2 border border-slate-200 rounded-xl px-3 py-2 bg-slate-50/50 focus-within:border-indigo-500 focus-within:bg-white transition-all">
+                    <span className="text-slate-400 font-bold text-xs select-none">@</span>
+                    <input
+                      type="text"
+                      required
+                      value={formUsername}
+                      onChange={(e) => setFormUsername(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ""))}
+                      placeholder="Contoh: kurnia atau erihome"
+                      className="bg-transparent text-xs text-slate-900 w-full outline-none font-mono"
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Digunakan staf/admin untuk masuk sistem (bukan alamat email).</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Alamat Email (Opsional)</label>
                   <div className="flex items-center gap-2 border border-slate-200 rounded-xl px-3 py-2 bg-slate-50/50 focus-within:border-indigo-500 focus-within:bg-white transition-all">
                     <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                     <input
                       type="email"
-                      required
                       value={formEmail}
                       onChange={(e) => setFormEmail(e.target.value)}
                       placeholder="Contoh: staff.kurnia@erihome.id"
@@ -596,13 +631,21 @@ export function UserManagementView() {
                   <div className="flex items-center gap-2 border border-slate-200 rounded-xl px-3 py-2 bg-slate-50/50 focus-within:border-indigo-500 focus-within:bg-white transition-all">
                     <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                     <input
-                      type="password"
+                      type={showFormPassword ? "text" : "password"}
                       required={!editingUser}
                       value={formPassword}
                       onChange={(e) => setFormPassword(e.target.value)}
                       placeholder={editingUser ? "•••••••• (tidak diubah)" : "Minimal 6 karakter"}
                       className="bg-transparent text-xs text-slate-900 w-full outline-none"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowFormPassword((prev) => !prev)}
+                      className="text-slate-400 hover:text-slate-600 p-0.5"
+                      tabIndex={-1}
+                    >
+                      {showFormPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
                   </div>
                 </div>
               </div>
