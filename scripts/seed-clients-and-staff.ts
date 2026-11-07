@@ -164,6 +164,35 @@ async function main() {
   }
   console.log(`Assigned @${hanUsername} -> All Clients (${allClients.length} clients)`);
 
+  // 7. User SuperAdmin: username 'admin'
+  const adminUsername = "admin";
+  const adminEmail = "admin@erihome.id";
+  const adminPass = hashPassword(process.env.ADMIN_PASSWORD || "Chrisinda83X");
+  const adminPermissions = JSON.stringify({
+    can_view_website_hub: true,
+    can_view_social_hub: true,
+    can_edit_social: true,
+    can_manage_clients: true,
+  });
+
+  let adminUser = db.prepare("SELECT id FROM staff_users WHERE LOWER(username) = ? OR LOWER(email) = ?").get(adminUsername, adminEmail) as { id: string } | undefined;
+  let adminUserId = adminUser ? adminUser.id : "admin-root-uuid-001";
+
+  if (adminUser) {
+    db.prepare(`
+      UPDATE staff_users 
+      SET username = ?, name = 'SuperAdmin', password_hash = ?, role = 'admin', status = 'active', permissions = ?, updated_at = ?
+      WHERE id = ?
+    `).run(adminUsername, adminPass, adminPermissions, new Date().toISOString(), adminUserId);
+    console.log(`Updated user @${adminUsername} to SuperAdmin`);
+  } else {
+    db.prepare(`
+      INSERT INTO staff_users (id, username, name, email, password_hash, role, status, permissions, created_at)
+      VALUES (?, ?, 'SuperAdmin', ?, ?, 'admin', 'active', ?, ?)
+    `).run(adminUserId, adminUsername, adminEmail, adminPass, adminPermissions, new Date().toISOString());
+    console.log(`Created SuperAdmin user @${adminUsername} with id ${adminUserId}`);
+  }
+
   console.log("Seeding completed successfully!");
 }
 

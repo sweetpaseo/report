@@ -298,9 +298,9 @@ export function SidebarNav({
         {/* User / Staff Profile Card */}
         {(() => {
           const effectiveUsername = username || (userRole === "admin" ? "admin" : userRole === "client" ? "han" : "staff");
-          const avatarChar = (effectiveUsername || userName || "U").charAt(0).toUpperCase();
-          const roleSubtitle = userRole === "admin" ? "Administrator" : userRole === "client" ? "Pemeriksa Laporan" : "Staff Medsos";
-          const displaySubtitle = userName && userName.toLowerCase() !== effectiveUsername.toLowerCase() ? userName : roleSubtitle;
+          const displayName = userRole === "admin" ? "SuperAdmin" : (userName || effectiveUsername);
+          const avatarChar = displayName.charAt(0).toUpperCase();
+          const handleSubtitle = `@${effectiveUsername}`;
 
           return (
             <div className="flex items-center justify-between p-2 rounded-xl border border-slate-200/80 bg-white shadow-2xs">
@@ -316,10 +316,10 @@ export function SidebarNav({
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-slate-800 leading-tight truncate">
-                    @{effectiveUsername}
+                    {displayName}
                   </p>
-                  <p className="text-[10px] text-slate-400 font-medium capitalize truncate">
-                    {displaySubtitle}
+                  <p className="text-[10px] text-slate-400 font-medium truncate">
+                    {handleSubtitle}
                   </p>
                 </div>
               </div>
@@ -337,7 +337,7 @@ export function SidebarNav({
                     ? "fill-emerald-500 text-emerald-500"
                     : "fill-indigo-500 text-indigo-500"
                 }`} />
-                <span>{userRole === "admin" ? "Admin" : userRole === "client" ? "Client" : "Staff"}</span>
+                <span>{userRole === "admin" ? "SuperAdmin" : userRole === "client" ? "Client" : "Staff"}</span>
               </div>
             </div>
           );

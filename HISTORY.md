@@ -2,6 +2,21 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit 363386f)`.
 
+## 2026-11-07 — Perbarui Profil Akun Administrator Menjadi SuperAdmin (commit 250f964)
+- **Identitas Akun Administrator (@admin / @superadmin)**:
+  - Mengubah nama display akun Administrator menjadi **SuperAdmin** pada seluruh antarmuka sesi dan kartu profil footer sidebar.
+  - Inisial avatar otomatis menampilkan huruf **S** dengan aksen emas/amber (`bg-amber-100 text-amber-800`).
+  - Baris utama kartu profil menampilkan **SuperAdmin** dan baris kedua menampilkan handle username (`@admin` atau `@superadmin`).
+  - Badge hak akses menampilkan **⚡ SuperAdmin**.
+  - Memperbarui `app/api/auth/login/route.ts` dan `app/api/auth/me/route.ts` agar mendukung login baik dengan username `admin` maupun `superadmin` serta selalu menyematkan nama `SuperAdmin`.
+- **Verifikasi Live**:
+  - Login & `/api/auth/me` untuk `admin` dan `superadmin` terverifikasi 200 OK dengan `name: "SuperAdmin"`.
+- **File Terdampak**:
+  - `app/api/auth/login/route.ts`
+  - `app/api/auth/me/route.ts`
+  - `components/sidebar-nav.tsx`
+  - `scripts/seed-clients-and-staff.ts`
+
 ## 2026-11-07 — Tampilkan Username Aktif Pada Kartu Profil Sidebar (commit d4def7f)
 - **Pembaruan Kartu Profil Sidebar**:
   - Mengubah tampilan kartu profil di bagian bawah sidebar (`components/sidebar-nav.tsx`) agar secara dinamis menampilkan identitas `@username` yang sedang login (misal: `@admin`, `@han`, `@kurnia`, `@erihome`).

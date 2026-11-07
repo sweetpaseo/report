@@ -42,9 +42,9 @@ export async function POST(request: Request) {
 
   // 1. Cek login Administrator utama via ADMIN_PASSWORD
   if (adminExpected && adminExpected.length >= 10 && safeEqual(password, adminExpected)) {
-    if (!username || username === "admin" || username === "administrator") {
+    if (!username || username === "admin" || username === "administrator" || username === "superadmin") {
       role = "admin";
-      extraPayload = { name: "Admin", username: username || "admin" };
+      extraPayload = { name: "SuperAdmin", username: username || "admin" };
     }
   }
 
@@ -88,7 +88,7 @@ export async function POST(request: Request) {
   if (!role && !username) {
     if (adminExpected && safeEqual(password, adminExpected)) {
       role = "admin";
-      extraPayload = { name: "Admin", username: "admin" };
+      extraPayload = { name: "SuperAdmin", username: "admin" };
     } else if (clientExpected && safeEqual(password, clientExpected)) {
       role = "client";
       extraPayload = { userId: "client-han-uuid-001", name: "Han", username: "han" };

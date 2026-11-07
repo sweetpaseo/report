@@ -59,9 +59,9 @@ export async function GET() {
     (payload.role === "admin" ? "admin" : payload.role === "client" ? "han" : "staff");
 
   const finalName =
-    dbName ||
-    payload.name ||
-    (payload.role === "admin" ? "Admin" : payload.role === "client" ? "Han" : finalUsername);
+    payload.role === "admin"
+      ? (dbName || "SuperAdmin")
+      : (dbName || payload.name || (payload.role === "client" ? "Han" : finalUsername));
 
   const userData = {
     id: payload.userId,
