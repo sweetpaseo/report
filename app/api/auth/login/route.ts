@@ -45,10 +45,13 @@ export async function POST(request: Request) {
   if (!role && email) {
     const emailStr = String(email).trim().toLowerCase();
     const staff = getDb()
-      .prepare("SELECT id, name, password_hash, role FROM staff_users WHERE LOWER(email) = ?")
-      .get(emailStr) as { id: string; name: string; password_hash: string; role: string } | undefined;
+      .prepare("SELECT id, name, password_hash, role, status FROM staff_users WHERE LOWER(email) = ?")
+      .get(emailStr) as { id: string; name: string; password_hash: string; role: string; status?: string } | undefined;
 
     if (staff && verifyPassword(passwordStr, staff.password_hash)) {
+      if (staff.status === "inactive") {
+        return NextResponse.json({ error: "Akun Anda dinonaktifkan oleh Administrator." }, { status: 403 });
+      }
       role = "staff";
       extraPayload = { userId: staff.id, name: staff.name };
     }

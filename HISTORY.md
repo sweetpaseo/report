@@ -2,6 +2,41 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit 363386f)`.
 
+## 2026-11-07 — Manajemen Pengguna, Hak Akses Granular & Multi-Tenancy Client Scoping (commit c363342)
+- **Manajemen Pengguna & Role Based Access Control (RBAC)**:
+  - Antarmuka baru UserManagementView.tsx khusus Administrator untuk menambah, mengubah, mengaktifkan/menonaktifkan, dan menghapus akun staf/admin.
+  - Granular permissions matrix per pengguna: hak akses lihat/edit Website Hub, hak akses lihat/edit Social Media Hub, dan hak kelola klien.
+  - Multi-tenancy client scoping: staf media sosial hanya dapat melihat dan mengelola klien yang ditugaskan kepada mereka (misal Staf Kurnia hanya dapat mengakses Kurnia Printing, Staf Erihome hanya dapat mengakses Erihome).
+  - Tampilan User Management ramah mobile (block md:hidden untuk Mobile Feed Cards dan hidden md:block untuk Desktop Analytic Table).
+  - Modal tambah klien baru langsung dari dashboard.
+- **Backend API & Keamanan Endpoints**:
+  - app/api/admin/users: Endpoint CRUD user dengan verifikasi admin, validasi Zod, dan hashing password (lib/password.ts).
+  - app/api/dashboard: Proteksi 403 Forbidden bagi staf yang tidak memiliki izin can_view_website_hub serta pembatasan website hanya milik klien yang ditugaskan.
+  - app/api/websites: Membatasi daftar website yang di-load hanya untuk klien dalam lingkup penugasan staf.
+  - app/api/social/synced-data: Membatasi data sinkronisasi medsos hanya untuk klien yang ditugaskan.
+  - app/api/extension/auth & app/api/auth/login: Pengecekan status akun aktif/nonaktif dan pengembalian daftar klien yang ditugaskan.
+  - app/api/extension/sync-profile: Dukungan penyimpanan multi-cabang social handles (clients.social_handles).
+- **Navigasi & UI**:
+  - components/sidebar-nav.tsx: Sembunyikan modul Website Hub secara otomatis untuk staf tanpa izin, dan tampilkan menu 'User & Hak Akses' dengan badge Admin hanya untuk Administrator.
+  - components/dashboard-app.tsx: Fetch sesi /api/auth/me pada mount untuk menentukan role, permission, dan client scoping secara real-time. Staf tanpa akses Web Hub otomatis diarahkan ke Social Media Hub.
+  - Penambahan script seeding scripts/seed-clients-and-staff.ts untuk setup klien Kurnia Printing dan Erihome beserta kedua akun stafnya.
+- **File Terdampak**:
+  - app/api/admin/users/route.ts
+  - app/api/admin/users/[id]/route.ts
+  - app/api/auth/login/route.ts
+  - app/api/auth/me/route.ts
+  - app/api/dashboard/route.ts
+  - app/api/extension/auth/route.ts
+  - app/api/extension/sync-profile/route.ts
+  - app/api/social/synced-data/route.ts
+  - app/api/websites/route.ts
+  - components/dashboard-app.tsx
+  - components/sidebar-nav.tsx
+  - components/views/UserManagementView.tsx
+  - lib/auth.ts
+  - lib/db.ts
+  - scripts/seed-clients-and-staff.ts
+
 ## 2026-11-07 — Mobile-First Responsive & Clean Architecture (Drawer Nav, Feed Cards, Breakpoints)
 - **Mobile-First Layout & Drawer Navigation (`components/sidebar-nav.tsx` & `components/dashboard-app.tsx`)**:
   - Memisahkan sidebar menjadi Desktop Sticky Sidebar (`hidden lg:flex`) dan Mobile Slide-over Drawer dengan backdrop blur gelap yang elegan (`lg:hidden`).

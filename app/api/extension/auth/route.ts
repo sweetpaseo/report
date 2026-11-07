@@ -23,11 +23,15 @@ export async function POST(request: Request) {
     const db = getDb();
 
     const staff = db
-      .prepare("SELECT id, name, email, password_hash FROM staff_users WHERE LOWER(email) = ?")
-      .get(email.toLowerCase()) as { id: string; name: string; email: string; password_hash: string } | undefined;
+      .prepare("SELECT id, name, email, password_hash, status FROM staff_users WHERE LOWER(email) = ?")
+      .get(email.toLowerCase()) as { id: string; name: string; email: string; password_hash: string; status?: string } | undefined;
 
     if (!staff || !verifyPassword(password, staff.password_hash)) {
       return NextResponse.json({ error: "Email atau password salah." }, { status: 401 });
+    }
+
+    if (staff.status === "inactive") {
+      return NextResponse.json({ error: "Akun Anda dinonaktifkan oleh Administrator." }, { status: 403 });
     }
 
     // Generate extension token

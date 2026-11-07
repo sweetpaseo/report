@@ -462,6 +462,17 @@ function initialize(db: DatabaseSync) {
       db.exec(`ALTER TABLE ${table} ADD COLUMN search_type TEXT NOT NULL DEFAULT 'web';`);
     } catch (e) {}
   }
+
+  // staff_users migrations for RBAC permissions & status
+  try {
+    db.exec(`ALTER TABLE staff_users ADD COLUMN permissions TEXT DEFAULT '{"can_view_website_hub":false,"can_view_social_hub":true,"can_edit_social":true,"can_manage_clients":false}';`);
+  } catch (e) {}
+  try {
+    db.exec(`ALTER TABLE staff_users ADD COLUMN status TEXT NOT NULL DEFAULT 'active';`);
+  } catch (e) {}
+  try {
+    db.exec(`ALTER TABLE staff_users ADD COLUMN updated_at TEXT;`);
+  } catch (e) {}
 }
 
 export function getDb() {

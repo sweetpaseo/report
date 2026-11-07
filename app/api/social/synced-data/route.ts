@@ -1,13 +1,13 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
+import { SESSION_COOKIE, getSessionPayload } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { resolvePostDate } from "@/lib/social-utils";
 
 export async function GET(request: Request) {
   const sessionToken = (await cookies()).get(SESSION_COOKIE)?.value;
-  const role = await verifySessionToken(sessionToken);
-  if (!role) {
+  const payload = await getSessionPayload(sessionToken);
+  if (!payload) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -15,6 +15,28 @@ export async function GET(request: Request) {
   let clientId = searchParams.get("clientId");
   const websiteId = searchParams.get("websiteId");
   const db = getDb();
+
+  // Scope Restriction for Staff
+  if (payload.role === "staff" && payload.userId) {
+    const assignments = db
+      .prepare("SELECT client_id FROM staff_client_assignments WHERE staff_id = ?")
+      .all(payload.userId) as Array<{ client_id: string }>;
+
+    const allowedClientIds = assignments.map((a) => a.client_id);
+    if (allowedClientIds.length === 0) {
+      return NextResponse.json({
+        ok: true,
+        snapshots: [],
+        posts: [],
+        client: null,
+      });
+    }
+
+    // If no clientId specified or not allowed, fallback to the staff's first assigned client
+    if (!clientId || !allowedClientIds.includes(clientId)) {
+      clientId = allowedClientIds[0];
+    }
+  }
 
   let targetWebsite: { id: string; name: string; domain: string; client_id: string | null } | undefined;
   if (websiteId) {

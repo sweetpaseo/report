@@ -65,15 +65,27 @@ export async function POST(request: Request) {
       now
     );
 
-    // Update social_handles in clients table
+    // Update social_handles in clients table with multi-branch support
     const client = db.prepare("SELECT social_handles FROM clients WHERE id = ?").get(data.clientId) as { social_handles: string | null } | undefined;
-    let handles: Record<string, string> = {};
+    let handles: Record<string, any> = {};
     if (client?.social_handles) {
       try {
         handles = JSON.parse(client.social_handles);
       } catch {}
     }
-    handles[data.platform] = data.username.replace(/^@/, "");
+
+    const cleanUsername = data.username.replace(/^@/, "");
+    let branchList: string[] = [];
+    if (Array.isArray(handles[data.platform])) {
+      branchList = handles[data.platform];
+    } else if (typeof handles[data.platform] === "string" && handles[data.platform]) {
+      branchList = [handles[data.platform]];
+    }
+    if (!branchList.includes(cleanUsername)) {
+      branchList.push(cleanUsername);
+    }
+    handles[data.platform] = branchList;
+    handles[`${data.platform}_latest`] = cleanUsername;
 
     db.prepare("UPDATE clients SET social_handles = ? WHERE id = ?").run(
       JSON.stringify(handles),

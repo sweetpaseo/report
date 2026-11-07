@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getDb } from "@/lib/db";
-import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
+import { SESSION_COOKIE, verifySessionToken, getSessionPayload } from "@/lib/auth";
 
 const schema = z.object({
   name: z.string().trim().min(2).max(80),
@@ -16,12 +16,39 @@ const schema = z.object({
 
 export async function GET(request: Request) {
   const sessionToken = (await cookies()).get(SESSION_COOKIE)?.value;
-  const role = await verifySessionToken(sessionToken);
-  if (!role) {
+  const payload = await getSessionPayload(sessionToken);
+  if (!payload) {
     return NextResponse.json({ error: "Akses ditolak" }, { status: 403 });
   }
-  // public_token is a bearer secret for the public report routes; never expose it in the list.
-  const websites = getDb().prepare(`
+
+  const db = getDb();
+
+  // If role is staff, only return websites that belong to assigned clients
+  if (payload.role === "staff" && payload.userId) {
+    const assignedClients = db
+      .prepare("SELECT client_id FROM staff_client_assignments WHERE staff_id = ?")
+      .all(payload.userId) as Array<{ client_id: string }>;
+
+    const clientIds = assignedClients.map((a) => a.client_id);
+    if (clientIds.length === 0) {
+      return NextResponse.json({ websites: [] });
+    }
+
+    const placeholders = clientIds.map(() => "?").join(",");
+    const websites = db.prepare(`
+      SELECT w.id, w.name, w.domain, w.timezone, w.client_id, w.created_at,
+        w.gsc_site_url, w.ga_property_id, w.last_api_sync_at, w.api_sync_status, w.api_sync_error,
+        (SELECT COUNT(*) FROM report_periods rp WHERE rp.website_id = w.id) AS period_count
+      FROM websites w
+      WHERE w.client_id IN (${placeholders})
+      ORDER BY w.name ASC
+    `).all(...clientIds);
+
+    return NextResponse.json({ websites });
+  }
+
+  // Admin: return all websites
+  const websites = db.prepare(`
     SELECT w.id, w.name, w.domain, w.timezone, w.client_id, w.created_at,
       w.gsc_site_url, w.ga_property_id, w.last_api_sync_at, w.api_sync_status, w.api_sync_error,
       (SELECT COUNT(*) FROM report_periods rp WHERE rp.website_id = w.id) AS period_count

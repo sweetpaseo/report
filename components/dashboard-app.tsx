@@ -17,6 +17,7 @@ import { AiInsightView } from "./views/AiInsightView";
 import { RecommendationsView } from "./views/RecommendationsView";
 import { NotificationsIssuesView } from "./views/NotificationsIssuesView";
 import { ReportsView } from "./views/ReportsView";
+import { UserManagementView } from "./views/UserManagementView";
 import { BackupModal } from "./BackupModal";
 import { GoogleApiModal } from "./GoogleApiModal";
 import { ExecutiveReportModal } from "./ExecutiveReportModal";
@@ -66,6 +67,50 @@ export function DashboardApp({
     initialData?.comparePeriod?.id || initialData?.previous?.id || ""
   );
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{
+    id?: string;
+    role: string;
+    name?: string;
+    email?: string;
+    permissions?: {
+      can_view_website_hub?: boolean;
+      can_edit_website_hub?: boolean;
+      can_view_social_hub?: boolean;
+      can_edit_social_hub?: boolean;
+      can_manage_users?: boolean;
+    };
+    assignedClientIds?: string[];
+  } | null>(null);
+
+  // Periksa sesi pengguna (role, nama, izin modular, client scoping)
+  useEffect(() => {
+    async function checkAuthMe() {
+      try {
+        const res = await fetch("/api/auth/me");
+        if (res.ok) {
+          const json = await res.json();
+          if (json.authenticated && json.user) {
+            setCurrentUser(json.user);
+            // Staf yang tidak memiliki izin Web Hub otomatis dialihkan ke Social Media Hub
+            if (
+              json.user.role === "staff" &&
+              json.user.permissions?.can_view_website_hub === false
+            ) {
+              setActiveTab("social_media");
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Gagal memeriksa sesi pengguna:", err);
+      }
+    }
+    checkAuthMe();
+  }, []);
+
+  const effectiveRole = currentUser?.role || userRole || "admin";
+  const canViewWebsiteHub = currentUser?.permissions
+    ? !!currentUser.permissions.can_view_website_hub
+    : effectiveRole === "admin";
 
   type QuickRange = "all" | "30d" | "14d" | "7d";
   const [quickRange, setQuickRange] = useState<QuickRange>("all");
@@ -230,10 +275,18 @@ export function DashboardApp({
       {/* Sidebar Navigation (Desktop Fixed + Mobile Slide Drawer) */}
       <SidebarNav
         activeTab={activeTab}
-        onSelectTab={(tab) => setActiveTab(tab)}
+        onSelectTab={(tab) => {
+          if (!canViewWebsiteHub && tab !== "social_media" && tab !== "user_management") {
+            return;
+          }
+          setActiveTab(tab);
+        }}
         issuesCount={(dashboardData?.anomalies?.length || 0) + (dashboardData?.dataQuality?.filter((q: any) => q.status !== 'ok').length || 0)}
         isOpenMobile={mobileMenuOpen}
         onCloseMobile={() => setMobileMenuOpen(false)}
+        userRole={effectiveRole}
+        canViewWebsiteHub={canViewWebsiteHub}
+        userName={currentUser?.name}
       />
 
       {/* Main Content Area */}
@@ -264,28 +317,34 @@ export function DashboardApp({
           </div>
 
           {/* Quick Hub Switcher for Mobile */}
-          <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200 shrink-0 text-[10px] font-bold">
-            <button
-              onClick={() => setActiveTab("ringkasan")}
-              className={`px-2 py-1 rounded-md transition-all ${
-                activeTab !== "social_media" ? "bg-white text-indigo-700 shadow-2xs" : "text-slate-500"
-              }`}
-            >
-              Web Hub
-            </button>
-            <button
-              onClick={() => setActiveTab("social_media")}
-              className={`px-2 py-1 rounded-md transition-all ${
-                activeTab === "social_media" ? "bg-indigo-600 text-white shadow-2xs" : "text-slate-500"
-              }`}
-            >
+          {canViewWebsiteHub ? (
+            <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200 shrink-0 text-[10px] font-bold">
+              <button
+                onClick={() => setActiveTab("ringkasan")}
+                className={`px-2 py-1 rounded-md transition-all ${
+                  activeTab !== "social_media" && activeTab !== "user_management" ? "bg-white text-indigo-700 shadow-2xs" : "text-slate-500"
+                }`}
+              >
+                Web Hub
+              </button>
+              <button
+                onClick={() => setActiveTab("social_media")}
+                className={`px-2 py-1 rounded-md transition-all ${
+                  activeTab === "social_media" ? "bg-indigo-600 text-white shadow-2xs" : "text-slate-500"
+                }`}
+              >
+                Social Hub
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 bg-purple-50 border border-purple-200 px-2.5 py-1 rounded-lg shrink-0 text-[10px] font-extrabold text-purple-700">
               Social Hub
-            </button>
-          </div>
+            </div>
+          )}
         </header>
 
         {/* Sticky Header Topbar - Khusus Modul Website Hub */}
-        {activeTab !== "social_media" && (
+        {activeTab !== "social_media" && activeTab !== "user_management" && canViewWebsiteHub && (
           <header className="sticky top-0 lg:top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-4 py-3 sm:px-6 sm:py-3.5 lg:px-8 lg:py-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shadow-2xs">
           <div>
             <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
@@ -491,8 +550,11 @@ export function DashboardApp({
               website={selectedWebsite}
               websites={websites}
               onSelectWebsite={(id) => handleSelectWebsite(id)}
-              userRole={userRole}
+              userRole={effectiveRole}
             />
+          )}
+          {activeTab === "user_management" && effectiveRole === "admin" && (
+            <UserManagementView />
           )}
           {activeTab === "ai_insight" && <AiInsightView data={activeDashboardData} isComparing={isComparing} />}
           {activeTab === "rekomendasi" && <RecommendationsView data={activeDashboardData} isComparing={isComparing} />}

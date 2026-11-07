@@ -3,6 +3,27 @@ import { SignJWT, jwtVerify } from "jose";
 export const SESSION_COOKIE = "whr_session";
 export type SessionRole = "admin" | "client" | "staff";
 
+export interface UserPermissions {
+  can_view_website_hub: boolean;
+  can_view_social_hub: boolean;
+  can_edit_social: boolean;
+  can_manage_clients: boolean;
+}
+
+export const DEFAULT_STAFF_PERMISSIONS: UserPermissions = {
+  can_view_website_hub: false,
+  can_view_social_hub: true,
+  can_edit_social: true,
+  can_manage_clients: false,
+};
+
+export const ADMIN_PERMISSIONS: UserPermissions = {
+  can_view_website_hub: true,
+  can_view_social_hub: true,
+  can_edit_social: true,
+  can_manage_clients: true,
+};
+
 function secret() {
   const value = process.env.SESSION_SECRET;
   if (!value || value.length < 32) {
