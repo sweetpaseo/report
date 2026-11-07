@@ -71,6 +71,7 @@ export function DashboardApp({
     id?: string;
     role: string;
     name?: string;
+    username?: string;
     email?: string;
     permissions?: {
       can_view_website_hub?: boolean;
@@ -89,12 +90,13 @@ export function DashboardApp({
         const res = await fetch("/api/auth/me");
         if (res.ok) {
           const json = await res.json();
-          if (json.authenticated && json.user) {
-            setCurrentUser(json.user);
+          const userObj = json.user || (json.role ? json : null);
+          if (userObj) {
+            setCurrentUser(userObj);
             // Staf yang tidak memiliki izin Web Hub otomatis dialihkan ke Social Media Hub
             if (
-              json.user.role === "staff" &&
-              json.user.permissions?.can_view_website_hub === false
+              userObj.role === "staff" &&
+              userObj.permissions?.can_view_website_hub === false
             ) {
               setActiveTab("social_media");
             }
@@ -287,6 +289,7 @@ export function DashboardApp({
         userRole={effectiveRole}
         canViewWebsiteHub={canViewWebsiteHub}
         userName={currentUser?.name}
+        username={currentUser?.username}
       />
 
       {/* Main Content Area */}

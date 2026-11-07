@@ -16,15 +16,21 @@ export async function GET() {
       : DEFAULT_STAFF_PERMISSIONS;
   let assignedClientIds: string[] = [];
 
+  let dbUsername: string | undefined;
+  let dbName: string | undefined;
+
   if (payload.userId) {
     const db = getDb();
     const user = db
-      .prepare("SELECT permissions, status FROM staff_users WHERE id = ?")
-      .get(payload.userId) as { permissions?: string | null; status?: string } | undefined;
+      .prepare("SELECT username, name, permissions, status FROM staff_users WHERE id = ?")
+      .get(payload.userId) as { username?: string | null; name?: string; permissions?: string | null; status?: string } | undefined;
 
     if (user?.status === "inactive") {
       return NextResponse.json({ error: "Akun Anda telah dinonaktifkan." }, { status: 403 });
     }
+
+    if (user?.username) dbUsername = user.username;
+    if (user?.name) dbName = user.name;
 
     if (user?.permissions) {
       try {
@@ -47,11 +53,29 @@ export async function GET() {
     assignedClientIds = allClients.map((c) => c.id);
   }
 
-  return NextResponse.json({
-    role: payload.role,
+  const finalUsername =
+    dbUsername ||
+    payload.username ||
+    (payload.role === "admin" ? "admin" : payload.role === "client" ? "han" : "staff");
+
+  const finalName =
+    dbName ||
+    payload.name ||
+    (payload.role === "admin" ? "Admin" : payload.role === "client" ? "Han" : finalUsername);
+
+  const userData = {
+    id: payload.userId,
     userId: payload.userId,
-    name: payload.name,
+    role: payload.role,
+    name: finalName,
+    username: finalUsername,
     permissions,
     assignedClientIds,
+  };
+
+  return NextResponse.json({
+    authenticated: true,
+    user: userData,
+    ...userData,
   });
 }

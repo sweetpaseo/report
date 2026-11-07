@@ -38,13 +38,13 @@ export async function POST(request: Request) {
   }
 
   let role: SessionRole | null = null;
-  let extraPayload: { userId?: string; name?: string } | undefined;
+  let extraPayload: { userId?: string; name?: string; username?: string } | undefined;
 
   // 1. Cek login Administrator utama via ADMIN_PASSWORD
   if (adminExpected && adminExpected.length >= 10 && safeEqual(password, adminExpected)) {
     if (!username || username === "admin" || username === "administrator") {
       role = "admin";
-      extraPayload = { name: "Administrator" };
+      extraPayload = { name: "Admin", username: username || "admin" };
     }
   }
 
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
   if (!role && clientExpected && clientExpected.length >= 6 && safeEqual(password, clientExpected)) {
     if (!username || username === "client" || username === "han" || username === "bos") {
       role = "client";
-      extraPayload = { userId: "client-han-uuid-001", name: "Han" };
+      extraPayload = { userId: "client-han-uuid-001", name: "Han", username: username || "han" };
     }
   }
 
@@ -80,7 +80,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Akun Anda dinonaktifkan oleh Administrator." }, { status: 403 });
       }
       role = staff.role === "admin" ? "admin" : staff.role === "client" ? "client" : "staff";
-      extraPayload = { userId: staff.id, name: staff.name };
+      extraPayload = { userId: staff.id, name: staff.name, username: staff.username || username };
     }
   }
 
@@ -88,10 +88,10 @@ export async function POST(request: Request) {
   if (!role && !username) {
     if (adminExpected && safeEqual(password, adminExpected)) {
       role = "admin";
-      extraPayload = { name: "Administrator" };
+      extraPayload = { name: "Admin", username: "admin" };
     } else if (clientExpected && safeEqual(password, clientExpected)) {
       role = "client";
-      extraPayload = { userId: "client-han-uuid-001", name: "Han" };
+      extraPayload = { userId: "client-han-uuid-001", name: "Han", username: "han" };
     }
   }
 
@@ -101,7 +101,12 @@ export async function POST(request: Request) {
 
   resetRateLimit(`login:${clientIp}`);
 
-  const response = NextResponse.json({ ok: true, role, name: extraPayload?.name });
+  const response = NextResponse.json({
+    ok: true,
+    role,
+    name: extraPayload?.name,
+    username: extraPayload?.username,
+  });
   const isProd = process.env.NODE_ENV === "production";
   const forwardedProto = request.headers.get("x-forwarded-proto") || "";
   const isHttps = forwardedProto.includes("https") || request.url.startsWith("https://");

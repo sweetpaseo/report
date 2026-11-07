@@ -39,7 +39,7 @@ function secret() {
   return new TextEncoder().encode(value);
 }
 
-export async function createSessionToken(role: SessionRole, extra?: { userId?: string; name?: string }) {
+export async function createSessionToken(role: SessionRole, extra?: { userId?: string; name?: string; username?: string }) {
   return new SignJWT({ role, ...extra })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -58,7 +58,7 @@ export async function verifySessionToken(token?: string): Promise<SessionRole | 
   }
 }
 
-export async function getSessionPayload(token?: string): Promise<{ role: SessionRole; userId?: string; name?: string } | null> {
+export async function getSessionPayload(token?: string): Promise<{ role: SessionRole; userId?: string; name?: string; username?: string } | null> {
   if (!token) return null;
   try {
     const result = await jwtVerify(token, secret());
@@ -68,6 +68,7 @@ export async function getSessionPayload(token?: string): Promise<{ role: Session
         role,
         userId: typeof result.payload.userId === "string" ? result.payload.userId : undefined,
         name: typeof result.payload.name === "string" ? result.payload.name : undefined,
+        username: typeof result.payload.username === "string" ? result.payload.username : undefined,
       };
     }
     return null;

@@ -2,6 +2,27 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit 363386f)`.
 
+## 2026-11-07 — Tampilkan Username Aktif Pada Kartu Profil Sidebar (commit d4def7f)
+- **Pembaruan Kartu Profil Sidebar**:
+  - Mengubah tampilan kartu profil di bagian bawah sidebar (`components/sidebar-nav.tsx`) agar secara dinamis menampilkan identitas `@username` yang sedang login (misal: `@admin`, `@han`, `@kurnia`, `@erihome`).
+  - Menghapus label default hardcoded `"Erihome Admin"` dan menggantikannya dengan username asli akun pengguna.
+  - Menyelaraskan inisial avatar agar bersumber dari karakter pertama username pengguna (`A` untuk admin, `H` untuk han, `K` untuk kurnia, `E` untuk erihome).
+- **Backend Auth & Session Me**:
+  - `lib/auth.ts`: Menambahkan properti `username` ke dalam token sesi JWT (`createSessionToken` dan `getSessionPayload`).
+  - `app/api/auth/login/route.ts`: Menyimpan `username` pada payload sesi saat login berhasil.
+  - `app/api/auth/me/route.ts`: Mengembalikan properti `username` dan data pengguna baik dalam format nested `{ authenticated: true, user: {...} }` maupun flat properties untuk kompatibilitas penuh.
+  - `components/dashboard-app.tsx`: Membaca objek user dari balasan `/api/auth/me` dan meneruskan prop `username` ke komponen `SidebarNav`.
+- **Verifikasi & Deployment Live**:
+  - Typecheck dan build (`npm run typecheck` & `npm run build`) lulus 100%.
+  - Deploy bundle sukses ke server produksi `https://report.erihome.id`.
+  - Verifikasi otomatis via HTTPS: login dan `/api/auth/me` untuk 4 akun (`admin`, `han`, `kurnia`, `erihome`) terverifikasi aktif dengan username masing-masing.
+- **File Terdampak**:
+  - `app/api/auth/login/route.ts`
+  - `app/api/auth/me/route.ts`
+  - `components/dashboard-app.tsx`
+  - `components/sidebar-nav.tsx`
+  - `lib/auth.ts`
+
 ## 2026-11-07 — Integrasi Akun Bos / Eksekutif (@han) & Hak Akses Pemeriksa Laporan
 - **Akun Bos / Eksekutif (@han)**:
   - Mendaftarkan akun `han` (Han - Pemeriksa Laporan) secara resmi di database (`staff_users`) dengan password `han1234`.
