@@ -135,7 +135,7 @@ export function OverviewView({
       />
 
       {/* Top 5 KPI Cards Grid with Sparklines */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         {/* KPI 1: Total Klik */}
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-2 hover:shadow-md transition-all">
           <div className="flex items-center justify-between text-slate-500">
@@ -348,7 +348,7 @@ export function OverviewView({
       </div>
 
       {/* Main Performance Charts Grid (Interactive Recharts) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Google Search Performance Recharts Card */}
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
           <div className="flex items-center justify-between">

@@ -2,6 +2,26 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit 363386f)`.
 
+## 2026-11-07 — Mobile-First Responsive & Clean Architecture (Drawer Nav, Feed Cards, Breakpoints)
+- **Mobile-First Layout & Drawer Navigation (`components/sidebar-nav.tsx` & `components/dashboard-app.tsx`)**:
+  - Memisahkan sidebar menjadi Desktop Sticky Sidebar (`hidden lg:flex`) dan Mobile Slide-over Drawer dengan backdrop blur gelap yang elegan (`lg:hidden`).
+  - Menghilangkan bug layout desktop kaku di layar smartphone yang sebelumnya membuat viewport ter-squish / terpotong oleh fixed sidebar 256px.
+  - Menambahkan Mobile Topbar Navbar (< lg) dengan tombol hamburger menu (☰), logo AcS, nama website aktif, dan Quick Switcher (Web Hub / Social Hub) yang ramah sentuhan jempol.
+  - Mengoptimalkan padding kontainer utama dari `p-8` menjadi responsif: `p-3 sm:p-5 lg:p-8`.
+- **Mobile-First Social Media Hub (`components/views/SocialMediaView.tsx`)**:
+  - Memperkenalkan **Mobile Post Feed Cards** di smartphone (< md): setiap postingan disajikan dalam bentuk kartu mobile yang rapi (thumbnail, caption, badge tanggal publikasi asli & jam tayang WIB, tombol interaksi suka/komen, salin link, dan tombol langsung ke Instagram).
+  - Di layar tablet & desktop (>= md), tetap menyajikan Tabel Data Analisis yang komprehensif.
+  - Menyesuaikan 4 kartu metrik interaksi menjadi `grid-cols-2 lg:grid-cols-4` dengan padding dan font angka yang proporsional untuk layar HP.
+  - Toolbar pencarian, filter format, pengurutan, dan tombol aksi kini wrap secara alami tanpa merusak layout.
+- **Penyempurnaan Modul Website Hub (`components/views/OverviewView.tsx`)**:
+  - Mengubah grid 5 KPI metrik menjadi `grid-cols-1 sm:grid-cols-2 lg:grid-cols-5` agar tidak berdesakan di tablet & mobile.
+  - Grafik performa Google Search & GA4 responsif `grid-cols-1 lg:grid-cols-2`.
+- **File Terdampak**:
+  - `components/sidebar-nav.tsx`
+  - `components/dashboard-app.tsx`
+  - `components/views/SocialMediaView.tsx`
+  - `components/views/OverviewView.tsx`
+
 ## 2026-11-05 — Fix Tanggal Postingan: Algoritma Decoding Instagram Snowflake ID (Waktu Asli Publikasi) (commit dbd73ca)
 - **Decoding Tanggal Asli Instagram (`lib/social-utils.ts`)**:
   - Mengimplementasikan decoder 64-bit BigInt Snowflake dari shortcode Instagram (`/p/{code}/` dan `/reel/{code}/`) berbasis epoch Instagram (`1314220021721ms`).

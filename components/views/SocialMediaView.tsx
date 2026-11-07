@@ -347,7 +347,7 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-indigo-900/40">
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-indigo-900/40">
         <div>
           <div className="flex items-center gap-2 text-indigo-300 text-xs font-bold uppercase tracking-wider mb-1 flex-wrap">
             <Share2 className="w-4 h-4 text-indigo-400" />
@@ -369,7 +369,7 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
               <span>{website?.name || clientInfo?.name || "Klien Erihome"}</span>
             )}
           </div>
-          <h2 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
             Pusat Optimasi Media Sosial Klien
           </h2>
           <p className="text-slate-300 text-xs mt-1 max-w-2xl leading-relaxed">
@@ -396,18 +396,18 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 flex-wrap w-full md:w-auto">
           <button
             onClick={fetchData}
             disabled={loading}
-            className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-xl transition-all border border-slate-700"
+            className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-xl transition-all border border-slate-700 flex-1 sm:flex-none justify-center"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
             <span>Segarkan</span>
           </button>
           <button
             onClick={() => setActiveSubTab("extension")}
-            className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-lg shadow-emerald-600/25 transition-all"
+            className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-lg shadow-emerald-600/25 transition-all flex-1 sm:flex-none justify-center"
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>Ekstensi Staf (ACS Copilot)</span>
@@ -415,7 +415,7 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
           <button
             onClick={handleGenerateConnectLink}
             disabled={connectLoading}
-            className="flex items-center gap-1.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-lg shadow-indigo-500/25 transition-all"
+            className="flex items-center gap-1.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-lg shadow-indigo-500/25 transition-all w-full sm:w-auto justify-center"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Tautkan Akun Klien</span>
@@ -498,38 +498,38 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
         <div className="space-y-5">
           {/* Summary KPI Cards for Interaction Stats */}
           {syncedPosts.length > 0 && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Konten Terpantau</span>
-                <div className="text-2xl font-black text-slate-900 mt-1">{totalPostsCount}</div>
-                <div className="text-[11px] text-slate-400 mt-0.5">Feed Instagram/TikTok</div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+              <div className="bg-white border border-slate-200/90 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm">
+                <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider block truncate">Total Konten</span>
+                <div className="text-xl sm:text-2xl font-black text-slate-900 mt-1">{totalPostsCount}</div>
+                <div className="text-[10px] text-slate-400 mt-0.5 truncate">Feed Instagram/TikTok</div>
               </div>
 
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm">
-                <span className="text-[11px] font-bold text-rose-600 uppercase tracking-wider flex items-center gap-1">
-                  <Heart className="w-3 h-3 fill-rose-500 text-rose-500" />
-                  Total Suka (Likes)
+              <div className="bg-white border border-slate-200/90 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm">
+                <span className="text-[10px] sm:text-[11px] font-bold text-rose-600 uppercase tracking-wider flex items-center gap-1 truncate">
+                  <Heart className="w-3 h-3 fill-rose-500 text-rose-500 shrink-0" />
+                  <span className="truncate">Total Suka</span>
                 </span>
-                <div className="text-2xl font-black text-rose-700 mt-1">{totalLikes.toLocaleString("id-ID")}</div>
-                <div className="text-[11px] text-slate-400 mt-0.5">Akumulasi seluruh konten</div>
+                <div className="text-xl sm:text-2xl font-black text-rose-700 mt-1">{totalLikes.toLocaleString("id-ID")}</div>
+                <div className="text-[10px] text-slate-400 mt-0.5 truncate">Akumulasi suka</div>
               </div>
 
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm">
-                <span className="text-[11px] font-bold text-blue-600 uppercase tracking-wider flex items-center gap-1">
-                  <MessageCircle className="w-3 h-3 fill-blue-500 text-blue-500" />
-                  Total Komentar
+              <div className="bg-white border border-slate-200/90 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm">
+                <span className="text-[10px] sm:text-[11px] font-bold text-blue-600 uppercase tracking-wider flex items-center gap-1 truncate">
+                  <MessageCircle className="w-3 h-3 fill-blue-500 text-blue-500 shrink-0" />
+                  <span className="truncate">Total Komentar</span>
                 </span>
-                <div className="text-2xl font-black text-blue-700 mt-1">{totalComments.toLocaleString("id-ID")}</div>
-                <div className="text-[11px] text-slate-400 mt-0.5">Interaksi percakapan audiens</div>
+                <div className="text-xl sm:text-2xl font-black text-blue-700 mt-1">{totalComments.toLocaleString("id-ID")}</div>
+                <div className="text-[10px] text-slate-400 mt-0.5 truncate">Interaksi audiens</div>
               </div>
 
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm">
-                <span className="text-[11px] font-bold text-indigo-600 uppercase tracking-wider flex items-center gap-1">
-                  <TrendingUp className="w-3 h-3 text-indigo-600" />
-                  Rata-rata Interaksi
+              <div className="bg-white border border-slate-200/90 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm">
+                <span className="text-[10px] sm:text-[11px] font-bold text-indigo-600 uppercase tracking-wider flex items-center gap-1 truncate">
+                  <TrendingUp className="w-3 h-3 text-indigo-600 shrink-0" />
+                  <span className="truncate">Rata-rata Interaksi</span>
                 </span>
-                <div className="text-2xl font-black text-indigo-700 mt-1">{avgEngagementPerPost}</div>
-                <div className="text-[11px] text-slate-400 mt-0.5">Suka + komentar per konten</div>
+                <div className="text-xl sm:text-2xl font-black text-indigo-700 mt-1">{avgEngagementPerPost}</div>
+                <div className="text-[10px] text-slate-400 mt-0.5 truncate">Suka + komen / post</div>
               </div>
             </div>
           )}
@@ -644,183 +644,306 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
             </div>
           </div>
 
-          {/* TABLE VIEW OF SOCIAL MEDIA POSTS & INTERACTIONS */}
+          {/* TABLE & MOBILE CARD VIEW OF SOCIAL MEDIA POSTS & INTERACTIONS */}
           {(postSourceFilter === "all" || postSourceFilter === "extension") && postViewMode === "table" && (
             <div className="space-y-3">
               {filteredSyncedPosts.length === 0 ? (
-                <div className="bg-white rounded-3xl border border-slate-200/80 p-8 text-center text-slate-500 text-xs">
+                <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 p-8 text-center text-slate-500 text-xs">
                   Tidak ada postingan yang sesuai dengan filter pencarian.
                 </div>
               ) : (
-                <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-sm">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead>
-                        <tr className="bg-slate-50/90 border-b border-slate-200 text-slate-600 font-extrabold uppercase text-[10px] tracking-wider">
-                          <th className="py-3 px-3 w-10 text-center">#</th>
-                          <th className="py-3 px-3 w-28">Format</th>
-                          <th className="py-3 px-4 min-w-[280px]">Caption &amp; Konten</th>
-                          <th className="py-3 px-4 min-w-[220px]">URL Postingan Medsos</th>
-                          <th className="py-3 px-3 text-right cursor-pointer" onClick={() => setPostSortBy("likes")}>
-                            <span className="flex items-center justify-end gap-1 text-rose-600 font-extrabold">
-                              <Heart className="w-3 h-3 fill-rose-500 text-rose-500" />
-                              Likes {postSortBy === "likes" && "↓"}
-                            </span>
-                          </th>
-                          <th className="py-3 px-3 text-right cursor-pointer" onClick={() => setPostSortBy("comments")}>
-                            <span className="flex items-center justify-end gap-1 text-blue-600 font-extrabold">
-                              <MessageCircle className="w-3 h-3 fill-blue-500 text-blue-500" />
-                              Komen {postSortBy === "comments" && "↓"}
-                            </span>
-                          </th>
-                          <th className="py-3 px-3 text-right cursor-pointer" onClick={() => setPostSortBy("engagement")}>
-                            <span className="flex items-center justify-end gap-1 text-indigo-600 font-extrabold">
-                              <TrendingUp className="w-3 h-3" />
-                              Interaksi {postSortBy === "engagement" && "↓"}
-                            </span>
-                          </th>
-                          <th className="py-3 px-3 text-center">Aksi</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {filteredSyncedPosts.map((p, idx) => {
-                          const isCopied = copiedUrl === p.post_url;
-                          const totalInt = (p.likes_count || 0) + (p.comments_count || 0);
+                <>
+                  {/* MOBILE VIEW (< md): Responsive Clean Architecture Post Cards */}
+                  <div className="block md:hidden space-y-3">
+                    {filteredSyncedPosts.map((p, idx) => {
+                      const isCopied = copiedUrl === p.post_url;
+                      const totalInt = (p.likes_count || 0) + (p.comments_count || 0);
 
-                          return (
-                            <tr key={p.id} className="hover:bg-slate-50/60 transition-colors">
-                              <td className="py-3.5 px-3 text-center font-bold text-slate-400 text-[11px]">
-                                {idx + 1}
-                              </td>
+                      return (
+                        <div
+                          key={p.id}
+                          className="bg-white border border-slate-200/90 rounded-2xl p-3.5 shadow-2xs space-y-3"
+                        >
+                          {/* Card Header: #, Format Badge, Date */}
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="text-[11px] font-bold text-slate-400">#{idx + 1}</span>
+                              <span
+                                className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${
+                                  p.media_type === "reel"
+                                    ? "bg-purple-50 text-purple-700 border-purple-200"
+                                    : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                }`}
+                              >
+                                {p.media_type === "reel" ? "🎬 Reel" : "🖼️ Image"}
+                              </span>
+                            </div>
 
-                              {/* Format / Media */}
-                              <td className="py-3.5 px-3">
-                                <div className="flex items-center gap-2">
-                                  {p.thumbnail_url ? (
-                                    <img
-                                      src={p.thumbnail_url}
-                                      alt="Thumbnail"
-                                      className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0"
-                                      onError={(e) => {
-                                        (e.target as HTMLElement).style.display = "none";
-                                      }}
-                                    />
-                                  ) : (
-                                    <div className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
-                                      <Laptop className="w-4 h-4" />
-                                    </div>
-                                  )}
-                                  <span
-                                    className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${
-                                      p.media_type === "reel"
-                                        ? "bg-purple-50 text-purple-700 border-purple-200"
-                                        : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                    }`}
-                                  >
-                                    {p.media_type || "Post"}
-                                  </span>
-                                </div>
-                              </td>
+                            {p.posted_at && (
+                              <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md flex items-center gap-1 shrink-0">
+                                <Calendar className="w-2.5 h-2.5 text-indigo-500" />
+                                {new Date(p.posted_at).toLocaleDateString("id-ID", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })}
+                              </span>
+                            )}
+                          </div>
 
-                              {/* Caption & Post Date */}
-                              <td className="py-3.5 px-4">
-                                <p className="text-slate-800 line-clamp-2 leading-relaxed text-xs font-medium">
-                                  {p.caption || <span className="text-slate-400 italic">(Tanpa caption teks)</span>}
-                                </p>
-                                {p.posted_at && (
-                                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-700 bg-slate-100/90 border border-slate-200/80 px-2 py-0.5 rounded-md shadow-2xs">
-                                      <Calendar className="w-3 h-3 text-indigo-500" />
-                                      {new Date(p.posted_at).toLocaleDateString("id-ID", {
-                                        day: "numeric",
-                                        month: "short",
-                                        year: "numeric",
-                                      })}
-                                    </span>
-                                    <span className="text-[10px] text-slate-400">
-                                      {new Date(p.posted_at).toLocaleTimeString("id-ID", {
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      })}{" "}
-                                      WIB
+                          {/* Card Body: Thumbnail & Caption */}
+                          <div className="flex gap-3 items-start">
+                            {p.thumbnail_url ? (
+                              <img
+                                src={p.thumbnail_url}
+                                alt="Thumbnail"
+                                className="w-16 h-16 rounded-xl object-cover border border-slate-200 shrink-0"
+                                onError={(e) => {
+                                  (e.target as HTMLElement).style.display = "none";
+                                }}
+                              />
+                            ) : (
+                              <div className="w-16 h-16 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
+                                <Laptop className="w-5 h-5" />
+                              </div>
+                            )}
+
+                            <div className="flex-1 min-w-0">
+                              <p className="text-slate-800 text-xs leading-relaxed line-clamp-3 font-medium">
+                                {p.caption || <span className="text-slate-400 italic">(Tanpa caption teks)</span>}
+                              </p>
+                              {p.posted_at && (
+                                <span className="text-[10px] text-slate-400 block mt-1">
+                                  Pukul {new Date(p.posted_at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} WIB
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Interaction Stats Row */}
+                          <div className="grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-100 text-center">
+                            <div className="bg-rose-50/70 border border-rose-100 rounded-xl py-1 px-1.5">
+                              <div className="flex items-center justify-center gap-1 text-[11px] font-black text-rose-700">
+                                <Heart className="w-3 h-3 fill-rose-500 text-rose-500" />
+                                <span>{p.likes_count.toLocaleString("id-ID")}</span>
+                              </div>
+                              <div className="text-[9px] text-rose-600 font-semibold">Likes</div>
+                            </div>
+
+                            <div className="bg-blue-50/70 border border-blue-100 rounded-xl py-1 px-1.5">
+                              <div className="flex items-center justify-center gap-1 text-[11px] font-black text-blue-700">
+                                <MessageCircle className="w-3 h-3 fill-blue-500 text-blue-500" />
+                                <span>{p.comments_count.toLocaleString("id-ID")}</span>
+                              </div>
+                              <div className="text-[9px] text-blue-600 font-semibold">Komen</div>
+                            </div>
+
+                            <div className="bg-indigo-50/70 border border-indigo-100 rounded-xl py-1 px-1.5">
+                              <div className="flex items-center justify-center gap-1 text-[11px] font-black text-indigo-700">
+                                <TrendingUp className="w-3 h-3 text-indigo-600" />
+                                <span>{totalInt.toLocaleString("id-ID")}</span>
+                              </div>
+                              <div className="text-[9px] text-indigo-600 font-semibold">Interaksi</div>
+                            </div>
+                          </div>
+
+                          {/* Actions Row */}
+                          {p.post_url && (
+                            <div className="flex items-center gap-2 pt-1">
+                              <button
+                                onClick={() => handleCopyPostUrl(p.post_url || "")}
+                                className="flex-1 flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2 px-3 rounded-xl transition-all"
+                              >
+                                {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
+                                <span>{isCopied ? "Tersalin!" : "Salin Link"}</span>
+                              </button>
+                              <a
+                                href={p.post_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-3 rounded-xl transition-all shadow-xs"
+                              >
+                                <span>Buka</span>
+                                <ArrowUpRight className="w-3.5 h-3.5" />
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* DESKTOP VIEW (>= md): Full Data Table */}
+                  <div className="hidden md:block bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-sm">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead>
+                          <tr className="bg-slate-50/90 border-b border-slate-200 text-slate-600 font-extrabold uppercase text-[10px] tracking-wider">
+                            <th className="py-3 px-3 w-10 text-center">#</th>
+                            <th className="py-3 px-3 w-28">Format</th>
+                            <th className="py-3 px-4 min-w-[280px]">Caption &amp; Konten</th>
+                            <th className="py-3 px-4 min-w-[220px]">URL Postingan Medsos</th>
+                            <th className="py-3 px-3 text-right cursor-pointer" onClick={() => setPostSortBy("likes")}>
+                              <span className="flex items-center justify-end gap-1 text-rose-600 font-extrabold">
+                                <Heart className="w-3 h-3 fill-rose-500 text-rose-500" />
+                                Likes {postSortBy === "likes" && "↓"}
+                              </span>
+                            </th>
+                            <th className="py-3 px-3 text-right cursor-pointer" onClick={() => setPostSortBy("comments")}>
+                              <span className="flex items-center justify-end gap-1 text-blue-600 font-extrabold">
+                                <MessageCircle className="w-3 h-3 fill-blue-500 text-blue-500" />
+                                Komen {postSortBy === "comments" && "↓"}
+                              </span>
+                            </th>
+                            <th className="py-3 px-3 text-right cursor-pointer" onClick={() => setPostSortBy("engagement")}>
+                              <span className="flex items-center justify-end gap-1 text-indigo-600 font-extrabold">
+                                <TrendingUp className="w-3 h-3" />
+                                Interaksi {postSortBy === "engagement" && "↓"}
+                              </span>
+                            </th>
+                            <th className="py-3 px-3 text-center">Aksi</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {filteredSyncedPosts.map((p, idx) => {
+                            const isCopied = copiedUrl === p.post_url;
+                            const totalInt = (p.likes_count || 0) + (p.comments_count || 0);
+
+                            return (
+                              <tr key={p.id} className="hover:bg-slate-50/60 transition-colors">
+                                <td className="py-3.5 px-3 text-center font-bold text-slate-400 text-[11px]">
+                                  {idx + 1}
+                                </td>
+
+                                {/* Format / Media */}
+                                <td className="py-3.5 px-3">
+                                  <div className="flex items-center gap-2">
+                                    {p.thumbnail_url ? (
+                                      <img
+                                        src={p.thumbnail_url}
+                                        alt="Thumbnail"
+                                        className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0"
+                                        onError={(e) => {
+                                          (e.target as HTMLElement).style.display = "none";
+                                        }}
+                                      />
+                                    ) : (
+                                      <div className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
+                                        <Laptop className="w-4 h-4" />
+                                      </div>
+                                    )}
+                                    <span
+                                      className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${
+                                        p.media_type === "reel"
+                                          ? "bg-purple-50 text-purple-700 border-purple-200"
+                                          : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                      }`}
+                                    >
+                                      {p.media_type || "Post"}
                                     </span>
                                   </div>
-                                )}
-                              </td>
+                                </td>
 
-                              {/* Post URL */}
-                              <td className="py-3.5 px-4">
-                                {p.post_url ? (
-                                  <div className="flex items-center gap-1.5 max-w-[260px]">
+                                {/* Caption & Post Date */}
+                                <td className="py-3.5 px-4">
+                                  <p className="text-slate-800 line-clamp-2 leading-relaxed text-xs font-medium">
+                                    {p.caption || <span className="text-slate-400 italic">(Tanpa caption teks)</span>}
+                                  </p>
+                                  {p.posted_at && (
+                                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-700 bg-slate-100/90 border border-slate-200/80 px-2 py-0.5 rounded-md shadow-2xs">
+                                        <Calendar className="w-3 h-3 text-indigo-500" />
+                                        {new Date(p.posted_at).toLocaleDateString("id-ID", {
+                                          day: "numeric",
+                                          month: "short",
+                                          year: "numeric",
+                                        })}
+                                      </span>
+                                      <span className="text-[10px] text-slate-400">
+                                        {new Date(p.posted_at).toLocaleTimeString("id-ID", {
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        })}{" "}
+                                        WIB
+                                      </span>
+                                    </div>
+                                  )}
+                                </td>
+
+                                {/* Post URL */}
+                                <td className="py-3.5 px-4">
+                                  {p.post_url ? (
+                                    <div className="flex items-center gap-1.5 max-w-[260px]">
+                                      <a
+                                        href={p.post_url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="font-mono text-[11px] text-indigo-600 hover:text-indigo-800 hover:underline truncate bg-indigo-50/70 border border-indigo-100 px-2 py-1 rounded-lg"
+                                        title={p.post_url}
+                                      >
+                                        {p.post_url.replace(/^https?:\/\/(www\.)?/, "")}
+                                      </a>
+                                      <button
+                                        onClick={() => handleCopyPostUrl(p.post_url || "")}
+                                        className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600 transition-colors shrink-0"
+                                        title="Salin Link"
+                                      >
+                                        {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <span className="text-slate-400 text-xs">-</span>
+                                  )}
+                                </td>
+
+                                {/* Likes */}
+                                <td className="py-3.5 px-3 text-right">
+                                  <span className="inline-flex items-center gap-1 font-black text-rose-700 bg-rose-50 border border-rose-200/80 px-2.5 py-1 rounded-full text-xs">
+                                    <Heart className="w-3 h-3 fill-rose-500 text-rose-500" />
+                                    {p.likes_count.toLocaleString("id-ID")}
+                                  </span>
+                                </td>
+
+                                {/* Comments */}
+                                <td className="py-3.5 px-3 text-right">
+                                  <span className="inline-flex items-center gap-1 font-black text-blue-700 bg-blue-50 border border-blue-200/80 px-2.5 py-1 rounded-full text-xs">
+                                    <MessageCircle className="w-3 h-3 fill-blue-500 text-blue-500" />
+                                    {p.comments_count.toLocaleString("id-ID")}
+                                  </span>
+                                </td>
+
+                                {/* Total Engagement */}
+                                <td className="py-3.5 px-3 text-right">
+                                  <div className="font-extrabold text-slate-900 text-xs">
+                                    {totalInt.toLocaleString("id-ID")}
+                                  </div>
+                                  <span className="text-[10px] text-indigo-600 font-semibold">
+                                    Skor: {p.engagement_score || totalInt}
+                                  </span>
+                                </td>
+
+                                {/* Action */}
+                                <td className="py-3.5 px-3 text-center">
+                                  {p.post_url && (
                                     <a
                                       href={p.post_url}
                                       target="_blank"
                                       rel="noreferrer"
-                                      className="font-mono text-[11px] text-indigo-600 hover:text-indigo-800 hover:underline truncate bg-indigo-50/70 border border-indigo-100 px-2 py-1 rounded-lg"
-                                      title={p.post_url}
+                                      className="inline-flex items-center gap-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-700 font-bold px-2.5 py-1 rounded-lg text-[11px] transition-all"
                                     >
-                                      {p.post_url.replace(/^https?:\/\/(www\.)?/, "")}
+                                      <span>Buka</span>
+                                      <ArrowUpRight className="w-3 h-3" />
                                     </a>
-                                    <button
-                                      onClick={() => handleCopyPostUrl(p.post_url || "")}
-                                      className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600 transition-colors shrink-0"
-                                      title="Salin Link"
-                                    >
-                                      {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <span className="text-slate-400 text-xs">-</span>
-                                )}
-                              </td>
-
-                              {/* Likes */}
-                              <td className="py-3.5 px-3 text-right">
-                                <span className="inline-flex items-center gap-1 font-black text-rose-700 bg-rose-50 border border-rose-200/80 px-2.5 py-1 rounded-full text-xs">
-                                  <Heart className="w-3 h-3 fill-rose-500 text-rose-500" />
-                                  {p.likes_count.toLocaleString("id-ID")}
-                                </span>
-                              </td>
-
-                              {/* Comments */}
-                              <td className="py-3.5 px-3 text-right">
-                                <span className="inline-flex items-center gap-1 font-black text-blue-700 bg-blue-50 border border-blue-200/80 px-2.5 py-1 rounded-full text-xs">
-                                  <MessageCircle className="w-3 h-3 fill-blue-500 text-blue-500" />
-                                  {p.comments_count.toLocaleString("id-ID")}
-                                </span>
-                              </td>
-
-                              {/* Total Engagement */}
-                              <td className="py-3.5 px-3 text-right">
-                                <div className="font-extrabold text-slate-900 text-xs">
-                                  {totalInt.toLocaleString("id-ID")}
-                                </div>
-                                <span className="text-[10px] text-indigo-600 font-semibold">
-                                  Skor: {p.engagement_score || totalInt}
-                                </span>
-                              </td>
-
-                              {/* Action */}
-                              <td className="py-3.5 px-3 text-center">
-                                {p.post_url && (
-                                  <a
-                                    href={p.post_url}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="inline-flex items-center gap-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-700 font-bold px-2.5 py-1 rounded-lg text-[11px] transition-all"
-                                  >
-                                    <span>Buka</span>
-                                    <ArrowUpRight className="w-3 h-3" />
-                                  </a>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                </div>
+                </>
               )}
             </div>
           )}

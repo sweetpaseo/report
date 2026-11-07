@@ -20,6 +20,8 @@ import {
   MessageCircle,
   ChevronDown,
   ChevronRight,
+  X,
+  Menu,
 } from "lucide-react";
 
 export type NavTabId =
@@ -43,6 +45,8 @@ interface SidebarNavProps {
   activeTab: NavTabId;
   onSelectTab: (tab: NavTabId) => void;
   issuesCount?: number;
+  isOpenMobile?: boolean;
+  onCloseMobile?: () => void;
 }
 
 export const WEBSITE_SUB_ITEMS: {
@@ -75,12 +79,25 @@ export const NAV_ITEMS: {
   { id: "social_media", label: "Social Media Hub", icon: MessageCircle },
 ];
 
-export function SidebarNav({ activeTab, onSelectTab, issuesCount = 42 }: SidebarNavProps) {
+export function SidebarNav({
+  activeTab,
+  onSelectTab,
+  issuesCount = 42,
+  isOpenMobile = false,
+  onCloseMobile,
+}: SidebarNavProps) {
   const isWebsiteActive = activeTab !== "social_media";
   const [websiteHubOpen, setWebsiteHubOpen] = useState(true);
 
-  return (
-    <aside className="w-64 bg-white/90 backdrop-blur-xl border-r border-slate-200 flex flex-col shrink-0 h-screen sticky top-0 z-30 select-none">
+  const handleItemClick = (id: NavTabId) => {
+    onSelectTab(id);
+    if (onCloseMobile) {
+      onCloseMobile();
+    }
+  };
+
+  const navContent = (
+    <div className="flex flex-col h-full select-none">
       {/* Brand Header */}
       <div className="p-4 border-b border-slate-100 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
@@ -92,12 +109,25 @@ export function SidebarNav({ activeTab, onSelectTab, issuesCount = 42 }: Sidebar
             <p className="text-[10px] font-medium text-slate-400">Studio Analytics</p>
           </div>
         </div>
-        <div
-          className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-full shrink-0"
-          title={`Versi ${process.env.NEXT_PUBLIC_APP_VERSION || "0.2.0"}`}
-        >
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-[10px] font-extrabold text-emerald-700">v{process.env.NEXT_PUBLIC_APP_VERSION || "0.2.0"}</span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <div
+            className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-full"
+            title={`Versi ${process.env.NEXT_PUBLIC_APP_VERSION || "0.2.1"}`}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[10px] font-extrabold text-emerald-700">v{process.env.NEXT_PUBLIC_APP_VERSION || "0.2.1"}</span>
+          </div>
+
+          {/* Close button for mobile drawer */}
+          {onCloseMobile && (
+            <button
+              onClick={onCloseMobile}
+              className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              aria-label="Tutup Menu"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -112,7 +142,7 @@ export function SidebarNav({ activeTab, onSelectTab, issuesCount = 42 }: Sidebar
           <button
             onClick={() => {
               if (!isWebsiteActive) {
-                onSelectTab("ringkasan");
+                handleItemClick("ringkasan");
                 setWebsiteHubOpen(true);
               } else {
                 setWebsiteHubOpen((prev) => !prev);
@@ -155,8 +185,8 @@ export function SidebarNav({ activeTab, onSelectTab, issuesCount = 42 }: Sidebar
                 return (
                   <button
                     key={item.id}
-                    onClick={() => onSelectTab(item.id)}
-                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-150 ${
+                    onClick={() => handleItemClick(item.id)}
+                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-[11px] font-semibold transition-all duration-150 ${
                       isActive
                         ? "bg-indigo-600 text-white shadow-sm font-bold"
                         : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
@@ -185,7 +215,7 @@ export function SidebarNav({ activeTab, onSelectTab, issuesCount = 42 }: Sidebar
         {/* 2. MAIN MENU: Social Media Hub */}
         <div>
           <button
-            onClick={() => onSelectTab("social_media")}
+            onClick={() => handleItemClick("social_media")}
             className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 ${
               activeTab === "social_media"
                 ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-600/25 border border-indigo-600"
@@ -239,6 +269,32 @@ export function SidebarNav({ activeTab, onSelectTab, issuesCount = 42 }: Sidebar
           </div>
         </div>
       </div>
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Sidebar (lg and above only) */}
+      <aside className="hidden lg:flex w-64 bg-white/90 backdrop-blur-xl border-r border-slate-200 flex-col shrink-0 h-screen sticky top-0 z-30 select-none">
+        {navContent}
+      </aside>
+
+      {/* Mobile Drawer Navigation (< lg) */}
+      {isOpenMobile && (
+        <div className="fixed inset-0 z-50 lg:hidden flex">
+          {/* Backdrop overlay */}
+          <div
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-300"
+            onClick={onCloseMobile}
+            aria-hidden="true"
+          />
+
+          {/* Drawer content */}
+          <aside className="relative w-[285px] max-w-[85vw] bg-white h-full shadow-2xl flex flex-col z-10 animate-in slide-in-from-left duration-250">
+            {navContent}
+          </aside>
+        </div>
+      )}
+    </>
   );
 }

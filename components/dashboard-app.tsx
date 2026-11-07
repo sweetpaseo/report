@@ -31,6 +31,8 @@ import {
   Sliders,
   Sparkles,
   FileText,
+  Menu,
+  X,
 } from "lucide-react";
 
 interface DashboardAppProps {
@@ -63,6 +65,7 @@ export function DashboardApp({
   const [comparePeriodId, setComparePeriodId] = useState<string>(
     initialData?.comparePeriod?.id || initialData?.previous?.id || ""
   );
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   type QuickRange = "all" | "30d" | "14d" | "7d";
   const [quickRange, setQuickRange] = useState<QuickRange>("all");
@@ -224,39 +227,87 @@ export function DashboardApp({
 
   return (
     <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900 antialiased">
-      {/* Sidebar Navigation */}
+      {/* Sidebar Navigation (Desktop Fixed + Mobile Slide Drawer) */}
       <SidebarNav
         activeTab={activeTab}
         onSelectTab={(tab) => setActiveTab(tab)}
         issuesCount={(dashboardData?.anomalies?.length || 0) + (dashboardData?.dataQuality?.filter((q: any) => q.status !== 'ok').length || 0)}
+        isOpenMobile={mobileMenuOpen}
+        onCloseMobile={() => setMobileMenuOpen(false)}
       />
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-w-0 overflow-y-auto custom-scrollbar">
+        {/* Mobile Top Navigation Header (< lg) */}
+        <header className="lg:hidden sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/90 px-3.5 py-2.5 flex items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="p-1.5 -ml-1 rounded-xl text-slate-700 hover:bg-slate-100 transition-colors shrink-0"
+              aria-label="Buka Menu Navigasi"
+            >
+              <Menu className="w-5 h-5 text-slate-800" />
+            </button>
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white font-black text-xs shadow-xs shrink-0">
+                AcS
+              </div>
+              <div className="min-w-0">
+                <h2 className="font-extrabold text-xs text-slate-900 truncate">
+                  {activeNavItem?.label || "Ringkasan"}
+                </h2>
+                <p className="text-[10px] text-slate-400 font-medium truncate">
+                  {selectedWebsite?.name || selectedWebsite?.domain || "Erihome"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Hub Switcher for Mobile */}
+          <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200 shrink-0 text-[10px] font-bold">
+            <button
+              onClick={() => setActiveTab("ringkasan")}
+              className={`px-2 py-1 rounded-md transition-all ${
+                activeTab !== "social_media" ? "bg-white text-indigo-700 shadow-2xs" : "text-slate-500"
+              }`}
+            >
+              Web Hub
+            </button>
+            <button
+              onClick={() => setActiveTab("social_media")}
+              className={`px-2 py-1 rounded-md transition-all ${
+                activeTab === "social_media" ? "bg-indigo-600 text-white shadow-2xs" : "text-slate-500"
+              }`}
+            >
+              Social Hub
+            </button>
+          </div>
+        </header>
+
         {/* Sticky Header Topbar - Khusus Modul Website Hub */}
         {activeTab !== "social_media" && (
-          <header className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-8 py-4 flex flex-wrap items-center justify-between gap-4">
+          <header className="sticky top-0 lg:top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-4 py-3 sm:px-6 sm:py-3.5 lg:px-8 lg:py-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shadow-2xs">
           <div>
-            <h1 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
+            <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
               <span>{activeNavItem?.label || "Ringkasan"}</span>
               <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200/80 shadow-xs">
-                v{process.env.NEXT_PUBLIC_APP_VERSION || "0.1.2"}
+                v{process.env.NEXT_PUBLIC_APP_VERSION || "0.2.1"}
               </span>
             </h1>
-            <p className="text-xs font-medium text-slate-500 mt-0.5">
+            <p className="text-[11px] sm:text-xs font-medium text-slate-500 mt-0.5">
               Ringkasan performa website Anda dari Google Search Console & Google Analytics
             </p>
           </div>
 
           {/* Top Controls */}
-          <div className="flex flex-wrap items-center gap-3 text-xs">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
             {/* Website Selector */}
-            <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5 shadow-sm hover:border-indigo-300 transition-colors">
+            <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 shadow-sm hover:border-indigo-300 transition-colors flex-1 sm:flex-none">
               <Globe className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
               <select
                 value={selectedWebsiteId}
                 onChange={(e) => handleSelectWebsite(e.target.value)}
-                className="bg-transparent font-bold text-slate-800 outline-none cursor-pointer pr-1 text-xs"
+                className="bg-transparent font-bold text-slate-800 outline-none cursor-pointer pr-1 text-xs w-full sm:w-auto"
               >
                 {websites.length > 0 ? (
                   websites.map((w) => (
@@ -271,7 +322,7 @@ export function DashboardApp({
             </div>
 
             {/* Date Range Picker / Period Selector */}
-            <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-3 py-1.5 shadow-sm">
+            <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 shadow-sm flex-1 sm:flex-none">
               <Calendar className="w-3.5 h-3.5 text-slate-500 shrink-0" />
               {dashboardData?.periods && dashboardData.periods.length > 0 ? (
                 <select
@@ -281,7 +332,7 @@ export function DashboardApp({
                       handleSelectWebsite(selectedWebsiteId, e.target.value);
                     }
                   }}
-                  className="bg-transparent font-bold text-slate-700 outline-none cursor-pointer text-xs"
+                  className="bg-transparent font-bold text-slate-700 outline-none cursor-pointer text-xs w-full sm:w-auto"
                 >
                   {dashboardData.periods.map((p: any) => (
                     <option key={p.id} value={p.id}>
@@ -297,7 +348,7 @@ export function DashboardApp({
             </div>
 
             {/* Quick Range Presets (Bulan Penuh, 30 Hari, 14 Hari, 7 Hari) */}
-            <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+            <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200 overflow-x-auto max-w-full">
               {(
                 [
                   { id: "all", label: "Bulan Penuh" },
@@ -309,7 +360,7 @@ export function DashboardApp({
                 <button
                   key={preset.id}
                   onClick={() => setQuickRange(preset.id)}
-                  className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                  className={`px-2 sm:px-2.5 py-1 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all whitespace-nowrap ${
                     quickRange === preset.id
                       ? "bg-white text-indigo-700 shadow-xs"
                       : "text-slate-500 hover:text-slate-800"
@@ -321,8 +372,8 @@ export function DashboardApp({
             </div>
 
             {/* Compare Toggle & Comparison Period Selector */}
-            <div className="flex items-center gap-2 bg-slate-100/80 px-3 py-1.5 rounded-xl border border-slate-200">
-              <span className="font-bold text-slate-600">Bandingkan</span>
+            <div className="flex items-center gap-2 bg-slate-100/80 px-2.5 py-1.5 rounded-xl border border-slate-200">
+              <span className="font-bold text-slate-600 text-[11px] sm:text-xs">Bandingkan</span>
               <button
                 onClick={() => {
                   const nextCmp = !isComparing;
@@ -345,7 +396,7 @@ export function DashboardApp({
 
               {isComparing && dashboardData?.periods && dashboardData.periods.length > 1 && (
                 <div className="flex items-center gap-1.5 pl-2 border-l border-slate-300">
-                  <span className="text-[11px] font-bold text-slate-500">vs</span>
+                  <span className="text-[10px] font-bold text-slate-500">vs</span>
                   <select
                     value={dashboardData?.comparePeriod?.id || comparePeriodId}
                     onChange={(e) => {
@@ -355,7 +406,7 @@ export function DashboardApp({
                         handleSelectWebsite(selectedWebsiteId, dashboardData?.selected?.id, nextCmpId, true);
                       }
                     }}
-                    className="bg-white border border-slate-300 rounded-lg px-2 py-0.5 font-bold text-indigo-700 outline-none cursor-pointer text-xs shadow-xs"
+                    className="bg-white border border-slate-300 rounded-lg px-2 py-0.5 font-bold text-indigo-700 outline-none cursor-pointer text-[11px] shadow-xs"
                   >
                     {dashboardData.periods
                       .filter((p: any) => p.id !== dashboardData.selected?.id)
@@ -374,7 +425,7 @@ export function DashboardApp({
               <button
                 onClick={() => setShowGoogleApiModal(true)}
                 title="Tarik data terbaru dari Google Search Console & Google Analytics API"
-                className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold px-3 py-1.5 rounded-xl hover:bg-indigo-100 transition-colors shadow-sm"
+                className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold px-2.5 py-1.5 rounded-xl hover:bg-indigo-100 transition-colors shadow-sm text-xs"
               >
                 <RefreshCw className="w-3.5 h-3.5 text-indigo-600" />
                 <span>Tarik Data Google</span>
@@ -385,7 +436,7 @@ export function DashboardApp({
             <button
               onClick={() => setShowBackupModal(true)}
               title="Backup data kredensial & konfigurasi database"
-              className="flex items-center gap-1.5 bg-white border border-slate-200 text-slate-700 font-bold px-3 py-1.5 rounded-xl shadow-sm hover:bg-slate-50 transition-colors"
+              className="flex items-center gap-1.5 bg-white border border-slate-200 text-slate-700 font-bold px-2.5 py-1.5 rounded-xl shadow-sm hover:bg-slate-50 transition-colors text-xs"
             >
               <Database className="w-3.5 h-3.5 text-slate-500" />
               <span>Backup</span>
@@ -395,7 +446,7 @@ export function DashboardApp({
             <button
               onClick={() => setShowExecutiveReportModal(true)}
               title="Buka dan cetak Dokumen Laporan Resmi Eksekutif A4 untuk Pimpinan / Klien"
-              className="flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold px-3.5 py-1.5 rounded-xl shadow-md shadow-indigo-600/25 hover:from-purple-700 hover:to-indigo-700 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold px-3 py-1.5 rounded-xl shadow-md shadow-indigo-600/25 hover:from-purple-700 hover:to-indigo-700 transition-all cursor-pointer text-xs"
             >
               <FileText className="w-3.5 h-3.5" />
               <span>Laporan Eksekutif</span>
@@ -404,7 +455,7 @@ export function DashboardApp({
             {/* Export Button */}
             <button
               onClick={() => setActiveTab("laporan")}
-              className="flex items-center gap-1.5 bg-white border border-slate-200 text-slate-700 font-bold px-3 py-1.5 rounded-xl shadow-sm hover:bg-slate-50 transition-colors"
+              className="flex items-center gap-1.5 bg-white border border-slate-200 text-slate-700 font-bold px-2.5 py-1.5 rounded-xl shadow-sm hover:bg-slate-50 transition-colors text-xs"
             >
               <Download className="w-3.5 h-3.5 text-slate-500" />
               <span>Ekspor</span>
@@ -414,7 +465,7 @@ export function DashboardApp({
         )}
 
         {/* Dynamic View Canvas */}
-        <div className="p-8 max-w-[1440px] w-full mx-auto space-y-6 flex-1">
+        <div className="p-3 sm:p-5 lg:p-8 max-w-[1440px] w-full mx-auto space-y-4 sm:space-y-6 flex-1">
           {activeTab === "ringkasan" && (
             <OverviewView data={activeDashboardData} isComparing={isComparing} onSelectTab={(t) => setActiveTab(t)} />
           )}
