@@ -48,15 +48,15 @@ export async function POST(request: Request) {
     }
   }
 
-  // 2. Cek login Client via CLIENT_PASSWORD
+  // 2. Cek login Client / Bos via CLIENT_PASSWORD (username 'han' atau 'client')
   if (!role && clientExpected && clientExpected.length >= 6 && safeEqual(password, clientExpected)) {
-    if (!username || username === "client" || username === "han") {
+    if (!username || username === "client" || username === "han" || username === "bos") {
       role = "client";
-      extraPayload = { name: "Client" };
+      extraPayload = { userId: "client-han-uuid-001", name: "Han" };
     }
   }
 
-  // 3. Cek database user (staf/admin) berdasarkan Username atau Email
+  // 3. Cek database user (staf/admin/client) berdasarkan Username atau Email
   if (!role && username) {
     const db = getDb();
     const staff = db
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
       if (staff.status === "inactive") {
         return NextResponse.json({ error: "Akun Anda dinonaktifkan oleh Administrator." }, { status: 403 });
       }
-      role = staff.role === "admin" ? "admin" : "staff";
+      role = staff.role === "admin" ? "admin" : staff.role === "client" ? "client" : "staff";
       extraPayload = { userId: staff.id, name: staff.name };
     }
   }
@@ -91,7 +91,7 @@ export async function POST(request: Request) {
       extraPayload = { name: "Administrator" };
     } else if (clientExpected && safeEqual(password, clientExpected)) {
       role = "client";
-      extraPayload = { name: "Client" };
+      extraPayload = { userId: "client-han-uuid-001", name: "Han" };
     }
   }
 

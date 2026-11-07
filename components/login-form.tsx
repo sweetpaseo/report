@@ -65,7 +65,7 @@ export function LoginForm({ nextPath = "/dashboard" }: { nextPath?: string }) {
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            placeholder="admin, kurnia, atau erihome"
+            placeholder="admin, han, kurnia, atau erihome"
             autoComplete="username"
             required
             autoFocus
@@ -142,7 +142,7 @@ export function LoginForm({ nextPath = "/dashboard" }: { nextPath?: string }) {
       </button>
 
       <p style={{ margin: "4px 0 0", fontSize: "11px", color: "#64748b", textAlign: "center", lineHeight: "1.4" }}>
-        Masuk menggunakan username dan password Anda (bukan alamat email).
+        Masuk sebagai Admin, Pemeriksa Laporan (Han), atau Staf Medsos menggunakan username.
       </p>
     </form>
   );

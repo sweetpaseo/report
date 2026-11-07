@@ -297,26 +297,38 @@ export function SidebarNav({
         <div className="flex items-center justify-between p-2 rounded-xl border border-slate-200/80 bg-white shadow-2xs">
           <div className="flex items-center gap-2 min-w-0">
             <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs uppercase shrink-0 ${
-              userRole === "admin" ? "bg-amber-100 text-amber-800" : "bg-indigo-100 text-indigo-700"
+              userRole === "admin"
+                ? "bg-amber-100 text-amber-800"
+                : userRole === "client"
+                ? "bg-emerald-100 text-emerald-800"
+                : "bg-indigo-100 text-indigo-700"
             }`}>
-              {(userName || (userRole === "admin" ? "Admin" : "Staff")).charAt(0)}
+              {(userName || (userRole === "admin" ? "Admin" : userRole === "client" ? "Han" : "Staff")).charAt(0)}
             </div>
             <div className="min-w-0">
               <p className="text-xs font-bold text-slate-800 leading-tight truncate">
-                {userName || (userRole === "admin" ? "Erihome Admin" : "Staff User")}
+                {userName || (userRole === "admin" ? "Erihome Admin" : userRole === "client" ? "Han" : "Staff User")}
               </p>
               <p className="text-[10px] text-slate-400 font-medium capitalize truncate">
-                {userRole === "admin" ? "Administrator" : "Staff Medsos"}
+                {userRole === "admin" ? "Administrator" : userRole === "client" ? "Pemeriksa Laporan" : "Staff Medsos"}
               </p>
             </div>
           </div>
           <div className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
             userRole === "admin"
               ? "text-amber-700 bg-amber-50 border-amber-200"
+              : userRole === "client"
+              ? "text-emerald-700 bg-emerald-50 border-emerald-200"
               : "text-indigo-700 bg-indigo-50 border-indigo-200"
           }`}>
-            <Zap className={`w-3 h-3 ${userRole === "admin" ? "fill-amber-500 text-amber-500" : "fill-indigo-500 text-indigo-500"}`} />
-            <span>{userRole === "admin" ? "Admin" : "Staff"}</span>
+            <Zap className={`w-3 h-3 ${
+              userRole === "admin"
+                ? "fill-amber-500 text-amber-500"
+                : userRole === "client"
+                ? "fill-emerald-500 text-emerald-500"
+                : "fill-indigo-500 text-indigo-500"
+            }`} />
+            <span>{userRole === "admin" ? "Admin" : userRole === "client" ? "Client" : "Staff"}</span>
           </div>
         </div>
       </div>

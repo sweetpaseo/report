@@ -87,7 +87,7 @@ export async function POST(request: Request) {
     let username = String(body.username || "").trim().toLowerCase().replace(/[^a-z0-9._-]/g, "");
     let email = String(body.email || "").trim().toLowerCase();
     const password = String(body.password || "").trim();
-    const role = body.role === "admin" ? "admin" : "staff_social_media";
+    const role = body.role === "admin" ? "admin" : body.role === "client" ? "client" : "staff_social_media";
     const status = body.status === "inactive" ? "inactive" : "active";
     const permissions: UserPermissions = {
       can_view_website_hub: Boolean(body.permissions?.can_view_website_hub),

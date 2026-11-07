@@ -2,6 +2,24 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit 363386f)`.
 
+## 2026-11-07 — Integrasi Akun Bos / Eksekutif (@han) & Hak Akses Pemeriksa Laporan
+- **Akun Bos / Eksekutif (@han)**:
+  - Mendaftarkan akun `han` (Han - Pemeriksa Laporan) secara resmi di database (`staff_users`) dengan password `han1234`.
+  - Memberikan hak akses penuh pembacaan laporan: Website Hub (Search Console, Analytics, Vitals, Laporan) dan Social Media Hub untuk seluruh klien.
+  - Memperbarui `app/api/auth/me` agar role `client` otomatis memperoleh `CLIENT_VIEWER_PERMISSIONS` dan akses ke semua website/klien tanpa pembatasan staf.
+  - Menampilkan badge `👔 Bos / Klien` pada daftar pengguna di `UserManagementView.tsx` serta kartu profil eksekutif di footer sidebar navigasi.
+  - Memperbarui placeholder dan petunjuk di halaman login: `admin, han, kurnia, atau erihome`.
+- **File Terdampak**:
+  - `app/api/admin/users/route.ts`
+  - `app/api/admin/users/[id]/route.ts`
+  - `app/api/auth/login/route.ts`
+  - `app/api/auth/me/route.ts`
+  - `components/login-form.tsx`
+  - `components/sidebar-nav.tsx`
+  - `components/views/UserManagementView.tsx`
+  - `lib/auth.ts`
+  - `scripts/seed-clients-and-staff.ts`
+
 ## 2026-11-07 — Autentikasi Berbasis Username & Perbaikan Sistem Password (Web & Ekstensi)
 - **Login Berbasis Username (Bukan Email)**:
   - Mengubah antarmuka halaman login (`components/login-form.tsx`) dengan dua field utama: **Username** dan **Password**, menggantikan form password tunggal sebelumnya.

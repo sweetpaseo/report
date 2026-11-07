@@ -123,6 +123,47 @@ async function main() {
   );
   console.log(`Assigned @${staffErihomeUsername} -> Erihome (${erihomeClient.id})`);
 
+  // 6. User Bos / Eksekutif: username 'han' (Pemeriksa Laporan)
+  const hanUsername = "han";
+  const hanEmail = "han@erihome.id";
+  const hanPass = hashPassword("han1234");
+  const hanPermissions = JSON.stringify({
+    can_view_website_hub: true,
+    can_view_social_hub: true,
+    can_edit_social: false,
+    can_manage_clients: false,
+  });
+
+  let hanUser = db.prepare("SELECT id FROM staff_users WHERE LOWER(username) = ? OR LOWER(email) = ?").get(hanUsername, hanEmail) as { id: string } | undefined;
+  let hanUserId = hanUser ? hanUser.id : "client-han-uuid-001";
+
+  if (hanUser) {
+    db.prepare(`
+      UPDATE staff_users 
+      SET username = ?, name = 'Han (Pemeriksa Laporan)', password_hash = ?, role = 'client', status = 'active', permissions = ?, updated_at = ?
+      WHERE id = ?
+    `).run(hanUsername, hanPass, hanPermissions, new Date().toISOString(), hanUserId);
+    console.log(`Updated existing user @${hanUsername}`);
+  } else {
+    db.prepare(`
+      INSERT INTO staff_users (id, username, name, email, password_hash, role, status, permissions, created_at)
+      VALUES (?, ?, 'Han (Pemeriksa Laporan)', ?, ?, 'client', 'active', ?, ?)
+    `).run(hanUserId, hanUsername, hanEmail, hanPass, hanPermissions, new Date().toISOString());
+    console.log(`Created new boss/client user @${hanUsername} with id ${hanUserId}`);
+  }
+
+  // Assign Han to all clients
+  db.prepare("DELETE FROM staff_client_assignments WHERE staff_id = ?").run(hanUserId);
+  const allClients = db.prepare("SELECT id FROM clients").all() as Array<{ id: string }>;
+  for (const c of allClients) {
+    db.prepare("INSERT INTO staff_client_assignments (staff_id, client_id, created_at) VALUES (?, ?, ?)").run(
+      hanUserId,
+      c.id,
+      new Date().toISOString()
+    );
+  }
+  console.log(`Assigned @${hanUsername} -> All Clients (${allClients.length} clients)`);
+
   console.log("Seeding completed successfully!");
 }
 

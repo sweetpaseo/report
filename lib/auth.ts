@@ -17,6 +17,13 @@ export const DEFAULT_STAFF_PERMISSIONS: UserPermissions = {
   can_manage_clients: false,
 };
 
+export const CLIENT_VIEWER_PERMISSIONS: UserPermissions = {
+  can_view_website_hub: true,
+  can_view_social_hub: true,
+  can_edit_social: false,
+  can_manage_clients: false,
+};
+
 export const ADMIN_PERMISSIONS: UserPermissions = {
   can_view_website_hub: true,
   can_view_social_hub: true,

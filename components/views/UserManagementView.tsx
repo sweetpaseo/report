@@ -61,7 +61,7 @@ export function UserManagementView() {
   const [formEmail, setFormEmail] = useState("");
   const [formPassword, setFormPassword] = useState("");
   const [showFormPassword, setShowFormPassword] = useState(false);
-  const [formRole, setFormRole] = useState<"staff_social_media" | "admin">("staff_social_media");
+  const [formRole, setFormRole] = useState<"staff_social_media" | "admin" | "client">("staff_social_media");
   const [formStatus, setFormStatus] = useState<"active" | "inactive">("active");
   const [formPermissions, setFormPermissions] = useState<UserPermissions>(DEFAULT_STAFF_PERMISSIONS);
   const [formClientIds, setFormClientIds] = useState<string[]>([]);
@@ -122,7 +122,7 @@ export function UserManagementView() {
     setFormEmail(user.email);
     setFormPassword(""); // Leave empty unless changing
     setShowFormPassword(false);
-    setFormRole(user.role === "admin" ? "admin" : "staff_social_media");
+    setFormRole(user.role === "admin" ? "admin" : user.role === "client" ? "client" : "staff_social_media");
     setFormStatus(user.status === "inactive" ? "inactive" : "active");
     setFormPermissions({ ...DEFAULT_STAFF_PERMISSIONS, ...user.permissions });
     setFormClientIds(user.assignedClientIds || []);
@@ -356,7 +356,7 @@ export function UserManagementView() {
                   {/* Role & Permissions badges */}
                   <div className="flex flex-wrap gap-1.5 text-[10px]">
                     <span className="font-bold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100">
-                      {user.role === "admin" ? "🛡️ Administrator" : "📱 Staf Medsos"}
+                      {user.role === "admin" ? "🛡️ Administrator" : user.role === "client" ? "👔 Bos / Klien" : "📱 Staf Medsos"}
                     </span>
                     {user.permissions?.can_view_website_hub ? (
                       <span className="font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-100">
@@ -458,7 +458,7 @@ export function UserManagementView() {
 
                         <td className="py-3.5 px-3">
                           <span className="font-bold px-2 py-0.5 rounded-full text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-100">
-                            {user.role === "admin" ? "🛡️ Admin" : "📱 Staf Medsos"}
+                            {user.role === "admin" ? "🛡️ Admin" : user.role === "client" ? "👔 Bos / Klien" : "📱 Staf Medsos"}
                           </span>
                         </td>
 
@@ -656,10 +656,36 @@ export function UserManagementView() {
                   <label className="block text-xs font-bold text-slate-700 mb-1">Tingkat Peran (Role)</label>
                   <select
                     value={formRole}
-                    onChange={(e) => setFormRole(e.target.value as any)}
+                    onChange={(e) => {
+                      const newRole = e.target.value as "staff_social_media" | "admin" | "client";
+                      setFormRole(newRole);
+                      if (newRole === "client") {
+                        setFormPermissions({
+                          can_view_website_hub: true,
+                          can_view_social_hub: true,
+                          can_edit_social: false,
+                          can_manage_clients: false,
+                        });
+                      } else if (newRole === "admin") {
+                        setFormPermissions({
+                          can_view_website_hub: true,
+                          can_view_social_hub: true,
+                          can_edit_social: true,
+                          can_manage_clients: true,
+                        });
+                      } else {
+                        setFormPermissions({
+                          can_view_website_hub: false,
+                          can_view_social_hub: true,
+                          can_edit_social: true,
+                          can_manage_clients: false,
+                        });
+                      }
+                    }}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 outline-none"
                   >
                     <option value="staff_social_media">Staf Media Sosial</option>
+                    <option value="client">Eksekutif / Bos (Pemeriksa Laporan)</option>
                     <option value="admin">Administrator Penuh</option>
                   </select>
                 </div>
