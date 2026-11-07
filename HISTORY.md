@@ -2,7 +2,7 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit 363386f)`.
 
-## 2026-11-07 — Manajemen Pengguna, Hak Akses Granular & Multi-Tenancy Client Scoping (commit c363342)
+## 2026-11-07 — Manajemen Pengguna, Hak Akses Granular & Multi-Tenancy Client Scoping (commit 343525e)
 - **Manajemen Pengguna & Role Based Access Control (RBAC)**:
   - Antarmuka baru UserManagementView.tsx khusus Administrator untuk menambah, mengubah, mengaktifkan/menonaktifkan, dan menghapus akun staf/admin.
   - Granular permissions matrix per pengguna: hak akses lihat/edit Website Hub, hak akses lihat/edit Social Media Hub, dan hak kelola klien.
@@ -37,7 +37,7 @@ Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). For
   - lib/db.ts
   - scripts/seed-clients-and-staff.ts
 
-## 2026-11-07 — Mobile-First Responsive & Clean Architecture (Drawer Nav, Feed Cards, Breakpoints)
+## 2026-11-07 — Mobile-First Responsive & Clean Architecture (Drawer Nav, Feed Cards, Breakpoints) (commit 70412d3)
 - **Mobile-First Layout & Drawer Navigation (`components/sidebar-nav.tsx` & `components/dashboard-app.tsx`)**:
   - Memisahkan sidebar menjadi Desktop Sticky Sidebar (`hidden lg:flex`) dan Mobile Slide-over Drawer dengan backdrop blur gelap yang elegan (`lg:hidden`).
   - Menghilangkan bug layout desktop kaku di layar smartphone yang sebelumnya membuat viewport ter-squish / terpotong oleh fixed sidebar 256px.
