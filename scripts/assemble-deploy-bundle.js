@@ -86,6 +86,11 @@ if (fs.existsSync(staticDir)) {
   fs.cpSync(staticDir, path.join(out, '.next', 'static'), { recursive: true });
 }
 
+const publicDir = path.join(root, 'public');
+if (fs.existsSync(publicDir)) {
+  fs.cpSync(publicDir, path.join(out, 'public'), { recursive: true });
+}
+
 console.log('Assembling deploy_bundle.zip...');
 const zipPath = path.join(root, 'deploy_bundle.zip');
 

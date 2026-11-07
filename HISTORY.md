@@ -2,6 +2,37 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit 363386f)`.
 
+## 2026-11-07 — Penambahan Favicon & Identitas Tab Browser AcS (commit e3be528)
+- **Identitas Visual Tab Browser (Favicon & App Icon)**:
+  - Membuat aset favicon beresolusi tinggi dengan branding **AcS (AI Creative Studio)** menggunakan palet gradien indigo-purple khas aplikasi (`#4f46e5` ke `#9333ea`) dan teks tebal putih kontras tinggi agar langsung mudah dikenali saat browser membuka puluhan tab.
+  - Menghasilkan format lengkap:
+    - `/icon.svg` & `app/icon.svg`: Vektor SVG dinamis untuk layar high-DPI (Retina / 4K).
+    - `/favicon.ico` & `app/favicon.ico`: Multi-size ICO (16x16, 32x32, 48x48, 64x64) untuk kompatibilitas seluruh browser desktop.
+    - `/apple-touch-icon.png` & `app/apple-icon.png`: Ukuran 180x180 untuk Apple / iOS bookmarks.
+    - `/icon-192.png` & `/icon-512.png`: Resolusi PWA & tab overview Android/Chrome.
+- **Pembaruan Konfigurasi & Middleware**:
+  - `app/layout.tsx`: Mendefinisikan metadata icon (icon, shortcut, apple-touch-icon) serta title `"AI Creative Studio - Studio Analytics"`.
+  - `app/manifest.webmanifest`: Mendaftarkan icon SVG dan PNG serta theme-color `#4f46e5`.
+  - `middleware.ts`: Menambahkan whitelist rute publik untuk favicon (`/favicon.ico`, `/icon.svg`, `/apple-icon.png`, dll.) agar tidak dicegat redirect login saat browser memuat aset tab.
+  - `scripts/assemble-deploy-bundle.js`: Menyalin direktori `public/` ke standalone bundle deploy.
+- **Verifikasi Live**:
+  - Seluruh file favicon (`/favicon.ico`, `/icon.svg`, `/apple-icon.png`, `/apple-touch-icon.png`) terverifikasi HTTP 200 di https://report.erihome.id.
+  - Tag `<link rel="icon">` terpasang rapi di `<head>` dokumen HTML.
+- **File Terdampak**:
+  - `app/apple-icon.png`
+  - `app/favicon.ico`
+  - `app/icon.svg`
+  - `app/layout.tsx`
+  - `app/manifest.webmanifest`
+  - `middleware.ts`
+  - `public/apple-touch-icon.png`
+  - `public/favicon.ico`
+  - `public/icon-192.png`
+  - `public/icon-512.png`
+  - `public/icon.svg`
+  - `scripts/assemble-deploy-bundle.js`
+  - `scripts/generate-favicons.py`
+
 ## 2026-11-07 — Perbarui Profil Akun Administrator Menjadi SuperAdmin (commit 250f964)
 - **Identitas Akun Administrator (@admin / @superadmin)**:
   - Mengubah nama display akun Administrator menjadi **SuperAdmin** pada seluruh antarmuka sesi dan kartu profil footer sidebar.

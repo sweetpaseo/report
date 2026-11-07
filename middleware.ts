@@ -1,7 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 
-const PUBLIC_EXACT = new Set(["/login", "/api/auth/login", "/manifest.webmanifest"]);
+const PUBLIC_EXACT = new Set([
+  "/login",
+  "/api/auth/login",
+  "/manifest.webmanifest",
+  "/favicon.ico",
+  "/icon.svg",
+  "/apple-icon.png",
+  "/apple-touch-icon.png",
+  "/icon-192.png",
+  "/icon-512.png",
+]);
 const PUBLIC_PREFIXES = ["/report/", "/api/public/", "/report-data/", "/api/cron/", "/api/extension/"];
 const CLIENT_BLOCKED = new Set(["/api/upload", "/api/websites"]);
 const ADMIN_MUTATIONS = new Set([
@@ -69,5 +79,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|robots.txt).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|robots.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)"],
 };
