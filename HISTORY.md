@@ -783,3 +783,12 @@ Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). For
 - Menambahkan fungsi `decodeTikTokIdDate` pada `lib/social-utils.ts` untuk mendekode timestamp asli video TikTok via 64-bit Snowflake ID (mencegah fallback new Date() sesuai aturan integritas data).
 - Mengaktifkan parser video TikTok di `acs-social-extension/content-scripts/instagram-extractor.js` (membaca link, postId, thumbnail, play count/views, dan publish date) sehingga penambahan akun TikTok baru dari browser dapat tertampung lengkap ke dalam webapp.
 - File yang diubah: `components/views/SocialMediaView.tsx`, `lib/social-utils.ts`, `acs-social-extension/content-scripts/instagram-extractor.js`.
+
+
+## 2026-11-10 — Agency-Grade Social Analytics Suite (commit 0c4bc22)
+- Menambahkan **Format Performance Breakdown (Video Reels vs Foto/Carousel)**: menganalisis rasio perbandingan rata-rata suka dan komentar antar format serta memberikan insight strategis bagi tim konten.
+- Menambahkan **Konten Performa Terbaik (Hall of Fame Leaderboard)**: menampilkan widget 3 konten teratas (🥇 #1, 🥈 #2, 🥉 #3) dengan thumbnail, metrik likes/comments, badge platform, dan tautan langsung ke postingan.
+- Menambahkan **Empirical Data-Driven Best Time to Post**: menghitung hari terbaik dan rentang jam tayang paling efektif berdasarkan riwayat nyata postingan klien yang tersinkron, dilengkapi distribusi performa 5 pembagian waktu (pagi, siang, sore, malam, dini hari).
+- Menambahkan **Riwayat & Tren Followers (Follower Dynamics Timeline)**: menghitung akumulasi net growth delta followers dari rekaman snapshot berkala.
+- Mengintegrasikan **Rekomendasi Topik Viral Google Search Console ke Medsos (SEO-to-Social)**: menarik kueri pencarian website klien dengan impresi tinggi dari tabel `gsc_queries` dan merumuskannya menjadi kartu ide konten siap pakai lengkap dengan formula hook viral, CTA, dan tombol salin langsung di tab Papan Ide Konten.
+- File yang diubah: `app/api/social/synced-data/route.ts`, `components/views/SocialMediaView.tsx`.
