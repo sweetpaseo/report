@@ -775,3 +775,11 @@ Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). For
 - File yang diubah: app/dashboard-theme.css, components/dashboard-app.tsx
 
 
+
+
+## 2026-11-10 — Social Media Hub: Platform Switcher, Visual Badges, and TikTok Extractor (commit c1bfb51)
+- Menambahkan filter pemilih platform (Semua Medsos / Instagram / TikTok) pada toolbar utama Social Media Hub dengan perhitungan dinamis KPI.
+- Menambahkan badge visual identitas platform (Instagram beraksen pink/ungu dan TikTok beraksen hitam-cyan) pada tabel desktop dan kartu responsif mobile.
+- Menambahkan fungsi `decodeTikTokIdDate` pada `lib/social-utils.ts` untuk mendekode timestamp asli video TikTok via 64-bit Snowflake ID (mencegah fallback new Date() sesuai aturan integritas data).
+- Mengaktifkan parser video TikTok di `acs-social-extension/content-scripts/instagram-extractor.js` (membaca link, postId, thumbnail, play count/views, dan publish date) sehingga penambahan akun TikTok baru dari browser dapat tertampung lengkap ke dalam webapp.
+- File yang diubah: `components/views/SocialMediaView.tsx`, `lib/social-utils.ts`, `acs-social-extension/content-scripts/instagram-extractor.js`.
