@@ -112,6 +112,7 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
   const [postSourceFilter, setPostSourceFilter] = useState<"all" | "extension" | "cloud">("extension");
   const [postViewMode, setPostViewMode] = useState<"table" | "grid">("table");
   const [postSearch, setPostSearch] = useState("");
+  const [postPlatformFilter, setPostPlatformFilter] = useState<"all" | "instagram" | "tiktok">("all");
   const [postTypeFilter, setPostTypeFilter] = useState<"all" | "reel" | "image">("all");
   const [postSortBy, setPostSortBy] = useState<"likes" | "comments" | "engagement" | "date">("likes");
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
@@ -228,7 +229,11 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
   const filteredSyncedPosts = useMemo(() => {
     return syncedPosts
       .filter((p) => {
-        if (postTypeFilter !== "all" && p.media_type !== postTypeFilter) return false;
+        if (postPlatformFilter !== "all" && p.platform?.toLowerCase() !== postPlatformFilter) return false;
+        if (postTypeFilter !== "all") {
+          if (postTypeFilter === "reel" && p.media_type !== "reel" && p.media_type !== "video") return false;
+          if (postTypeFilter === "image" && p.media_type !== "image" && p.media_type !== "photo") return false;
+        }
         if (postSearch) {
           const q = postSearch.toLowerCase();
           const inCaption = p.caption?.toLowerCase().includes(q);
@@ -243,12 +248,17 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
         if (postSortBy === "engagement") return (b.engagement_score || 0) - (a.engagement_score || 0);
         return new Date(b.posted_at || b.synced_at).getTime() - new Date(a.posted_at || a.synced_at).getTime();
       });
-  }, [syncedPosts, postTypeFilter, postSearch, postSortBy]);
+  }, [syncedPosts, postPlatformFilter, postTypeFilter, postSearch, postSortBy]);
 
-  // Aggregate Metrics
-  const totalPostsCount = syncedPosts.length;
-  const totalLikes = syncedPosts.reduce((acc, p) => acc + (p.likes_count || 0), 0);
-  const totalComments = syncedPosts.reduce((acc, p) => acc + (p.comments_count || 0), 0);
+  // Aggregate Metrics based on selected platform
+  const displayedPostsForKpi = useMemo(() => {
+    if (postPlatformFilter === "all") return syncedPosts;
+    return syncedPosts.filter((p) => p.platform?.toLowerCase() === postPlatformFilter);
+  }, [syncedPosts, postPlatformFilter]);
+
+  const totalPostsCount = displayedPostsForKpi.length;
+  const totalLikes = displayedPostsForKpi.reduce((acc, p) => acc + (p.likes_count || 0), 0);
+  const totalComments = displayedPostsForKpi.reduce((acc, p) => acc + (p.comments_count || 0), 0);
   const totalInteractions = totalLikes + totalComments;
   const avgEngagementPerPost = totalPostsCount > 0 ? (totalInteractions / totalPostsCount).toFixed(1) : "0";
 
@@ -502,7 +512,9 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
               <div className="bg-white border border-slate-200/90 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm">
                 <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider block truncate">Total Konten</span>
                 <div className="text-xl sm:text-2xl font-black text-slate-900 mt-1">{totalPostsCount}</div>
-                <div className="text-[10px] text-slate-400 mt-0.5 truncate">Feed Instagram/TikTok</div>
+                <div className="text-[10px] text-slate-400 mt-0.5 truncate">
+                  {postPlatformFilter === "instagram" ? "Feed Instagram" : postPlatformFilter === "tiktok" ? "Video TikTok" : "Feed Instagram & TikTok"}
+                </div>
               </div>
 
               <div className="bg-white border border-slate-200/90 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm">
@@ -570,6 +582,23 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
                   Semua
                 </button>
               </div>
+
+              {/* Platform Filter */}
+              {postSourceFilter !== "cloud" && (
+                <select
+                  value={postPlatformFilter}
+                  onChange={(e) => setPostPlatformFilter(e.target.value as any)}
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 outline-none cursor-pointer"
+                >
+                  <option value="all">Semua Medsos ({syncedPosts.length})</option>
+                  <option value="instagram">
+                    Instagram ({syncedPosts.filter((p) => p.platform?.toLowerCase() === "instagram").length})
+                  </option>
+                  <option value="tiktok">
+                    TikTok ({syncedPosts.filter((p) => p.platform?.toLowerCase() === "tiktok").length})
+                  </option>
+                </select>
+              )}
 
               {/* Media Type Filter */}
               {postSourceFilter !== "cloud" && (
@@ -664,18 +693,29 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
                           key={p.id}
                           className="bg-white border border-slate-200/90 rounded-2xl p-3.5 shadow-2xs space-y-3"
                         >
-                          {/* Card Header: #, Format Badge, Date */}
+                          {/* Card Header: #, Platform Badge, Format Badge, Date */}
                           <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2 min-w-0">
+                            <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                               <span className="text-[11px] font-bold text-slate-400">#{idx + 1}</span>
+                              {p.platform?.toLowerCase() === "tiktok" ? (
+                                <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full border bg-slate-900 text-white border-slate-700 inline-flex items-center gap-1 shadow-2xs">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                                  TikTok
+                                </span>
+                              ) : (
+                                <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full border bg-pink-50 text-pink-700 border-pink-200 inline-flex items-center gap-1 shadow-2xs">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-pink-500" />
+                                  Instagram
+                                </span>
+                              )}
                               <span
                                 className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${
-                                  p.media_type === "reel"
+                                  p.media_type === "reel" || p.media_type === "video"
                                     ? "bg-purple-50 text-purple-700 border-purple-200"
                                     : "bg-emerald-50 text-emerald-700 border-emerald-200"
                                 }`}
                               >
-                                {p.media_type === "reel" ? "🎬 Reel" : "🖼️ Image"}
+                                {p.media_type === "reel" || p.media_type === "video" ? "🎬 Video" : "🖼️ Image"}
                               </span>
                             </div>
 
@@ -780,7 +820,7 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
                         <thead>
                           <tr className="bg-slate-50/90 border-b border-slate-200 text-slate-600 font-extrabold uppercase text-[10px] tracking-wider">
                             <th className="py-3 px-3 w-10 text-center">#</th>
-                            <th className="py-3 px-3 w-28">Format</th>
+                            <th className="py-3 px-3 w-36">Platform &amp; Format</th>
                             <th className="py-3 px-4 min-w-[280px]">Caption &amp; Konten</th>
                             <th className="py-3 px-4 min-w-[220px]">URL Postingan Medsos</th>
                             <th className="py-3 px-3 text-right cursor-pointer" onClick={() => setPostSortBy("likes")}>
@@ -815,7 +855,7 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
                                   {idx + 1}
                                 </td>
 
-                                {/* Format / Media */}
+                                {/* Platform & Format / Media */}
                                 <td className="py-3.5 px-3">
                                   <div className="flex items-center gap-2">
                                     {p.thumbnail_url ? (
@@ -832,15 +872,28 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
                                         <Laptop className="w-4 h-4" />
                                       </div>
                                     )}
-                                    <span
-                                      className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${
-                                        p.media_type === "reel"
-                                          ? "bg-purple-50 text-purple-700 border-purple-200"
-                                          : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                      }`}
-                                    >
-                                      {p.media_type || "Post"}
-                                    </span>
+                                    <div className="flex flex-col gap-1 min-w-0">
+                                      {p.platform?.toLowerCase() === "tiktok" ? (
+                                        <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md border bg-slate-900 text-white border-slate-700 inline-flex items-center gap-1 w-fit shadow-2xs">
+                                          <span className="w-1 h-1 rounded-full bg-cyan-400" />
+                                          TikTok
+                                        </span>
+                                      ) : (
+                                        <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md border bg-pink-50 text-pink-700 border-pink-200 inline-flex items-center gap-1 w-fit shadow-2xs">
+                                          <span className="w-1 h-1 rounded-full bg-pink-500" />
+                                          Instagram
+                                        </span>
+                                      )}
+                                      <span
+                                        className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md border w-fit ${
+                                          p.media_type === "reel" || p.media_type === "video"
+                                            ? "bg-purple-50 text-purple-700 border-purple-200"
+                                            : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                        }`}
+                                      >
+                                        {p.media_type === "reel" || p.media_type === "video" ? "🎬 Video" : "🖼️ Image"}
+                                      </span>
+                                    </div>
                                   </div>
                                 </td>
 

@@ -254,6 +254,23 @@
     };
   }
 
+  function decodeTikTokVideoId(videoId) {
+    if (!videoId || typeof videoId !== "string") return null;
+    const clean = videoId.trim();
+    if (!/^\d{16,21}$/.test(clean)) return null;
+    try {
+      const id = BigInt(clean);
+      const unixSeconds = Number(id >> 32n);
+      const date = new Date(unixSeconds * 1000);
+      if (isNaN(date.getTime()) || date.getFullYear() < 2016 || date.getFullYear() > 2035) {
+        return null;
+      }
+      return date;
+    } catch (e) {
+      return null;
+    }
+  }
+
   function extractTikTokData() {
     const match = window.location.pathname.match(/^\/@([^/?#]+)/);
     const username = match ? match[1] : "";
@@ -270,19 +287,71 @@
       likesCount = parseCount(countEls[2].textContent);
     }
 
+    // Full name, Bio, Avatar
+    const fullNameEl = document.querySelector('[data-e2e="user-title"], h1[data-e2e="user-title"], h1');
+    const fullName = fullNameEl ? fullNameEl.textContent?.trim() : username;
+
+    const bioEl = document.querySelector('[data-e2e="user-bio"], h2[data-e2e="user-bio"]');
+    const bio = bioEl ? bioEl.textContent?.trim() : "";
+
+    const avatarEl = document.querySelector('[data-e2e="user-avatar"] img, img.tiktok-avatar, header img');
+    const profilePicUrl = avatarEl ? avatarEl.src : "";
+
+    // Parse visible videos on profile page
+    const posts = [];
+    const seenIds = new Set();
+    const videoLinks = document.querySelectorAll('a[href*="/video/"]');
+
+    videoLinks.forEach((a) => {
+      const href = a.getAttribute("href") || "";
+      const vMatch = href.match(/\/video\/(\d+)/);
+      if (!vMatch) return;
+      const postId = vMatch[1];
+      if (seenIds.has(postId)) return;
+      seenIds.add(postId);
+
+      const fullUrl = href.startsWith("http") ? href : `https://www.tiktok.com/@${username}/video/${postId}`;
+      const img = a.querySelector("img");
+      const caption = img ? img.getAttribute("alt") || "" : a.getAttribute("title") || "";
+      const thumb = img ? img.getAttribute("src") || "" : "";
+
+      // Views / Plays count in video card
+      let views = 0;
+      const viewEl = a.querySelector('[data-e2e="video-views"], strong, span');
+      if (viewEl) {
+        const rawText = viewEl.textContent?.trim() || "";
+        views = parseCount(rawText);
+      }
+
+      // Exact publish date from TikTok Snowflake ID
+      const realPostedDate = decodeTikTokVideoId(postId);
+
+      posts.push({
+        postId,
+        postUrl: fullUrl,
+        caption: caption.slice(0, 1000),
+        mediaType: "video",
+        thumbnailUrl: thumb,
+        likesCount: views,
+        commentsCount: 0,
+        sharesCount: 0,
+        postedAt: realPostedDate ? realPostedDate.toISOString() : new Date().toISOString(),
+      });
+    });
+
     return {
       ok: true,
       profile: {
         platform: "tiktok",
         username,
-        fullName: username,
+        fullName: fullName || username,
         followersCount,
         followingCount,
-        postsCount: 0,
-        bio: "",
-        profilePicUrl: "",
+        postsCount: posts.length,
+        bio: (bio || "").slice(0, 500),
+        profilePicUrl,
       },
-      posts: [],
+      posts: posts.slice(0, 30),
     };
   }
 
