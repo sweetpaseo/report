@@ -111,6 +111,51 @@ export async function GET(request: Request) {
     };
   }).sort((a, b) => new Date(b.posted_at).getTime() - new Date(a.posted_at).getTime());
 
+  // SEO to Social Content Recommendations based on top Google Search queries
+  let seoSuggestions: Array<{
+    id: string;
+    topic: string;
+    impressions: number;
+    clicks: number;
+    recommendedFormat: string;
+    hook: string;
+    cta: string;
+  }> = [];
+
+  try {
+    const clientWebsites = db
+      .prepare("SELECT id FROM websites WHERE (? IS NOT NULL AND client_id = ?) OR (? IS NOT NULL AND id = ?)")
+      .all(clientId, clientId, websiteId, websiteId) as Array<{ id: string }>;
+
+    if (clientWebsites.length > 0) {
+      const siteIds = clientWebsites.map((w) => `'${w.id}'`).join(",");
+      const topQueries = db
+        .prepare(`
+          SELECT query, SUM(clicks) as clicks, SUM(impressions) as impressions
+          FROM gsc_queries
+          WHERE website_id IN (${siteIds}) AND query NOT LIKE '%http%'
+          GROUP BY query
+          ORDER BY impressions DESC, clicks DESC
+          LIMIT 6
+        `)
+        .all() as Array<{ query: string; clicks: number; impressions: number }>;
+
+      seoSuggestions = topQueries.map((q, idx) => ({
+        id: `seo_sug_${idx + 1}`,
+        topic: q.query,
+        impressions: q.impressions || 0,
+        clicks: q.clicks || 0,
+        recommendedFormat: idx % 2 === 0 ? "Carousel Edukatif (3-5 Slide)" : "Reels / Video Pendek (30-45 dtk)",
+        hook: idx % 3 === 0
+          ? `Banyak yang belum tahu, ini tips penting tentang ${q.query}!`
+          : idx % 3 === 1
+          ? `Stop scroll dulu kalau kamu lagi butuh ${q.query}!`
+          : `3 Rahasia memilih ${q.query} yang wajib kamu tahu!`,
+        cta: "Ketik 'INFO' di komentar untuk konsultasi gratis atau cek link di bio!",
+      }));
+    }
+  } catch {}
+
   return NextResponse.json({
     ok: true,
     client: client
@@ -122,5 +167,6 @@ export async function GET(request: Request) {
       : null,
     snapshots,
     posts,
+    seoSuggestions,
   });
 }

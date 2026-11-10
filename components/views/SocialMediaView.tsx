@@ -30,6 +30,11 @@ import {
   LayoutGrid,
   Search,
   FileSpreadsheet,
+  Award,
+  Flame,
+  Zap,
+  Video,
+  Image as ImageIcon,
 } from "lucide-react";
 
 interface SocialMediaViewProps {
@@ -107,6 +112,16 @@ interface SyncedPost {
   synced_at: string;
 }
 
+interface SeoSuggestion {
+  id: string;
+  topic: string;
+  impressions: number;
+  clicks: number;
+  recommendedFormat: string;
+  hook: string;
+  cta: string;
+}
+
 export function SocialMediaView({ website, websites, onSelectWebsite, userRole }: SocialMediaViewProps) {
   const [activeSubTab, setActiveSubTab] = useState<"accounts" | "posts" | "ideas" | "insights" | "extension">("posts");
   const [postSourceFilter, setPostSourceFilter] = useState<"all" | "extension" | "cloud">("extension");
@@ -116,6 +131,7 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
   const [postTypeFilter, setPostTypeFilter] = useState<"all" | "reel" | "image">("all");
   const [postSortBy, setPostSortBy] = useState<"likes" | "comments" | "engagement" | "date">("likes");
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
+  const [copiedIdeaHook, setCopiedIdeaHook] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -129,6 +145,7 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
   // Browser Extension data
   const [snapshots, setSnapshots] = useState<ProfileSnapshot[]>([]);
   const [syncedPosts, setSyncedPosts] = useState<SyncedPost[]>([]);
+  const [seoSuggestions, setSeoSuggestions] = useState<SeoSuggestion[]>([]);
   const [clientInfo, setClientInfo] = useState<{ id: string; name: string; socialHandles: Record<string, string> } | null>(null);
 
   // Connect link modal
@@ -178,6 +195,9 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
         setSyncedPosts(extensionRes.posts || []);
         if (extensionRes.client) {
           setClientInfo(extensionRes.client);
+        }
+        if (extensionRes.seoSuggestions) {
+          setSeoSuggestions(extensionRes.seoSuggestions);
         }
       }
     } catch {
@@ -261,6 +281,140 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
   const totalComments = displayedPostsForKpi.reduce((acc, p) => acc + (p.comments_count || 0), 0);
   const totalInteractions = totalLikes + totalComments;
   const avgEngagementPerPost = totalPostsCount > 0 ? (totalInteractions / totalPostsCount).toFixed(1) : "0";
+
+  // 1. Format Breakdown: Reels/Video vs Foto/Carousel
+  const formatStats = useMemo(() => {
+    const postsToAnalyze = postPlatformFilter === "all"
+      ? syncedPosts
+      : syncedPosts.filter((p) => p.platform?.toLowerCase() === postPlatformFilter);
+
+    const videoPosts = postsToAnalyze.filter((p) => p.media_type === "reel" || p.media_type === "video");
+    const imagePosts = postsToAnalyze.filter((p) => p.media_type === "image" || p.media_type === "photo");
+
+    const totalVideoLikes = videoPosts.reduce((acc, p) => acc + (p.likes_count || 0), 0);
+    const totalVideoComments = videoPosts.reduce((acc, p) => acc + (p.comments_count || 0), 0);
+    const avgVideoInt = videoPosts.length > 0 ? (totalVideoLikes + totalVideoComments) / videoPosts.length : 0;
+
+    const totalImageLikes = imagePosts.reduce((acc, p) => acc + (p.likes_count || 0), 0);
+    const totalImageComments = imagePosts.reduce((acc, p) => acc + (p.comments_count || 0), 0);
+    const avgImageInt = imagePosts.length > 0 ? (totalImageLikes + totalImageComments) / imagePosts.length : 0;
+
+    const ratio = avgImageInt > 0 ? (avgVideoInt / avgImageInt).toFixed(1) : "1.0";
+
+    return {
+      videoCount: videoPosts.length,
+      imageCount: imagePosts.length,
+      avgVideoInt: Number(avgVideoInt.toFixed(1)),
+      avgImageInt: Number(avgImageInt.toFixed(1)),
+      totalVideoLikes,
+      totalVideoComments,
+      totalImageLikes,
+      totalImageComments,
+      videoRatioVsImage: ratio,
+    };
+  }, [syncedPosts, postPlatformFilter]);
+
+  // 2. Top Performing Posts Leaderboard (Top 3)
+  const topLeaderboardPosts = useMemo(() => {
+    return [...filteredSyncedPosts]
+      .sort((a, b) => {
+        const intA = (a.likes_count || 0) + (a.comments_count || 0);
+        const intB = (b.likes_count || 0) + (b.comments_count || 0);
+        return intB - intA;
+      })
+      .slice(0, 3);
+  }, [filteredSyncedPosts]);
+
+  // 3. Data-Driven Empirical Timing Analysis
+  const empiricalTimingStats = useMemo(() => {
+    const postsToAnalyze = postPlatformFilter === "all"
+      ? syncedPosts
+      : syncedPosts.filter((p) => p.platform?.toLowerCase() === postPlatformFilter);
+
+    if (postsToAnalyze.length === 0) return null;
+
+    const daysName = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+    const dayStats: Record<number, { count: number; totalInt: number }> = {};
+    for (let i = 0; i < 7; i++) dayStats[i] = { count: 0, totalInt: 0 };
+
+    const timeBuckets = [
+      { id: "pagi", label: "Pagi Hari", timeWindow: "06:00 - 10:59 WIB", hours: [6, 7, 8, 9, 10], count: 0, totalInt: 0 },
+      { id: "siang", label: "Siang (Istirahat)", timeWindow: "11:00 - 14:59 WIB", hours: [11, 12, 13, 14], count: 0, totalInt: 0 },
+      { id: "sore", label: "Sore (Pulang Kerja)", timeWindow: "15:00 - 18:59 WIB", hours: [15, 16, 17, 18], count: 0, totalInt: 0 },
+      { id: "malam", label: "Malam (Prime Time)", timeWindow: "19:00 - 23:59 WIB", hours: [19, 20, 21, 22, 23], count: 0, totalInt: 0 },
+      { id: "dini", label: "Dini Hari", timeWindow: "00:00 - 05:59 WIB", hours: [0, 1, 2, 3, 4, 5], count: 0, totalInt: 0 },
+    ];
+
+    postsToAnalyze.forEach((p) => {
+      if (!p.posted_at) return;
+      const d = new Date(p.posted_at);
+      if (isNaN(d.getTime())) return;
+      const day = d.getDay();
+      const hour = d.getHours();
+      const totalInt = (p.likes_count || 0) + (p.comments_count || 0);
+
+      dayStats[day].count += 1;
+      dayStats[day].totalInt += totalInt;
+
+      const bucket = timeBuckets.find((b) => b.hours.includes(hour));
+      if (bucket) {
+        bucket.count += 1;
+        bucket.totalInt += totalInt;
+      }
+    });
+
+    const daysRanked = Object.entries(dayStats)
+      .map(([dayNum, st]) => ({
+        dayName: daysName[Number(dayNum)],
+        count: st.count,
+        avgInt: st.count > 0 ? Number((st.totalInt / st.count).toFixed(1)) : 0,
+      }))
+      .sort((a, b) => b.avgInt - a.avgInt);
+
+    const bucketsRanked = timeBuckets
+      .map((b) => ({
+        ...b,
+        avgInt: b.count > 0 ? Number((b.totalInt / b.count).toFixed(1)) : 0,
+      }))
+      .sort((a, b) => b.avgInt - a.avgInt);
+
+    const activeDays = daysRanked.filter((d) => d.count > 0);
+    const activeBuckets = bucketsRanked.filter((b) => b.count > 0);
+
+    return {
+      bestDay: activeDays[0] || daysRanked[0],
+      secondBestDay: activeDays[1] || null,
+      daysRanked,
+      bestBucket: activeBuckets[0] || bucketsRanked[0],
+      secondBestBucket: activeBuckets[1] || null,
+      bucketsRanked,
+      totalAnalyzed: postsToAnalyze.length,
+    };
+  }, [syncedPosts, postPlatformFilter]);
+
+  // 4. Follower Growth Dynamics from Snapshots
+  const followerGrowthStats = useMemo(() => {
+    if (snapshots.length === 0) return null;
+    const chronological = [...snapshots].reverse();
+    const latest = snapshots[0];
+    const earliest = chronological[0];
+    const deltaFollowers = latest.followers_count - earliest.followers_count;
+
+    return {
+      latest,
+      earliest,
+      deltaFollowers,
+      snapshotsCount: snapshots.length,
+      history: chronological.slice(-6),
+    };
+  }, [snapshots]);
+
+  // Copy Idea Hook
+  function handleCopyIdea(text: string, id: string) {
+    navigator.clipboard.writeText(text);
+    setCopiedIdeaHook(id);
+    setTimeout(() => setCopiedIdeaHook(null), 2000);
+  }
 
   // Generate Connect Link
   async function handleGenerateConnectLink() {
@@ -543,6 +697,151 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
                 <div className="text-xl sm:text-2xl font-black text-indigo-700 mt-1">{avgEngagementPerPost}</div>
                 <div className="text-[10px] text-slate-400 mt-0.5 truncate">Suka + komen / post</div>
               </div>
+            </div>
+          )}
+
+          {/* FORMAT BREAKDOWN & LEADERBOARD SECTION */}
+          {syncedPosts.length > 0 && postSourceFilter !== "cloud" && (
+            <div className="space-y-4">
+              {/* Format Comparison Banner */}
+              {(formatStats.videoCount > 0 || formatStats.imageCount > 0) && (
+                <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs">
+                  <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Flame className="w-4 h-4 text-amber-500" />
+                        <h4 className="text-xs sm:text-sm font-black text-slate-900">Perbandingan Efektivitas Format: Video vs Gambar</h4>
+                      </div>
+                      <p className="text-[11px] text-slate-500 leading-relaxed max-w-2xl">
+                        {formatStats.avgVideoInt > formatStats.avgImageInt ? (
+                          <>
+                            Konten berformat <strong className="text-purple-700">Reels / Video</strong> rata-rata memicu interaksi{" "}
+                            <span className="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                              {formatStats.videoRatioVsImage}x lebih tinggi
+                            </span>{" "}
+                            dibanding postingan gambar. Prioritaskan video pendek untuk eksposur jangkauan audiens baru.
+                          </>
+                        ) : (
+                          <>
+                            Postingan berformat <strong className="text-emerald-700">Gambar / Carousel</strong> menunjukkan engagement yang stabil dan konsisten. Sangat cocok untuk materi katalog dan tips edukasi.
+                          </>
+                        )}
+                      </p>
+                    </div>
+
+                    {/* Stats Pills */}
+                    <div className="grid grid-cols-2 gap-2.5 w-full lg:w-auto shrink-0">
+                      <div className="bg-purple-50/70 border border-purple-200/80 rounded-xl p-2.5 sm:px-3 sm:py-2">
+                        <div className="flex items-center gap-1.5 text-purple-700 text-xs font-bold">
+                          <Video className="w-3.5 h-3.5" />
+                          <span>Video ({formatStats.videoCount})</span>
+                        </div>
+                        <div className="mt-1 flex items-baseline gap-1">
+                          <span className="text-base sm:text-lg font-black text-purple-900">{formatStats.avgVideoInt}</span>
+                          <span className="text-[9px] text-purple-600 font-semibold">rata2 suka+komen</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-2.5 sm:px-3 sm:py-2">
+                        <div className="flex items-center gap-1.5 text-emerald-700 text-xs font-bold">
+                          <ImageIcon className="w-3.5 h-3.5" />
+                          <span>Gambar ({formatStats.imageCount})</span>
+                        </div>
+                        <div className="mt-1 flex items-baseline gap-1">
+                          <span className="text-base sm:text-lg font-black text-emerald-900">{formatStats.avgImageInt}</span>
+                          <span className="text-[9px] text-emerald-600 font-semibold">rata2 suka+komen</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Top 3 Performing Content Leaderboard */}
+              {topLeaderboardPosts.length > 0 && (
+                <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-4 sm:p-5 text-white shadow-md space-y-3.5">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
+                      <Award className="w-4 h-4 text-amber-400" />
+                      <h4 className="text-xs sm:text-sm font-black tracking-wide text-white">🏆 Konten Performa Terbaik (Hall of Fame)</h4>
+                    </div>
+                    <span className="text-[10px] text-slate-300 bg-white/10 px-2.5 py-0.5 rounded-full font-medium">
+                      Berdasarkan akumulasi interaksi (Likes + Komentar)
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {topLeaderboardPosts.map((p, idx) => {
+                      const totalInt = (p.likes_count || 0) + (p.comments_count || 0);
+                      const medal = idx === 0 ? "🥇 #1 Juara" : idx === 1 ? "🥈 #2 Runner Up" : "🥉 #3 Top";
+                      const medalColor = idx === 0 ? "text-amber-300 border-amber-400/40 bg-amber-400/10" : idx === 1 ? "text-slate-200 border-slate-300/40 bg-white/10" : "text-amber-500 border-amber-500/40 bg-amber-600/10";
+
+                      return (
+                        <div
+                          key={`lead_${p.id}`}
+                          className="bg-white/10 hover:bg-white/15 border border-white/15 rounded-xl p-3 flex flex-col justify-between transition-all space-y-2.5 backdrop-blur-xs"
+                        >
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between gap-1.5">
+                              <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md border ${medalColor}`}>
+                                {medal}
+                              </span>
+                              <span className="text-[9px] font-bold text-slate-300 capitalize">
+                                {p.platform} &bull; {p.media_type || "Post"}
+                              </span>
+                            </div>
+
+                            <div className="flex gap-2.5 items-start">
+                              {p.thumbnail_url ? (
+                                <img
+                                  src={p.thumbnail_url}
+                                  alt="Thumb"
+                                  className="w-12 h-12 rounded-lg object-cover border border-white/20 shrink-0"
+                                  onError={(e) => {
+                                    (e.target as HTMLElement).style.display = "none";
+                                  }}
+                                />
+                              ) : (
+                                <div className="w-12 h-12 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 shrink-0">
+                                  <Laptop className="w-4 h-4" />
+                                </div>
+                              )}
+                              <p className="text-[11px] text-slate-200 line-clamp-2 leading-snug font-normal">
+                                {p.caption || "(Tanpa caption)"}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="pt-2 border-t border-white/10 flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-2">
+                              <span className="text-rose-300 font-bold text-[11px] flex items-center gap-1">
+                                <Heart className="w-3 h-3 fill-rose-400 text-rose-400" />
+                                {p.likes_count.toLocaleString("id-ID")}
+                              </span>
+                              <span className="text-blue-300 font-bold text-[11px] flex items-center gap-1">
+                                <MessageCircle className="w-3 h-3 fill-blue-400 text-blue-400" />
+                                {p.comments_count.toLocaleString("id-ID")}
+                              </span>
+                            </div>
+
+                            {p.post_url && (
+                              <a
+                                href={p.post_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-300 hover:text-white transition-colors"
+                              >
+                                <span>Buka</span>
+                                <ArrowUpRight className="w-3 h-3" />
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1250,26 +1549,106 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
             </button>
           </div>
 
-          {/* GSC to Social Content Synergy Banner */}
-          <div className="bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 border border-indigo-200/80 rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-            <div className="flex items-start gap-3">
-              <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
-                <Sparkles className="w-5 h-5" />
+          {/* REAL SEO-TO-SOCIAL CONTENT RECOMMENDATIONS */}
+          {seoSuggestions.length > 0 ? (
+            <div className="bg-gradient-to-br from-indigo-50/80 via-purple-50/60 to-pink-50/80 border border-indigo-200/90 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-2xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-black text-slate-900">
+                      Rekomendasi Topik Viral dari Google Search Console Klien ({seoSuggestions.length} Topik)
+                    </h4>
+                    <p className="text-[10px] sm:text-[11px] text-slate-600">
+                      Topik yang terbukti banyak dicari audiens di Google, otomatis dirumuskan menjadi formula hook Reels &amp; Carousel.
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[10px] font-bold text-indigo-700 bg-white border border-indigo-200 px-2.5 py-0.5 rounded-full w-fit">
+                  Pencarian Nyata Audiens
+                </span>
               </div>
-              <div>
-                <h4 className="font-extrabold text-slate-900 text-xs">Sinergi Data: Website SEO &rarr; Ide Konten Medsos</h4>
-                <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
-                  Ekstensi staf secara otomatis membedah kueri pencarian Google Search Console klien yang memiliki *high impressions*. Kueri tersebut langsung diubah menjadi formula *viral hook* di floating widget staf saat menyusun caption.
-                </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {seoSuggestions.map((sug) => {
+                  const isCopied = copiedIdeaHook === sug.id;
+
+                  return (
+                    <div
+                      key={sug.id}
+                      className="bg-white border border-indigo-100 rounded-xl p-3.5 shadow-xs flex flex-col justify-between space-y-3 hover:border-indigo-300 transition-all"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-1 flex-wrap">
+                          <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                            {sug.recommendedFormat}
+                          </span>
+                          <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                            {sug.impressions.toLocaleString("id-ID")} tayangan Google
+                          </span>
+                        </div>
+
+                        <h5 className="font-bold text-slate-900 text-xs capitalize line-clamp-1">
+                          &ldquo;{sug.topic}&rdquo;
+                        </h5>
+
+                        <div className="bg-slate-50 border border-slate-100 rounded-lg p-2 text-[11px] text-slate-700 leading-relaxed">
+                          <span className="text-[9px] font-bold text-indigo-600 uppercase block mb-0.5">Viral Hook Formula:</span>
+                          &ldquo;{sug.hook}&rdquo;
+                        </div>
+
+                        <p className="text-[10px] text-slate-500 leading-tight">
+                          <strong className="text-slate-700">CTA:</strong> {sug.cta}
+                        </p>
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-100 flex items-center gap-2">
+                        <button
+                          onClick={() => handleCopyIdea(sug.hook, sug.id)}
+                          className="flex-1 flex items-center justify-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold py-1.5 px-2 rounded-lg transition-all"
+                        >
+                          {isCopied ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-slate-500" />}
+                          <span>{isCopied ? "Tersalin!" : "Salin Hook"}</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setPostContent(`${sug.hook}\n\n[Tulis materi konten di sini]\n\n${sug.cta}`);
+                            setShowPostModal(true);
+                          }}
+                          className="flex-1 flex items-center justify-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold py-1.5 px-2 rounded-lg transition-all shadow-2xs"
+                        >
+                          <span>Buat Post</span>
+                          <ArrowUpRight className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-            <button
-              onClick={() => setActiveSubTab("extension")}
-              className="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition-all"
-            >
-              Buka Panduan Ekstensi
-            </button>
-          </div>
+          ) : (
+            <div className="bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 border border-indigo-200/80 rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-slate-900 text-xs">Sinergi Data: Website SEO &rarr; Ide Konten Medsos</h4>
+                  <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
+                    Sistem secara otomatis membaca kueri pencarian Google Search Console klien yang memiliki *high impressions*, lalu mengubahnya menjadi formula *viral hook* dan rekomendasi format konten video.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setActiveSubTab("extension")}
+                className="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition-all"
+              >
+                Buka Panduan Ekstensi
+              </button>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-3">
@@ -1320,8 +1699,9 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
 
       {/* SUB-TAB: INSIGHTS */}
       {activeSubTab === "insights" && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="space-y-5">
+          {/* Top 4 KPI Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm">
               <p className="text-[11px] text-slate-500 font-medium">Total Akun Terpantau</p>
               <h4 className="text-2xl font-black text-slate-900 mt-1">{accounts.length + snapshots.length}</h4>
@@ -1336,8 +1716,10 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
             </div>
             <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm">
               <p className="text-[11px] text-slate-500 font-medium">Bank Ide Konten</p>
-              <h4 className="text-2xl font-black text-slate-900 mt-1">{ideas.length}</h4>
-              <p className="text-[10px] text-indigo-600 font-semibold mt-1">Riset &amp; Ideation</p>
+              <h4 className="text-2xl font-black text-slate-900 mt-1">{ideas.length + seoSuggestions.length}</h4>
+              <p className="text-[10px] text-indigo-600 font-semibold mt-1">
+                {seoSuggestions.length > 0 ? `${seoSuggestions.length} Rekomendasi SEO` : "Riset & Ideation"}
+              </p>
             </div>
             <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm">
               <p className="text-[11px] text-slate-500 font-medium">Status Ekstensi Staf</p>
@@ -1348,29 +1730,166 @@ export function SocialMediaView({ website, websites, onSelectWebsite, userRole }
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm space-y-3">
+          {/* EMPIRICAL DATA-DRIVEN BEST TIME CARD */}
+          {empiricalTimingStats && empiricalTimingStats.totalAnalyzed > 0 && (
+            <div className="bg-gradient-to-br from-indigo-900 via-slate-900 to-purple-950 rounded-2xl sm:rounded-3xl p-5 sm:p-6 text-white shadow-lg space-y-4 border border-indigo-800/40">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-400" />
+                  <h4 className="text-sm sm:text-base font-black text-white">
+                    Analisa Jam &amp; Hari Emas Klien (Data Riil Riwayat Konten)
+                  </h4>
+                </div>
+                <span className="text-[10px] text-indigo-300 bg-indigo-950/80 border border-indigo-700/50 px-2.5 py-0.5 rounded-full w-fit">
+                  Dihitung dari {empiricalTimingStats.totalAnalyzed} postingan tersinkron
+                </span>
+              </div>
+
+              {/* Peak Highlights */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div className="bg-white/10 border border-white/15 rounded-xl p-3.5 backdrop-blur-xs flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-400/20 border border-amber-400/30 flex items-center justify-center text-amber-300 font-black text-lg shrink-0">
+                    🏆
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-amber-300 uppercase block tracking-wider">Hari dengan Respon Tertinggi</span>
+                    <h5 className="text-base font-black text-white mt-0.5">
+                      {empiricalTimingStats.bestDay.dayName}
+                    </h5>
+                    <p className="text-[10px] text-slate-300 mt-0.5">
+                      Rata-rata <strong>{empiricalTimingStats.bestDay.avgInt}</strong> interaksi/post ({empiricalTimingStats.bestDay.count} konten)
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-white/10 border border-white/15 rounded-xl p-3.5 backdrop-blur-xs flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-400/20 border border-indigo-400/30 flex items-center justify-center text-indigo-300 font-black text-lg shrink-0">
+                    ⏰
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-indigo-300 uppercase block tracking-wider">Jam Tayang Paling Efektif</span>
+                    <h5 className="text-base font-black text-white mt-0.5">
+                      {empiricalTimingStats.bestBucket.label}
+                    </h5>
+                    <p className="text-[10px] text-slate-300 mt-0.5">
+                      {empiricalTimingStats.bestBucket.timeWindow} &bull; Rata-rata <strong>{empiricalTimingStats.bestBucket.avgInt}</strong> interaksi
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Time Breakdown Cards */}
+              <div className="space-y-2 pt-2">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Distribusi Performa Berdasarkan Waktu Tayang:
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+                  {empiricalTimingStats.bucketsRanked.map((b, idx) => (
+                    <div
+                      key={b.id}
+                      className={`p-2.5 rounded-xl border text-center transition-all ${
+                        idx === 0
+                          ? "bg-amber-400/15 border-amber-400/40 text-white"
+                          : "bg-white/5 border-white/10 text-slate-300"
+                      }`}
+                    >
+                      <div className="text-[11px] font-bold truncate">{b.label}</div>
+                      <div className="text-sm font-black text-white mt-1">{b.avgInt}</div>
+                      <div className="text-[9px] text-slate-400 mt-0.5">
+                        {b.count} postingan
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* FOLLOWER GROWTH DYNAMICS TIMELINE */}
+          {followerGrowthStats && followerGrowthStats.snapshotsCount > 0 && (
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-indigo-600" />
+                  <h4 className="font-extrabold text-slate-900 text-sm">
+                    Riwayat &amp; Tren Pertumbuhan Followers Klien
+                  </h4>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black text-slate-900">
+                    {followerGrowthStats.latest.followers_count.toLocaleString("id-ID")} Followers
+                  </span>
+                  {followerGrowthStats.deltaFollowers !== 0 && (
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                        followerGrowthStats.deltaFollowers > 0
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                          : "bg-rose-50 text-rose-700 border-rose-200"
+                      }`}
+                    >
+                      {followerGrowthStats.deltaFollowers > 0 ? `+${followerGrowthStats.deltaFollowers.toLocaleString("id-ID")}` : followerGrowthStats.deltaFollowers.toLocaleString("id-ID")} followers
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Progression History */}
+              <div className="space-y-2 pt-1">
+                <p className="text-[11px] text-slate-500">
+                  Riwayat snapshot followers yang tercatat saat staf melakukan sinkronisasi ekstensi:
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {followerGrowthStats.history.map((h, i) => (
+                    <div
+                      key={h.id}
+                      className="bg-slate-50/80 border border-slate-200/80 rounded-xl p-3 flex items-center justify-between"
+                    >
+                      <div>
+                        <span className="text-[10px] text-slate-400 block">
+                          {new Date(h.synced_at).toLocaleDateString("id-ID", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </span>
+                        <span className="text-xs font-black text-slate-900">
+                          {h.followers_count.toLocaleString("id-ID")} followers
+                        </span>
+                      </div>
+                      <span className="text-[9px] font-semibold bg-white border border-slate-200 text-slate-600 px-2 py-0.5 rounded-md uppercase">
+                        {h.platform}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* GENERAL BEST PRACTICES CARD */}
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-5 sm:p-6 shadow-sm space-y-3">
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-indigo-600" />
-              <h4 className="font-extrabold text-slate-900 text-sm">Rekomendasi Waktu Terbaik untuk Posting (Best Time to Post)</h4>
+              <h4 className="font-extrabold text-slate-900 text-sm">Standar Jam Tayang Baseline Indonesia (Benchmark Industri)</h4>
             </div>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Berdasarkan analisa algoritma audiens media sosial di Indonesia, waktu tayang dengan retensi tertinggi umumnya berada di:
+              Sebagai panduan umum audiens media sosial di Indonesia, waktu tayang dengan retensi pengguna tertinggi berada pada tiga jendela utama:
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
-              <div className="bg-slate-50 border border-slate-100 p-3 rounded-xl">
+              <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-xl">
                 <span className="text-[10px] font-bold text-indigo-600 uppercase">Siang Hari (Istirahat Kerja)</span>
                 <p className="text-xs font-black text-slate-800 mt-0.5">12:00 - 13:30 WIB</p>
-                <p className="text-[10px] text-slate-400 mt-1">Ideal untuk tips singkat &amp; infografis.</p>
+                <p className="text-[10px] text-slate-400 mt-1">Ideal untuk konten tips singkat, checklist, dan infografis.</p>
               </div>
-              <div className="bg-slate-50 border border-slate-100 p-3 rounded-xl">
+              <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-xl">
                 <span className="text-[10px] font-bold text-rose-600 uppercase">Sore Menjelang Pulang</span>
                 <p className="text-xs font-black text-slate-800 mt-0.5">17:00 - 18:30 WIB</p>
-                <p className="text-[10px] text-slate-400 mt-1">Bagus untuk carousel dan video showcase.</p>
+                <p className="text-[10px] text-slate-400 mt-1">Waktu transisi santai, sangat cocok untuk video Reels &amp; TikTok santai.</p>
               </div>
-              <div className="bg-slate-50 border border-slate-100 p-3 rounded-xl">
+              <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-xl">
                 <span className="text-[10px] font-bold text-emerald-600 uppercase">Malam Hari (Prime Time)</span>
-                <p className="text-xs font-black text-slate-800 mt-0.5">19:30 - 21:00 WIB</p>
-                <p className="text-[10px] text-slate-400 mt-1">Engagement komentar &amp; save tertinggi.</p>
+                <p className="text-xs font-black text-slate-800 mt-0.5">19:30 - 21:30 WIB</p>
+                <p className="text-[10px] text-slate-400 mt-1">Engagement komentar, diskusi, dan aksi direct message (DM) tertinggi.</p>
               </div>
             </div>
           </div>
