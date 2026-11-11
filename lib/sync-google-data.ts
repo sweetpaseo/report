@@ -7,7 +7,7 @@ import {
   getServiceAccountCredentials,
   GOOGLE_SCOPES,
 } from "./google-api";
-import { periodLabel } from "./parsers/utils";
+import { periodLabel, getCalendarMonthBounds } from "./parsers/utils";
 import { logError } from "./logger";
 
 export interface SyncOptions {
@@ -81,12 +81,41 @@ export async function syncGoogleDataForWebsite({
   let gaSynced = false;
   const now = new Date().toISOString();
 
-  // Find or create report_period
-  const existingPeriod = db
-    .prepare("SELECT id FROM report_periods WHERE website_id = ? AND period_start = ? AND period_end = ?")
-    .get(websiteId, startDate, endDate) as { id: string } | undefined;
+  // Normalize monthly period boundaries: If startDate and endDate fall within the same month,
+  // standardize the period_start to the 1st and period_end to the month end.
+  const isSameMonth = startDate.slice(0, 7) === endDate.slice(0, 7);
+  let standardPeriodStart = startDate;
+  let standardPeriodEnd = endDate;
+  let periodLabelText = periodLabel(startDate);
+
+  if (isSameMonth) {
+    const bounds = getCalendarMonthBounds(startDate);
+    standardPeriodStart = bounds.start;
+    standardPeriodEnd = bounds.end;
+    periodLabelText = bounds.label;
+  }
+
+  // Find or create report_period based on website_id and standard period_start (or exact bounds)
+  let existingPeriod = db
+    .prepare("SELECT id, period_end FROM report_periods WHERE website_id = ? AND period_start = ?")
+    .get(websiteId, standardPeriodStart) as { id: string; period_end: string } | undefined;
+
+  if (!existingPeriod && !isSameMonth) {
+    existingPeriod = db
+      .prepare("SELECT id, period_end FROM report_periods WHERE website_id = ? AND period_start = ? AND period_end = ?")
+      .get(websiteId, startDate, endDate) as { id: string; period_end: string } | undefined;
+  }
 
   const periodId = existingPeriod?.id || crypto.randomUUID();
+
+  // Ensure canonical period_end is up to date (e.g. extending partial month to full standard end)
+  if (existingPeriod && isSameMonth && existingPeriod.period_end !== standardPeriodEnd) {
+    db.prepare("UPDATE report_periods SET period_end = ?, period_label = ? WHERE id = ?").run(
+      standardPeriodEnd,
+      periodLabelText,
+      periodId
+    );
+  }
 
   try {
     // 1. Fetch & Import GSC Data if gsc_site_url is present
@@ -136,7 +165,7 @@ export async function syncGoogleDataForWebsite({
           db.prepare(`
             INSERT INTO report_periods(id, website_id, period_start, period_end, period_label, created_at)
             VALUES (?, ?, ?, ?, ?, ?)
-          `).run(periodId, websiteId, startDate, endDate, periodLabel(startDate), now);
+          `).run(periodId, websiteId, standardPeriodStart, standardPeriodEnd, periodLabelText, now);
         }
 
         // Clean old GSC data for this period
@@ -294,7 +323,7 @@ export async function syncGoogleDataForWebsite({
           db.prepare(`
             INSERT INTO report_periods(id, website_id, period_start, period_end, period_label, created_at)
             VALUES (?, ?, ?, ?, ?, ?)
-          `).run(periodId, websiteId, startDate, endDate, periodLabel(startDate), now);
+          `).run(periodId, websiteId, standardPeriodStart, standardPeriodEnd, periodLabelText, now);
         }
 
         // Clean old GA data for this period

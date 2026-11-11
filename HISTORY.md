@@ -2,6 +2,24 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit 363386f)`.
 
+## 2026-11-11 — Standarisasi Periode Kalender Bulanan & Deduplikasi Database Sync (commit a95e74b)
+- **Normalisasi Periode Bulanan Google Sync (lib/sync-google-data.ts)**:
+  - Menyelesaikan masalah dropdown bulan berulang (November 2026 muncul ganda) akibat cron harian/sync rolling dates (H-2) yang sebelumnya membuat baris report_periods baru tiap hari karena period_end selalu berubah.
+  - Mengimplementasikan helper getCalendarMonthBounds di lib/parsers/utils.ts untuk menstandarkan tanggal mulai ke tanggal 1 dan tanggal akhir ke akhir bulan kalender (period_start = YYYY-MM-01, period_end = YYYY-MM-lastDay).
+  - Kueri pencarian periode diubah mencari berdasarkan website_id dan period_start (atau exact bounds untuk multi-month).
+  - Setiap sync harian berikutnya otomatis menemukan periode yang sama dan memperbarui metrik di dalamnya (upsert/atomic replace).
+- **Proteksi UI & Deduplikasi Defensif (lib/dashboard.ts)**:
+  - Menambahkan penyaringan duplikasi pada query dropdown resolvePeriodContext berdasarkan calendar month/label sehingga dropdown periode terjamin selalu unik 1 entri per bulan.
+- **Pembersihan Database & Deduplikasi Data Eksisting**:
+  - Dibuat skrip otomatis scripts/deduplicate-periods.js untuk menggabungkan snapshot parsial ke periode kanonikal bulan kalender, memigrasikan seluruh relasi child table (metrik GSC, GA4, queries, pages, dll.), dan menghapus baris duplikat.
+  - Berhasil membersihkan dan menggabungkan 88 periode duplikat pada live database server report.erihome.id.
+- **File Terdampak**:
+  - lib/parsers/utils.ts
+  - lib/sync-google-data.ts
+  - lib/dashboard.ts
+  - scripts/deduplicate-periods.js
+  - HISTORY.md
+
 ## 2026-11-07 — Penambahan Favicon & Identitas Tab Browser AcS (commit e3be528)
 - **Identitas Visual Tab Browser (Favicon & App Icon)**:
   - Membuat aset favicon beresolusi tinggi dengan branding **AcS (AI Creative Studio)** menggunakan palet gradien indigo-purple khas aplikasi (`#4f46e5` ke `#9333ea`) dan teks tebal putih kontras tinggi agar langsung mudah dikenali saat browser membuka puluhan tab.

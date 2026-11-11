@@ -71,13 +71,26 @@ function resolvePeriodContext(
   requestedPeriodId?: string,
   requestedComparePeriodId?: string
 ): PeriodContext | null {
-  const periods = db.prepare(`
+  // Deduplicate periods defensively by calendar month (or unique start date)
+  // in case duplicate rows exist, selecting the period with the latest period_end per month.
+  const rawPeriods = db.prepare(`
     SELECT DISTINCT rp.id, rp.period_start, rp.period_end, rp.period_label
     FROM report_periods rp
     JOIN monthly_metrics mm ON mm.report_period_id = rp.id
     WHERE rp.website_id = ?
-    ORDER BY rp.period_start DESC
+    ORDER BY rp.period_start DESC, rp.period_end DESC
   `).all(websiteId) as PeriodRow[];
+
+  const seenMonthKeys = new Set<string>();
+  const periods: PeriodRow[] = [];
+  for (const p of rawPeriods) {
+    const key = p.period_label || p.period_start.slice(0, 7);
+    if (!seenMonthKeys.has(key)) {
+      seenMonthKeys.add(key);
+      periods.push(p);
+    }
+  }
+
   if (!periods.length) return null;
   const selected = periods.find((period) => period.id === requestedPeriodId) || periods[0];
   const selectedIndex = periods.findIndex((period) => period.id === selected.id);

@@ -55,3 +55,17 @@ export function periodLabel(start: string) {
   return new Intl.DateTimeFormat("id-ID", { month: "long", year: "numeric", timeZone: "UTC" })
     .format(new Date(`${start}T00:00:00Z`));
 }
+
+/**
+ * Returns standard start and end dates (YYYY-MM-DD) for a calendar month.
+ * If given a partial date or range within the same calendar month, it returns the 1st and the last day of that month.
+ */
+export function getCalendarMonthBounds(dateStr: string): { start: string; end: string; label: string } {
+  const parts = dateStr.slice(0, 7).split("-");
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10);
+  const start = `${year}-${String(month).padStart(2, "0")}-01`;
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const end = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+  return { start, end, label: periodLabel(start) };
+}
