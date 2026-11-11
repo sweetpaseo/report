@@ -792,3 +792,9 @@ Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). For
 - Menambahkan **Riwayat & Tren Followers (Follower Dynamics Timeline)**: menghitung akumulasi net growth delta followers dari rekaman snapshot berkala.
 - Mengintegrasikan **Rekomendasi Topik Viral Google Search Console ke Medsos (SEO-to-Social)**: menarik kueri pencarian website klien dengan impresi tinggi dari tabel `gsc_queries` dan merumuskannya menjadi kartu ide konten siap pakai lengkap dengan formula hook viral, CTA, dan tombol salin langsung di tab Papan Ide Konten.
 - File yang diubah: `app/api/social/synced-data/route.ts`, `components/views/SocialMediaView.tsx`.
+
+
+## 2026-11-11 — Fix User Password Update Validation (commit ffe15ac)
+- Memperbaiki validasi pembaruan password pengguna di `app/api/admin/users/[id]/route.ts`: sebelumnya password di bawah 6 karakter (seperti kata "staff" yang 5 karakter) diabaikan secara diam-diam tanpa memperbarui hash password di database.
+- Menurunkan batas minimal password menjadi 4 karakter dan menambahkan pesan error 400 eksplisit jika password yang diinput tidak memenuhi kriteria.
+- File yang diubah: `app/api/admin/users/[id]/route.ts`, `app/api/admin/users/route.ts`, `components/views/UserManagementView.tsx`.
