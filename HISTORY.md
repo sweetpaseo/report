@@ -2,7 +2,7 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit 363386f)`.
 
-## 2026-11-11 — Standarisasi Periode Kalender Bulanan & Deduplikasi Database Sync (commit a95e74b)
+## 2026-11-11 — Standarisasi Periode Kalender Bulanan & Deduplikasi Database Sync (commit 940f8c1)
 - **Normalisasi Periode Bulanan Google Sync (lib/sync-google-data.ts)**:
   - Menyelesaikan masalah dropdown bulan berulang (November 2026 muncul ganda) akibat cron harian/sync rolling dates (H-2) yang sebelumnya membuat baris report_periods baru tiap hari karena period_end selalu berubah.
   - Mengimplementasikan helper getCalendarMonthBounds di lib/parsers/utils.ts untuk menstandarkan tanggal mulai ke tanggal 1 dan tanggal akhir ke akhir bulan kalender (period_start = YYYY-MM-01, period_end = YYYY-MM-lastDay).
