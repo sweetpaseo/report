@@ -480,6 +480,31 @@ function initialize(db: DatabaseSync) {
   try {
     db.exec(`ALTER TABLE staff_users ADD COLUMN updated_at TEXT;`);
   } catch (e) {}
+
+  // Enforce Unique Constraints across dimension tables to guarantee zero duplicate rows
+  const uniqueIndexes = [
+    { name: "idx_gsc_countries_unique", table: "gsc_countries", cols: "website_id, report_period_id, search_type, country" },
+    { name: "idx_gsc_queries_unique", table: "gsc_queries", cols: "website_id, report_period_id, search_type, query" },
+    { name: "idx_gsc_pages_unique", table: "gsc_pages", cols: "website_id, report_period_id, search_type, page" },
+    { name: "idx_gsc_devices_unique", table: "gsc_devices", cols: "website_id, report_period_id, search_type, device" },
+    { name: "idx_gsc_appearance_unique", table: "gsc_appearance", cols: "website_id, report_period_id, search_type, appearance" },
+    { name: "idx_ga_cities_unique", table: "ga_cities", cols: "website_id, report_period_id, city" },
+    { name: "idx_ga_regions_unique", table: "ga_regions", cols: "website_id, report_period_id, region" },
+    { name: "idx_ga_countries_unique", table: "ga_countries", cols: "website_id, report_period_id, country" },
+    { name: "idx_ga_channels_unique", table: "ga_channels", cols: "website_id, report_period_id, channel" },
+    { name: "idx_ga_pages_unique", table: "ga_pages", cols: "website_id, report_period_id, page_title" },
+    { name: "idx_ga_events_unique", table: "ga_events", cols: "website_id, report_period_id, event_name" },
+    { name: "idx_ga_device_models_unique", table: "ga_device_models", cols: "website_id, report_period_id, model" },
+    { name: "idx_ga_source_medium_unique", table: "ga_source_medium", cols: "website_id, report_period_id, source_medium" },
+    { name: "idx_ga_operating_systems_unique", table: "ga_operating_systems", cols: "website_id, report_period_id, os" },
+    { name: "idx_ga_browsers_unique", table: "ga_browsers", cols: "website_id, report_period_id, browser" },
+  ];
+
+  for (const idx of uniqueIndexes) {
+    try {
+      db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS ${idx.name} ON ${idx.table}(${idx.cols});`);
+    } catch (e) {}
+  }
 }
 
 export function getDb() {
