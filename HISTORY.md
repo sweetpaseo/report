@@ -2,6 +2,34 @@
 
 Setiap perubahan yang di-commit ke git lokal dicatat di sini (baru di atas). Format: `## YYYY-MM-DD — <judul singkat>  (commit 363386f)`.
 
+## 2026-11-11 — Enforce Unique Constraints & Pembersihan Duplikasi Dimensi (commit 3636410)
+- **Database-Level Unique Constraints (15 Tabel Dimensi)**:
+  - Menyelesaikan masalah penumpukan data dimensi ganda (seperti nama negara "Indonesia" atau kota "Jakarta" berulang kali di halaman Countries) pasca penggabungan snapshot parsial periode lama.
+  - Memasang Composite Unique Indexes di `lib/db.ts` pada 15 tabel dimensi utama:
+    - `idx_gsc_countries_unique` pada `(website_id, report_period_id, search_type, country)`
+    - `idx_gsc_queries_unique` pada `(website_id, report_period_id, search_type, query)`
+    - `idx_gsc_pages_unique` pada `(website_id, report_period_id, search_type, page)`
+    - `idx_gsc_devices_unique` pada `(website_id, report_period_id, search_type, device)`
+    - `idx_gsc_appearance_unique` pada `(website_id, report_period_id, search_type, appearance)`
+    - `idx_ga_cities_unique` pada `(website_id, report_period_id, city)`
+    - `idx_ga_regions_unique` pada `(website_id, report_period_id, region)`
+    - `idx_ga_countries_unique` pada `(website_id, report_period_id, country)`
+    - `idx_ga_channels_unique` pada `(website_id, report_period_id, channel)`
+    - `idx_ga_pages_unique` pada `(website_id, report_period_id, page_title)`
+    - `idx_ga_events_unique` pada `(website_id, report_period_id, event_name)`
+    - `idx_ga_device_models_unique` pada `(website_id, report_period_id, model)`
+    - `idx_ga_source_medium_unique` pada `(website_id, report_period_id, source_medium)`
+    - `idx_ga_operating_systems_unique` pada `(website_id, report_period_id, os)`
+    - `idx_ga_browsers_unique` pada `(website_id, report_period_id, browser)`
+- **Pembersihan & Audit Menyeluruh**:
+  - Dibuat dan dieksekusi skrip `scripts/clean-child-duplicates.js` di seluruh tabel anak, mempertahankan 1 snapshot terlengkap/terkini per entitas dimensi.
+  - Audit database produksi mengonfirmasi 0 baris duplikat di seluruh periode dan tabel.
+  - Halaman Countries kini menampilkan ragam negara (Indonesia, Rumania, USA, Brazil, Hong Kong, Jepang, dll.) dan kota (Jakarta, Banjarmasin, Surabaya, Medan, dll.) secara akurat.
+- **File Terdampak**:
+  - `lib/db.ts`
+  - `scripts/clean-child-duplicates.js`
+  - `HISTORY.md`
+
 ## 2026-11-11 — Standarisasi Periode Kalender Bulanan & Deduplikasi Database Sync (commit 940f8c1)
 - **Normalisasi Periode Bulanan Google Sync (lib/sync-google-data.ts)**:
   - Menyelesaikan masalah dropdown bulan berulang (November 2026 muncul ganda) akibat cron harian/sync rolling dates (H-2) yang sebelumnya membuat baris report_periods baru tiap hari karena period_end selalu berubah.
