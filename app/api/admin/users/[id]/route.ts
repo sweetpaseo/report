@@ -73,7 +73,10 @@ export async function PUT(
 
     const now = new Date().toISOString();
 
-    if (password && password.length >= 6) {
+    if (password) {
+      if (password.length < 4) {
+        return NextResponse.json({ error: "Password baru minimal 4 karakter." }, { status: 400 });
+      }
       const passwordHash = hashPassword(password);
       db.prepare(`
         UPDATE staff_users

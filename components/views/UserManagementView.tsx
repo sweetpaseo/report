@@ -635,7 +635,7 @@ export function UserManagementView() {
                       required={!editingUser}
                       value={formPassword}
                       onChange={(e) => setFormPassword(e.target.value)}
-                      placeholder={editingUser ? "•••••••• (tidak diubah)" : "Minimal 6 karakter"}
+                      placeholder={editingUser ? "•••••••• (tidak diubah)" : "Minimal 4 karakter"}
                       className="bg-transparent text-xs text-slate-900 w-full outline-none"
                     />
                     <button

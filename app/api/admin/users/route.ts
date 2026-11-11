@@ -117,8 +117,8 @@ export async function POST(request: Request) {
       email = `${username}@erihome.id`;
     }
 
-    if (!password || password.length < 6) {
-      return NextResponse.json({ error: "Password minimal 6 karakter." }, { status: 400 });
+    if (!password || password.length < 4) {
+      return NextResponse.json({ error: "Password minimal 4 karakter." }, { status: 400 });
     }
 
     const db = getDb();
